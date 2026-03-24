@@ -270,8 +270,7 @@ input.error, select.error { border-color: var(--warn) !important; box-shadow: 0 
 
 <script>
 // ============================================================
-// ⚠️ Apps Script dağıtım URL'ini buraya yapıştır
-// (doPost + doGet aynı URL — tek dağıtım yeterli)
+// Apps Script URL — değiştirme, doğru ayarlandı
 // ============================================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_XncWVGH4JG5okF0CP71PJWWtyw6MSUcxriwH9qtcYMreKj12OpKdWON6HHoBEwVFYQ/exec';
 
@@ -288,27 +287,29 @@ window.onload = async function() {
   await loadLists();
 };
 
+// ---- LİSTELERİ SHEETS'TEN ÇEK ----
 async function loadLists() {
-  if (SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbw_XncWVGH4JG5okF0CP71PJWWtyw6MSUcxriwH9qtcYMreKj12OpKdWON6HHoBEwVFYQ/exec') {
-    // URL ayarlanmadan önce gösterim için örnek liste
-    fillSelect('adsoyad', 'skel-adsoyad', ['(URL ayarlanınca Sheets\'ten gelecek)']);
-    fillSelect('kasa_ebat', 'skel-kasa',  ['(URL ayarlanınca Sheets\'ten gelecek)']);
-    return;
-  }
   try {
     const res = await fetch(SCRIPT_URL + '?action=getLists');
     const json = await res.json();
+    if (json.error) throw new Error(json.error);
     fillSelect('adsoyad',  'skel-adsoyad', json.operatorler  || []);
     fillSelect('kasa_ebat','skel-kasa',    json.kasaEbatlari || []);
   } catch(e) {
-    fillSelect('adsoyad',  'skel-adsoyad', ['Bağlantı hatası — sayfayı yenile']);
-    fillSelect('kasa_ebat','skel-kasa',    ['Bağlantı hatası — sayfayı yenile']);
+    // Hata olursa skeleton'ı gizle, boş dropdown göster
+    fillSelect('adsoyad',  'skel-adsoyad', []);
+    fillSelect('kasa_ebat','skel-kasa',    []);
+    showToast('⚠️ Liste yüklenemedi, sayfayı yenile', 'err');
   }
 }
 
 function fillSelect(selId, skelId, items) {
   const sel = document.getElementById(selId);
-  items.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+  items.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    sel.appendChild(o);
+  });
   document.getElementById(skelId).style.display = 'none';
   sel.style.display = 'block';
 }
@@ -387,13 +388,22 @@ function validate2() {
   const bit = document.getElementById('sayac_bit');
   const errBit = document.getElementById('err-sayac-bit');
 
-  if (!bas.value) { bas.classList.add('error'); document.getElementById('err-sayac-bas').classList.add('show'); ok = false; }
-  else { bas.classList.remove('error'); document.getElementById('err-sayac-bas').classList.remove('show'); }
+  if (!bas.value) {
+    bas.classList.add('error');
+    document.getElementById('err-sayac-bas').classList.add('show');
+    ok = false;
+  } else {
+    bas.classList.remove('error');
+    document.getElementById('err-sayac-bas').classList.remove('show');
+  }
 
-  if (!bit.value) { bit.classList.add('error'); errBit.textContent = 'Bitiş değeri giriniz'; errBit.classList.add('show'); ok = false; }
-  else if (parseInt(bit.value) < parseInt(bas.value)) {
+  if (!bit.value) {
+    bit.classList.add('error'); errBit.textContent = 'Bitiş değeri giriniz'; errBit.classList.add('show'); ok = false;
+  } else if (parseInt(bit.value) < parseInt(bas.value)) {
     bit.classList.add('error'); errBit.textContent = 'Bitiş, başlamadan küçük olamaz!'; errBit.classList.add('show'); ok = false;
-  } else { bit.classList.remove('error'); errBit.classList.remove('show'); }
+  } else {
+    bit.classList.remove('error'); errBit.classList.remove('show');
+  }
   return ok;
 }
 
@@ -419,7 +429,8 @@ function getData() {
     makine_no: document.getElementById('makine_no').value,
     kasa_ebat: document.getElementById('kasa_ebat').value,
     enj_no: document.getElementById('enj_no').value,
-    vardiya, tarih: document.getElementById('tarih').value,
+    vardiya,
+    tarih: document.getElementById('tarih').value,
     olcum_saat: document.getElementById('olcum_saat').value,
     sayac_bas: bas, sayac_bit: bit, uretim_hesap: bit - bas,
     fire: document.getElementById('fire').value,
@@ -428,11 +439,14 @@ function getData() {
 }
 
 async function submitForm() {
-  if (SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbw_XncWVGH4JG5okF0CP71PJWWtyw6MSUcxriwH9qtcYMreKj12OpKdWON6HHoBEwVFYQ/exec') { showToast('⚠️ Script URL ayarlanmamış!', 'err'); return; }
   document.getElementById('loading').classList.add('show');
   document.getElementById('submit-btn').disabled = true;
   try {
-    await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(getData()) });
+    await fetch(SCRIPT_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(getData())
+    });
     document.getElementById('loading').classList.remove('show');
     showToast('✅ Kaydedildi!', 'ok');
     setTimeout(resetForm, 2000);
