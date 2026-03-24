@@ -352,7 +352,8 @@ function checkStatus(){
     updateStatusBox(json); updateEnjSection(json);
   };
   const s=document.createElement('script');s.id='status-s';
-  s.src=SCRIPT_URL+'?action=getStatus&adsoyad='+encodeURIComponent(ad)+'&tarih='+encodeURIComponent(tarih)+'&vardiya='+encodeURIComponent(vardiya)+'&callback='+cb;
+  const saat=document.getElementById('olcum_saat').value;
+  s.src=SCRIPT_URL+'?action=getStatus&adsoyad='+encodeURIComponent(ad)+'&tarih='+encodeURIComponent(tarih)+'&vardiya='+encodeURIComponent(vardiya)+'&saat='+encodeURIComponent(saat)+'&callback='+cb;
   s.onerror=()=>{};
   document.head.appendChild(s);
 }
