@@ -166,8 +166,8 @@ input.error,select.error{border-color:var(--warn)!important}
   <div class="section">
     <div class="stitle"><span>🏭</span> Kaç Enjeksiyon ile Çalışıyorsunuz?</div>
     <div class="toggle-row" id="enj-toggle-row">
-      <button class="tbtn active" id="t-1" onclick="setEnjSayisi(1)">1 Enjeksiyon</button>
-      <button class="tbtn"        id="t-2" onclick="setEnjSayisi(2)">2 Enjeksiyon</button>
+      <button class="tbtn active" id="t-1" onclick="setEnjSayisi(1)">Tek Enjeksiyon</button>
+      <button class="tbtn"        id="t-2" onclick="setEnjSayisi(2)">Çift Enjeksiyon</button>
     </div>
   </div>
 
@@ -417,9 +417,13 @@ function setEnjSayisi(n) {
   enjSayisi = n;
   document.getElementById('t-1').classList.toggle('active', n===1);
   document.getElementById('t-2').classList.toggle('active', n===2);
+  // Giriş sayfası enj2 bloğu
   document.getElementById('enj2-section').style.display = n===2 ? 'block' : 'none';
+  // Ölçüm sayfası enj2 bloğu
+  document.getElementById('olcum-enj2-section').style.display = n===2 ? 'block' : 'none';
   document.getElementById('enj1-title').textContent = n===2 ? '1. Enjeksiyon Bilgileri' : 'Enjeksiyon Bilgileri';
-  // toggle'ı kilitli modda gizle
+  document.getElementById('olcum-enj1-title').textContent = n===2 ? 'Enjeksiyon 1 — Ölçümler' : 'Ölçümler';
+  // toggle kilitli modda pasif
   document.getElementById('enj-toggle-row').style.opacity = (enj1Kilitli) ? '0.5' : '1';
   document.getElementById('enj-toggle-row').style.pointerEvents = (enj1Kilitli) ? 'none' : 'auto';
 }
