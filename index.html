@@ -101,6 +101,9 @@ input.error,select.error{border-color:var(--warn)!important}
 .skey{color:var(--text2);font-weight:600;flex-shrink:0;margin-right:12px}
 .sval{font-weight:800;color:var(--text);text-align:right}
 .sdivider{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--accent);padding:10px 0 5px;border-bottom:2px solid var(--accent-light);margin-bottom:4px}
+.remember-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:var(--accent-light);border-radius:10px;border:1.5px solid var(--accent)}
+.remember-row input[type="checkbox"]{width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.remember-row label{font-size:14px;font-weight:700;color:var(--accent);cursor:pointer;margin:0}
 .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(120px);padding:15px 26px;border-radius:50px;font-size:15px;font-weight:700;font-family:'Nunito',sans-serif;z-index:999;transition:transform .35s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;box-shadow:0 8px 30px rgba(0,0,0,.2)}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.ok{background:var(--success);color:white}
@@ -146,6 +149,10 @@ input.error,select.error{border-color:var(--warn)!important}
       <label>Şifre <span class="req">*</span></label>
       <input type="password" id="sifre" placeholder="••••" inputmode="numeric" oninput="clearSifreErr()">
       <div class="err-msg" id="err-sifre">Şifre yanlış</div>
+      <div class="remember-row">
+        <input type="checkbox" id="hatirla">
+        <label for="hatirla">Şifremi hatırla</label>
+      </div>
     </div>
     <div class="field">
       <label>Vardiya <span class="req">*</span></label>
@@ -168,6 +175,14 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
   </div>
 
+  <div class="nav-row">
+    <button class="btn btn-next" onclick="goNext(1)">İleri →</button>
+  </div>
+</div>
+
+<!-- ===== SAYFA 2: ÖLÇÜM ===== -->
+<div class="page" id="page-2">
+
   <div class="section">
     <div class="stitle"><span>🏭</span> Kaç Enjeksiyon ile Çalışıyorsunuz?</div>
     <div class="toggle-row" id="enj-toggle-row">
@@ -176,7 +191,7 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
   </div>
 
-  <!-- ENJ 1 -->
+  <!-- ENJ 1 BİLGİ -->
   <div class="section">
     <div class="stitle"><span>1️⃣</span> <span id="enj1-title">Enjeksiyon Bilgileri</span></div>
 
@@ -208,7 +223,7 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
   </div>
 
-  <!-- ENJ 2 (gizli başlar) -->
+  <!-- ENJ 2 BİLGİ (gizli başlar) -->
   <div class="section" id="enj2-section" style="display:none">
     <div class="stitle"><span>2️⃣</span> 2. Enjeksiyon Bilgileri</div>
 
@@ -238,14 +253,6 @@ input.error,select.error{border-color:var(--warn)!important}
       <div class="ro-field">📦 <span id="kasa2-ro-val"></span></div>
     </div>
   </div>
-
-  <div class="nav-row">
-    <button class="btn btn-next" onclick="goNext(1)">İleri →</button>
-  </div>
-</div>
-
-<!-- ===== SAYFA 2: ÖLÇÜM ===== -->
-<div class="page" id="page-2">
 
   <!-- ENJ 1 ÖLÇÜM -->
   <div class="section">
@@ -442,9 +449,17 @@ function onAdChange() {
   const ad = document.getElementById('adsoyad').value;
   const sf = document.getElementById('sifre-field');
   const si = document.getElementById('sifre');
+  const hatirla = document.getElementById('hatirla');
   if(ad) {
     sf.style.display = 'block';
-    si.value = '';
+    const kayitliSifre = localStorage.getItem('sifre_'+ad);
+    if(kayitliSifre) {
+      si.value = kayitliSifre;
+      hatirla.checked = true;
+    } else {
+      si.value = '';
+      hatirla.checked = false;
+    }
     document.getElementById('err-sifre').classList.remove('show');
     si.classList.remove('error');
   } else {
@@ -573,6 +588,13 @@ function goStep(n) {
 
 function goNext(from) {
   if(from===1&&!validate1()) return;
+  if(from===1) {
+    const ad = document.getElementById('adsoyad').value;
+    const si = document.getElementById('sifre').value;
+    const hatirla = document.getElementById('hatirla').checked;
+    if(hatirla && si) localStorage.setItem('sifre_'+ad, si);
+    else localStorage.removeItem('sifre_'+ad);
+  }
   if(from===2&&!validate2()) return;
   if(from===2) buildSummary();
   goStep(from+1);
@@ -597,7 +619,17 @@ function validate1() {
     }
   }
   if(!vardiya){document.getElementById('err-vardiya').classList.add('show');ok=false;}
+  return ok;
+}
 
+function validate2() {
+  let ok=true;
+  function chk(id,errId) {
+    const el=document.getElementById(id);
+    if(!el.value){el.classList.add('error');document.getElementById(errId).classList.add('show');ok=false;}
+    else{el.classList.remove('error');document.getElementById(errId).classList.remove('show');}
+  }
+  // Enjeksiyon seçimleri
   if(!enj1Kilitli){
     const e1=document.getElementById('enj1_no');
     if(!e1.value){e1.classList.add('error');document.getElementById('err-enj1').classList.add('show');ok=false;}
@@ -614,16 +646,8 @@ function validate1() {
     if(!k2.value){k2.classList.add('error');document.getElementById('err-kasa2').classList.add('show');ok=false;}
     else{k2.classList.remove('error');document.getElementById('err-kasa2').classList.remove('show');}
   }
-  return ok;
-}
-
-function validate2() {
-  let ok=true;
-  function chk(id,errId) {
-    const el=document.getElementById(id);
-    if(!el.value){el.classList.add('error');document.getElementById(errId).classList.add('show');ok=false;}
-    else{el.classList.remove('error');document.getElementById(errId).classList.remove('show');}
-  }
+  if(!ok) return false; // Enj seçilmeden ölçüm validasyonuna geçme
+  // Ölçümler
   chk('cevrim1','err-cevrim1'); chk('agirlik1','err-agirlik1');
   chk('sayac_bas1','err-bas1');
   const bit1=document.getElementById('sayac_bit1');
@@ -743,10 +767,14 @@ async function submitForm(onaylandi) {
 
 function resetForm() {
   vardiya=null; currentStep=1; olcumNo=1; enjSayisi=1; enj1Kilitli=false; enj2Kilitli=false;
-  ['adsoyad','enj1_no','kasa1','enj2_no','kasa2','sifre'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('sifre-field').style.display='none';
+  // Şifre: hatırla işaretliyse temizleme
+  const hatirla = document.getElementById('hatirla');
+  const sifreEl = document.getElementById('sifre');
+  const adEl    = document.getElementById('adsoyad');
+  if(!hatirla.checked) { sifreEl.value=''; adEl.value=''; document.getElementById('sifre-field').style.display='none'; }
   document.getElementById('err-sifre').classList.remove('show');
-  document.getElementById('sifre')?.classList.remove('error');
+  sifreEl.classList.remove('error');
+  ['enj1_no','kasa1','enj2_no','kasa2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   [1,2].forEach(n=>{const lw=document.getElementById('limit-warn'+n);if(lw)lw.style.display='none';});
   ['cevrim1','agirlik1','sayac_bas1','sayac_bit1','cevrim2','agirlik2','sayac_bas2','sayac_bit2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('fire1').value=0;
