@@ -118,6 +118,17 @@ input.error,select.error{border-color:var(--warn)!important}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.ok{background:var(--success);color:white}
 .toast.err{background:var(--warn);color:white}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:white;border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.modal-icon{font-size:52px;margin-bottom:10px}
+.modal-title{font-size:19px;font-weight:800;color:#dc2626;margin-bottom:10px}
+.modal-body{font-size:14px;color:var(--text2);font-weight:600;line-height:1.6;margin-bottom:22px}
+.modal-body strong{color:var(--text);font-weight:800}
+.modal-btns{display:flex;gap:10px}
+.modal-btn-cancel{flex:1;padding:14px;border-radius:12px;border:2px solid var(--border);background:white;color:var(--text2);font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;cursor:pointer}
+.modal-btn-confirm{flex:1;padding:14px;border-radius:12px;border:none;background:#dc2626;color:white;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer}
+.modal-btn-confirm:active{opacity:.85}
+.modal-btn-cancel:active{background:var(--bg)}
 .loading{display:none;position:fixed;inset:0;background:rgba(255,255,255,.88);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-size:16px;font-weight:700;color:var(--accent)}
 .loading.show{display:flex}
 .spinner{width:44px;height:44px;border:4px solid var(--accent-light);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
@@ -371,7 +382,7 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
     <div class="nav-row">
       <button class="btn btn-back" onclick="goStep(2)">←</button>
-      <button class="btn btn-submit" id="submit-btn" onclick="submitForm(false)">📤 Gönder</button>
+      <button class="btn btn-submit" id="submit-btn" onclick="onGonderClick(false)">📤 Gönder</button>
     </div>
   </div>
 
@@ -387,11 +398,23 @@ input.error,select.error{border-color:var(--warn)!important}
       <div id="onay-summary-body"></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn btn-submit" id="onay-btn" onclick="submitForm(true)">✅ Onaylıyorum — Gönder</button>
+      <button class="btn btn-submit" id="onay-btn" onclick="onGonderClick(true)">✅ Onaylıyorum — Gönder</button>
       <button class="btn" style="background:var(--border);color:var(--text2);padding:14px" onclick="goStep(2)">← Düzelt</button>
     </div>
   </div>
 
+</div>
+
+<div class="modal-overlay" id="limit-modal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">Üretim Limiti Aşıldı!</div>
+    <div class="modal-body" id="limit-modal-body"></div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="closeLimitModal()">İptal</button>
+      <button class="modal-btn-confirm" onclick="confirmLimitAndSubmit()">Evet, Gönder</button>
+    </div>
+  </div>
 </div>
 
 <div class="loading" id="loading"><div class="spinner"></div><span>Kaydediliyor...</span></div>
@@ -783,7 +806,14 @@ function buildSummary() {
   rows.push(['Çevrim', d.cevrim1+' sn']);
   rows.push(['Ağırlık', d.agirlik1+' gr']);
   rows.push(['Sayaç', d.sayac_bas1+' → '+d.sayac_bit1]);
-  rows.push(['Üretim', u1.toLocaleString('tr-TR')+' adet']);
+  const limitAsimi = uretimLimiti > 0;
+  const u1Asimi = limitAsimi && u1 > uretimLimiti;
+  const u2Asimi = limitAsimi && enjSayisi===2 && u2 > uretimLimiti;
+
+  const uretimVal = (u, asimi) =>
+    u.toLocaleString('tr-TR') + ' adet' + (asimi ? ' <span style="color:#dc2626;font-weight:800"> ⚠️</span>' : '');
+
+  rows.push({type:'uretim', key:'Üretim', val: uretimVal(u1, u1Asimi), asimi: u1Asimi});
   rows.push(['Fire', d.fire1+' adet']);
 
   if(enjSayisi===2){
@@ -793,14 +823,24 @@ function buildSummary() {
     rows.push(['Çevrim', d.cevrim2+' sn']);
     rows.push(['Ağırlık', d.agirlik2+' gr']);
     rows.push(['Sayaç', d.sayac_bas2+' → '+d.sayac_bit2]);
-    rows.push(['Üretim', u2.toLocaleString('tr-TR')+' adet']);
+    rows.push({type:'uretim', key:'Üretim', val: uretimVal(u2, u2Asimi), asimi: u2Asimi});
     rows.push(['Fire', d.fire2+' adet']);
   }
 
   const html = rows.map(r=>{
     if(r.type==='div') return '<div class="sdivider">'+r.text+'</div>';
+    if(r.type==='uretim') return '<div class="sitem"><span class="skey">'+r.key+'</span><span class="sval">'+r.val+'</span></div>';
     return '<div class="sitem"><span class="skey">'+r[0]+'</span><span class="sval">'+r[1]+'</span></div>';
   }).join('');
+
+  // Global: gönderimde limit popup için
+  window._limitAsimi = u1Asimi || u2Asimi;
+  window._limitAsimiMesaj = (() => {
+    const parts = [];
+    if(u1Asimi) parts.push('Enj 1 üretimi <strong>'+u1.toLocaleString('tr-TR')+'</strong> adet');
+    if(u2Asimi) parts.push('Enj 2 üretimi <strong>'+u2.toLocaleString('tr-TR')+'</strong> adet');
+    return parts.join('<br>') + '<br><br>Sistem limiti: <strong>'+uretimLimiti.toLocaleString('tr-TR')+'</strong> adet<br><br>Değer limiti çok yüksek, onaylıyor musunuz?';
+  })();
 
   if(olcumNo===3){
     document.getElementById('normal-ozet').style.display='none';
@@ -900,6 +940,27 @@ function resetForm() {
   document.getElementById('tarih').value=new Date().toISOString().split('T')[0];
   tickClock();
   goStep(1);
+}
+
+let _pendingOnaylandi = false;
+
+function onGonderClick(onaylandi) {
+  if(window._limitAsimi) {
+    _pendingOnaylandi = onaylandi;
+    document.getElementById('limit-modal-body').innerHTML = window._limitAsimiMesaj;
+    document.getElementById('limit-modal').style.display = 'flex';
+  } else {
+    submitForm(onaylandi);
+  }
+}
+
+function closeLimitModal() {
+  document.getElementById('limit-modal').style.display = 'none';
+}
+
+function confirmLimitAndSubmit() {
+  closeLimitModal();
+  submitForm(_pendingOnaylandi);
 }
 
 function showToast(msg,type='ok'){
