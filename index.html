@@ -266,45 +266,6 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
   </div>
 
-  <!-- ENJ 2 BİLGİ (gizli başlar) -->
-  <div class="section" id="enj2-section" style="display:none">
-    <div class="stitle"><span>2️⃣</span> 2. Enjeksiyon Bilgileri</div>
-
-    <div id="enj2-sec" class="field">
-      <label>Enjeksiyon No <span class="req">*</span></label>
-      <input type="hidden" id="enj2_no" value="">
-      <div class="enj-grid" id="enj2-grid">
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 1',this)">Enj 1</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 2',this)">Enj 2</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 3',this)">Enj 3</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 4',this)">Enj 4</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 5',this)">Enj 5</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 6',this)">Enj 6</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 7',this)">Enj 7</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 8',this)">Enj 8</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 9',this)">Enj 9</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 10',this)">Enj 10</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 11',this)">Enj 11</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 12',this)">Enj 12</button>
-      </div>
-      <div class="err-msg" id="err-enj2">Lütfen enjeksiyon seçin</div>
-    </div>
-    <div id="enj2-ro" style="display:none" class="field">
-      <span class="ro-label">Enjeksiyon No</span>
-      <div class="ro-field">🏭 <span id="enj2-ro-val"></span></div>
-    </div>
-
-    <div id="kasa2-sec" class="field">
-      <label>Kasa Ebatı <span class="req">*</span></label>
-      <select id="kasa2"><option value="">— Seçiniz —</option></select>
-      <div class="err-msg" id="err-kasa2">Lütfen kasa ebatı seçin</div>
-    </div>
-    <div id="kasa2-ro" style="display:none" class="field">
-      <span class="ro-label">Kasa Ebatı</span>
-      <div class="ro-field">📦 <span id="kasa2-ro-val"></span></div>
-    </div>
-  </div>
-
   <!-- ENJ 1 ÖLÇÜM -->
   <div class="section">
     <div class="stitle"><span>1️⃣</span> <span id="olcum-enj1-title">Enjeksiyon 1 — Ölçümler</span></div>
@@ -347,9 +308,48 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
   </div>
 
+  <!-- ENJ 2 BİLGİ (gizli başlar) -->
+  <div class="section" id="enj2-section" style="display:none">
+    <div class="stitle"><span>2️⃣</span> 2. Enjeksiyon Bilgileri</div>
+
+    <div id="enj2-sec" class="field">
+      <label>Enjeksiyon No <span class="req">*</span></label>
+      <input type="hidden" id="enj2_no" value="">
+      <div class="enj-grid" id="enj2-grid">
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 1',this)">Enj 1</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 2',this)">Enj 2</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 3',this)">Enj 3</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 4',this)">Enj 4</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 5',this)">Enj 5</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 6',this)">Enj 6</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 7',this)">Enj 7</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 8',this)">Enj 8</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 9',this)">Enj 9</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 10',this)">Enj 10</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 11',this)">Enj 11</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 12',this)">Enj 12</button>
+      </div>
+      <div class="err-msg" id="err-enj2">Lütfen enjeksiyon seçin</div>
+    </div>
+    <div id="enj2-ro" style="display:none" class="field">
+      <span class="ro-label">Enjeksiyon No</span>
+      <div class="ro-field">🏭 <span id="enj2-ro-val"></span></div>
+    </div>
+
+    <div id="kasa2-sec" class="field">
+      <label>Kasa Ebatı <span class="req">*</span></label>
+      <select id="kasa2"><option value="">— Seçiniz —</option></select>
+      <div class="err-msg" id="err-kasa2">Lütfen kasa ebatı seçin</div>
+    </div>
+    <div id="kasa2-ro" style="display:none" class="field">
+      <span class="ro-label">Kasa Ebatı</span>
+      <div class="ro-field">📦 <span id="kasa2-ro-val"></span></div>
+    </div>
+  </div>
+
   <!-- ENJ 2 ÖLÇÜM (gizli başlar) -->
   <div class="section" id="olcum-enj2-section" style="display:none">
-    <div class="stitle"><span>2️⃣</span> Enjeksiyon 2 — Ölçümler</div>
+    <div class="stitle"><span>2️⃣</span> <span id="olcum-enj2-title">Enjeksiyon 2 — Ölçümler</span></div>
 
     <div class="field">
       <label>Çevrim Süresi <span class="req">*</span></label>
