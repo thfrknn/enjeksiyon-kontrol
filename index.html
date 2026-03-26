@@ -894,7 +894,7 @@ async function submitForm(onaylandi) {
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     clearDraft();
     document.getElementById('loading').classList.remove('show');
-    const msgs={1:'✅ 1. ölçüm kaydedildi!',2:'✅ 2. ölçüm kaydedildi!',3:'✅ Vardiya tamamlandı!'};
+    const msgs={1:'✅ Ölçümünüz kaydedildi İyi Günler',2:'✅ 2. ölçüm kaydedildi!',3:'✅ Vardiya tamamlandı!'};
     showToast(msgs[olcumNo]||'✅ Kaydedildi!','ok');
     setTimeout(resetForm,2200);
   }catch(e){
