@@ -321,7 +321,7 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
     <div class="row2">
       <div class="field">
-        <label>Sayaç Başlama <span class="req">*</span></label>
+        <label id="lbl-bas1">Sayaç Başlama <span class="req">*</span></label>
         <input type="number" id="sayac_bas1" placeholder="0" style="font-size:18px;font-weight:800" oninput="calcUretim(1)">
         <div class="err-msg" id="err-bas1">Gerekli</div>
       </div>
@@ -340,9 +340,10 @@ input.error,select.error{border-color:var(--warn)!important}
       <label>Fire</label>
       <div class="counter">
         <button class="cbtn" onclick="adjFire(1,-1)">−</button>
-        <input class="cval" type="number" id="fire1" value="0" min="0">
+        <input class="cval" type="number" id="fire1" value="0" min="0" oninput="clampFire(1)">
         <button class="cbtn" onclick="adjFire(1,1)">+</button>
       </div>
+      <div class="err-msg" id="err-fire1">Fire, üretim adedinden fazla olamaz</div>
     </div>
   </div>
 
@@ -362,7 +363,7 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
     <div class="row2">
       <div class="field">
-        <label>Sayaç Başlama <span class="req">*</span></label>
+        <label id="lbl-bas2">Sayaç Başlama <span class="req">*</span></label>
         <input type="number" id="sayac_bas2" placeholder="0" style="font-size:18px;font-weight:800" oninput="calcUretim(2)">
         <div class="err-msg" id="err-bas2">Gerekli</div>
       </div>
@@ -381,9 +382,10 @@ input.error,select.error{border-color:var(--warn)!important}
       <label>Fire</label>
       <div class="counter">
         <button class="cbtn" onclick="adjFire(2,-1)">−</button>
-        <input class="cval" type="number" id="fire2" value="0" min="0">
+        <input class="cval" type="number" id="fire2" value="0" min="0" oninput="clampFire(2)">
         <button class="cbtn" onclick="adjFire(2,1)">+</button>
       </div>
+      <div class="err-msg" id="err-fire2">Fire, üretim adedinden fazla olamaz</div>
     </div>
   </div>
 
@@ -624,6 +626,43 @@ function selectEnj(n, val, btn) {
   document.getElementById('enj'+n+'_no').value = val;
   document.getElementById('enj'+n+'-grid').classList.remove('error');
   document.getElementById('err-enj'+n).classList.remove('show');
+  // Ölçüm başlığını güncelle (çevrim karışmasın)
+  document.getElementById('olcum-enj'+n+'-title').textContent = val + ' — Ölçümler';
+  // Önceki sayaç değerini çek
+  fetchLastCounter(n, val);
+}
+
+function fetchLastCounter(n, enjNo) {
+  const bas = document.getElementById('sayac_bas'+n);
+  bas.value = ''; setBasEditable(n); calcUretim(n);
+  const cb = 'cbLC'+n+'_'+Date.now();
+  window[cb] = function(json) {
+    delete window[cb]; document.getElementById('lcs'+n)?.remove();
+    if(json.sayacBit !== null && json.sayacBit !== undefined) {
+      bas.value = json.sayacBit;
+      setBasReadonly(n);
+      calcUretim(n);
+    }
+  };
+  const s = document.createElement('script');
+  s.id = 'lcs'+n;
+  s.src = SCRIPT_URL+'?action=getLastCounter&enj_no='+encodeURIComponent(enjNo)+'&callback='+cb;
+  s.onerror = ()=>{ delete window[cb]; };
+  document.head.appendChild(s);
+}
+
+function setBasReadonly(n) {
+  const el = document.getElementById('sayac_bas'+n);
+  el.setAttribute('readonly','');
+  el.style.cssText='font-size:18px;font-weight:800;background:var(--accent-light);border-color:var(--accent);color:var(--accent)';
+  document.getElementById('lbl-bas'+n).innerHTML='Sayaç Başlama <small style="color:var(--accent);font-size:12px;font-weight:700">(önceki kayıt)</small>';
+}
+
+function setBasEditable(n) {
+  const el = document.getElementById('sayac_bas'+n);
+  el.removeAttribute('readonly');
+  el.style.cssText='font-size:18px;font-weight:800';
+  document.getElementById('lbl-bas'+n).innerHTML='Sayaç Başlama <span class="req">*</span>';
 }
 
 function clearSifreErr() {
@@ -656,6 +695,15 @@ function checkStatus() {
     }
     showStatusBox(json);
     showEnjSection(json);
+    // Sayaç başlama değerini önceki bitiş değerinden doldur
+    if(enj1Kilitli && json.sayacBit1 != null) {
+      document.getElementById('sayac_bas1').value = json.sayacBit1;
+      setBasReadonly(1); calcUretim(1);
+    }
+    if(enj2Kilitli && json.sayacBit2 != null) {
+      document.getElementById('sayac_bas2').value = json.sayacBit2;
+      setBasReadonly(2); calcUretim(2);
+    }
   };
   const s = document.createElement('script');
   s.id = 'st-s';
@@ -728,9 +776,23 @@ function calcUretim(n) {
   }
 }
 
+function getUretim(n) {
+  const bas=parseInt(document.getElementById('sayac_bas'+n).value)||0;
+  const bit=parseInt(document.getElementById('sayac_bit'+n).value)||0;
+  return Math.max(0,bit-bas);
+}
 function adjFire(n,d) {
   const el=document.getElementById('fire'+n);
-  el.value=Math.max(0,parseInt(el.value||0)+d);
+  const max=getUretim(n);
+  el.value=Math.min(max,Math.max(0,parseInt(el.value||0)+d));
+}
+function clampFire(n) {
+  const el=document.getElementById('fire'+n);
+  const max=getUretim(n);
+  const v=parseInt(el.value)||0;
+  if(v>max){el.value=max;}
+  if(v<0){el.value=0;}
+  document.getElementById('err-fire'+n).classList.toggle('show', parseInt(el.value)>max);
 }
 
 function goStep(n) {
@@ -825,6 +887,16 @@ function validate2() {
     else if(parseInt(bit2.value)<parseInt(bas2.value)){bit2.classList.add('error');document.getElementById('err-bit2').textContent='Bitiş < Başlama!';document.getElementById('err-bit2').classList.add('show');ok=false;}
     else{bit2.classList.remove('error');document.getElementById('err-bit2').classList.remove('show');}
   }
+  // Fire > üretim kontrolü
+  const chkFire = (n) => {
+    const u = getUretim(n);
+    const f = parseInt(document.getElementById('fire'+n).value)||0;
+    const errEl = document.getElementById('err-fire'+n);
+    if(f > u){ errEl.classList.add('show'); ok=false; }
+    else { errEl.classList.remove('show'); }
+  };
+  chkFire(1);
+  if(enjSayisi===2) chkFire(2);
   return ok;
 }
 
@@ -976,6 +1048,7 @@ function resetForm() {
   document.getElementById('normal-ozet').style.display='block';
   document.getElementById('onay-ozet').style.display='none';
   setEnjSayisi(1);
+  setBasEditable(1); setBasEditable(2);
   document.getElementById('tarih').value=new Date().toISOString().split('T')[0];
   tickClock();
   goStep(1);

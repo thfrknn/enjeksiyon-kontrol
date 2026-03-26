@@ -50,13 +50,13 @@ function doGet(e) {
 
     const normTarih = vardiyaBaslangicTarih(tarih, saat, vardiya);
     const lastRow   = sheet.getLastRow();
-    const vals      = sheet.getRange(2, 1, lastRow - 1, 17).getValues();
+    // 24 sütun oku: M=Enj1SayaçBit(idx12), U=Enj2SayaçBit(idx20)
+    const vals = sheet.getRange(2, 1, lastRow - 1, 21).getValues();
 
     let olcumNo = 1, enj1 = null, kasa1 = null, enj2 = null, kasa2 = null, enjSayisi = 1;
+    let sayacBit1 = null, sayacBit2 = null;
 
     for (let i = 0; i < vals.length; i++) {
-      // C=AdSoyad(idx2) B=VardiyaTarih(idx1) D=Vardiya(idx3) E=ÖlçümNo(idx4) F=EnjSayısı(idx5)
-      // H=Enj1No(idx7) I=Enj1Kasa(idx8) P=Enj2No(idx15) Q=Enj2Kasa(idx16)
       if (String(vals[i][2]).trim() === String(adsoyad).trim() &&
           String(vals[i][1]).trim() === String(normTarih).trim() &&
           String(vals[i][3]).trim() === String(vardiya).trim()) {
@@ -66,10 +66,33 @@ function doGet(e) {
         kasa1 = String(vals[i][8]);
         enj2  = String(vals[i][15]);
         kasa2 = String(vals[i][16]);
+        // M=idx12 Enj1SayaçBit, U=idx20 Enj2SayaçBit
+        const b1 = parseInt(vals[i][12]); if(!isNaN(b1)) sayacBit1 = b1;
+        const b2 = parseInt(vals[i][20]); if(!isNaN(b2)) sayacBit2 = b2;
       }
     }
 
-    return jsonp(cb, { olcumNo, enj1, kasa1, enj2, kasa2, enjSayisi });
+    return jsonp(cb, { olcumNo, enj1, kasa1, enj2, kasa2, enjSayisi, sayacBit1, sayacBit2 });
+  }
+
+  if (e.parameter.action === 'getLastCounter') {
+    const enjNo = e.parameter.enj_no;
+    const ss    = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Veriler');
+    if (!sheet || sheet.getLastRow() < 2) return jsonp(cb, { sayacBit: null });
+    const lastRow = sheet.getLastRow();
+    // H=idx7 Enj1No, M=idx12 Enj1SayaçBit, P=idx15 Enj2No, U=idx20 Enj2SayaçBit
+    const vals = sheet.getRange(2, 1, lastRow - 1, 21).getValues();
+    let sayacBit = null;
+    for (let i = 0; i < vals.length; i++) {
+      if (String(vals[i][7]).trim() === String(enjNo).trim()) {
+        const b = parseInt(vals[i][12]); if (!isNaN(b)) sayacBit = b;
+      }
+      if (String(vals[i][15]).trim() === String(enjNo).trim()) {
+        const b = parseInt(vals[i][20]); if (!isNaN(b)) sayacBit = b;
+      }
+    }
+    return jsonp(cb, { sayacBit });
   }
 
   return jsonp(cb, { error: 'Geçersiz istek' });
