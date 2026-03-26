@@ -104,6 +104,11 @@ input.error,select.error{border-color:var(--warn)!important}
 .skey{color:var(--text2);font-weight:600;flex-shrink:0;margin-right:12px}
 .sval{font-weight:800;color:var(--text);text-align:right}
 .sdivider{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--accent);padding:10px 0 5px;border-bottom:2px solid var(--accent-light);margin-bottom:4px}
+.enj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.enj-gbtn{padding:12px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;text-align:center;transition:all .15s;line-height:1.2}
+.enj-gbtn.sel{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+.enj-gbtn:active{transform:scale(.95)}
+.enj-grid.error{outline:2px solid var(--warn);outline-offset:2px;border-radius:10px}
 .draft-banner{background:#fff7ed;border:2px solid #f97316;border-radius:var(--radius);padding:16px 18px;margin:16px 16px 0;display:none;flex-direction:column;gap:10px}
 .draft-banner-top{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:800;color:#c2410c}
 .draft-banner-top span{font-size:22px}
@@ -227,13 +232,21 @@ input.error,select.error{border-color:var(--warn)!important}
 
     <div id="enj1-sec" class="field">
       <label>Enjeksiyon No <span class="req">*</span></label>
-      <select id="enj1_no">
-        <option value="">— Seçiniz —</option>
-        <option>Enjeksiyon 1</option><option>Enjeksiyon 2</option><option>Enjeksiyon 3</option>
-        <option>Enjeksiyon 4</option><option>Enjeksiyon 5</option><option>Enjeksiyon 6</option>
-        <option>Enjeksiyon 7</option><option>Enjeksiyon 8</option><option>Enjeksiyon 9</option>
-        <option>Enjeksiyon 10</option><option>Enjeksiyon 11</option><option>Enjeksiyon 12</option>
-      </select>
+      <input type="hidden" id="enj1_no" value="">
+      <div class="enj-grid" id="enj1-grid">
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 1',this)">Enj 1</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 2',this)">Enj 2</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 3',this)">Enj 3</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 4',this)">Enj 4</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 5',this)">Enj 5</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 6',this)">Enj 6</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 7',this)">Enj 7</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 8',this)">Enj 8</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 9',this)">Enj 9</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 10',this)">Enj 10</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 11',this)">Enj 11</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 12',this)">Enj 12</button>
+      </div>
       <div class="err-msg" id="err-enj1">Lütfen enjeksiyon seçin</div>
     </div>
     <div id="enj1-ro" style="display:none" class="field">
@@ -259,13 +272,21 @@ input.error,select.error{border-color:var(--warn)!important}
 
     <div id="enj2-sec" class="field">
       <label>Enjeksiyon No <span class="req">*</span></label>
-      <select id="enj2_no">
-        <option value="">— Seçiniz —</option>
-        <option>Enjeksiyon 1</option><option>Enjeksiyon 2</option><option>Enjeksiyon 3</option>
-        <option>Enjeksiyon 4</option><option>Enjeksiyon 5</option><option>Enjeksiyon 6</option>
-        <option>Enjeksiyon 7</option><option>Enjeksiyon 8</option><option>Enjeksiyon 9</option>
-        <option>Enjeksiyon 10</option><option>Enjeksiyon 11</option><option>Enjeksiyon 12</option>
-      </select>
+      <input type="hidden" id="enj2_no" value="">
+      <div class="enj-grid" id="enj2-grid">
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 1',this)">Enj 1</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 2',this)">Enj 2</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 3',this)">Enj 3</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 4',this)">Enj 4</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 5',this)">Enj 5</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 6',this)">Enj 6</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 7',this)">Enj 7</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 8',this)">Enj 8</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 9',this)">Enj 9</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 10',this)">Enj 10</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 11',this)">Enj 11</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 12',this)">Enj 12</button>
+      </div>
       <div class="err-msg" id="err-enj2">Lütfen enjeksiyon seçin</div>
     </div>
     <div id="enj2-ro" style="display:none" class="field">
@@ -504,6 +525,13 @@ function restoreDraft() {
      'cevrim1','agirlik1','sayac_bas1','sayac_bit1','fire1',
      'cevrim2','agirlik2','sayac_bas2','sayac_bit2','fire2'
     ].forEach(id=>{ const el=document.getElementById(id); if(el&&d[id]!==undefined) el.value=d[id]; });
+    // Enj grid buton seçimini görsel olarak geri yükle
+    [1,2].forEach(n=>{
+      const val=d['enj'+n+'_no'];
+      if(val) document.getElementById('enj'+n+'-grid')?.querySelectorAll('.enj-gbtn').forEach(b=>{
+        if(b.getAttribute('onclick').includes("'"+val+"'")) b.classList.add('sel');
+      });
+    });
     calcUretim(1); calcUretim(2);
     if(d.step && d.step > 1) goStep(d.step);
     checkStatus();
@@ -588,6 +616,14 @@ function onAdChange() {
     sf.style.display = 'none';
   }
   if(vardiya) checkStatus();
+}
+
+function selectEnj(n, val, btn) {
+  document.getElementById('enj'+n+'-grid').querySelectorAll('.enj-gbtn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('enj'+n+'_no').value = val;
+  document.getElementById('enj'+n+'-grid').classList.remove('error');
+  document.getElementById('err-enj'+n).classList.remove('show');
 }
 
 function clearSifreErr() {
@@ -754,16 +790,18 @@ function validate2() {
   // Enjeksiyon seçimleri
   if(!enj1Kilitli){
     const e1=document.getElementById('enj1_no');
-    if(!e1.value){e1.classList.add('error');document.getElementById('err-enj1').classList.add('show');ok=false;}
-    else{e1.classList.remove('error');document.getElementById('err-enj1').classList.remove('show');}
+    const g1=document.getElementById('enj1-grid');
+    if(!e1.value){g1.classList.add('error');document.getElementById('err-enj1').classList.add('show');ok=false;}
+    else{g1.classList.remove('error');document.getElementById('err-enj1').classList.remove('show');}
     const k1=document.getElementById('kasa1');
     if(!k1.value){k1.classList.add('error');document.getElementById('err-kasa1').classList.add('show');ok=false;}
     else{k1.classList.remove('error');document.getElementById('err-kasa1').classList.remove('show');}
   }
   if(enjSayisi===2&&!enj2Kilitli){
     const e2=document.getElementById('enj2_no');
-    if(!e2.value){e2.classList.add('error');document.getElementById('err-enj2').classList.add('show');ok=false;}
-    else{e2.classList.remove('error');document.getElementById('err-enj2').classList.remove('show');}
+    const g2=document.getElementById('enj2-grid');
+    if(!e2.value){g2.classList.add('error');document.getElementById('err-enj2').classList.add('show');ok=false;}
+    else{g2.classList.remove('error');document.getElementById('err-enj2').classList.remove('show');}
     const k2=document.getElementById('kasa2');
     if(!k2.value){k2.classList.add('error');document.getElementById('err-kasa2').classList.add('show');ok=false;}
     else{k2.classList.remove('error');document.getElementById('err-kasa2').classList.remove('show');}
@@ -916,6 +954,7 @@ function resetForm() {
   document.getElementById('err-sifre').classList.remove('show');
   sifreEl.classList.remove('error');
   ['enj1_no','kasa1','enj2_no','kasa2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  [1,2].forEach(n=>document.getElementById('enj'+n+'-grid')?.querySelectorAll('.enj-gbtn').forEach(b=>b.classList.remove('sel')));
   [1,2].forEach(n=>{const lw=document.getElementById('limit-warn'+n);if(lw)lw.style.display='none';});
   ['cevrim1','agirlik1','sayac_bas1','sayac_bit1','cevrim2','agirlik2','sayac_bas2','sayac_bit2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('fire1').value=0;
