@@ -142,6 +142,11 @@ input.error,select.error{border-color:var(--warn)!important}
       </select>
       <div class="err-msg" id="err-ad">Lütfen isim seçin</div>
     </div>
+    <div class="field" id="sifre-field" style="display:none">
+      <label>Şifre <span class="req">*</span></label>
+      <input type="password" id="sifre" placeholder="••••" inputmode="numeric" oninput="clearSifreErr()">
+      <div class="err-msg" id="err-sifre">Şifre yanlış</div>
+    </div>
     <div class="field">
       <label>Vardiya <span class="req">*</span></label>
       <div class="vardiya-row">
@@ -272,6 +277,7 @@ input.error,select.error{border-color:var(--warn)!important}
       <div class="result-label" id="result-label1">🏭 Üretim Adedi</div>
       <div class="result-val"   id="result-val1">—</div>
     </div>
+    <div class="ibox orange" id="limit-warn1" style="display:none">⚠️ Üretim limiti aşıldı!</div>
     <div class="field" style="margin-top:14px">
       <label>Fire</label>
       <div class="counter">
@@ -312,6 +318,7 @@ input.error,select.error{border-color:var(--warn)!important}
       <div class="result-label" id="result-label2">🏭 Üretim Adedi</div>
       <div class="result-val"   id="result-val2">—</div>
     </div>
+    <div class="ibox orange" id="limit-warn2" style="display:none">⚠️ Üretim limiti aşıldı!</div>
     <div class="field" style="margin-top:14px">
       <label>Fire</label>
       <div class="counter">
@@ -369,6 +376,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_XncWVGH4JG5okF0CP
 
 let vardiya = null, currentStep = 1, olcumNo = 1, enjSayisi = 1;
 let enj1Kilitli = false, enj2Kilitli = false;
+let sifreler = {}, uretimLimiti = 0;
 
 window.onload = async function() {
   const now = new Date();
@@ -390,6 +398,8 @@ async function loadLists() {
     const cb = 'cb_'+Date.now();
     window[cb] = function(json) {
       delete window[cb]; document.getElementById('jsonp-s')?.remove();
+      sifreler = json.sifreler || {};
+      uretimLimiti = parseInt(json.uretimLimiti) || 0;
       fillSelect('adsoyad','skel-ad', json.operatorler||[]);
       const ebatlar = json.kasaEbatlari||[];
       fillSelect('kasa1','skel-kasa1', ebatlar);
@@ -428,7 +438,25 @@ function setEnjSayisi(n) {
   document.getElementById('enj-toggle-row').style.pointerEvents = (enj1Kilitli) ? 'none' : 'auto';
 }
 
-function onAdChange() { if(vardiya) checkStatus(); }
+function onAdChange() {
+  const ad = document.getElementById('adsoyad').value;
+  const sf = document.getElementById('sifre-field');
+  const si = document.getElementById('sifre');
+  if(ad) {
+    sf.style.display = 'block';
+    si.value = '';
+    document.getElementById('err-sifre').classList.remove('show');
+    si.classList.remove('error');
+  } else {
+    sf.style.display = 'none';
+  }
+  if(vardiya) checkStatus();
+}
+
+function clearSifreErr() {
+  document.getElementById('err-sifre').classList.remove('show');
+  document.getElementById('sifre').classList.remove('error');
+}
 
 function setVardiya(v) {
   vardiya = v;
@@ -505,21 +533,25 @@ function calcUretim(n) {
   const box = document.getElementById('uretim-box'+n);
   const val = document.getElementById('result-val'+n);
   const lbl = document.getElementById('result-label'+n);
+  const lw = document.getElementById('limit-warn'+n);
   if(!isNaN(bas)&&!isNaN(bit)){
     const f=bit-bas;
     if(f>=0){
       val.textContent=f.toLocaleString('tr-TR');
       box.style.cssText='background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
       val.style.color='#16a34a';lbl.style.color='#16a34a';
+      if(lw) lw.style.display = (uretimLimiti > 0 && f > uretimLimiti) ? 'flex' : 'none';
     }else{
       val.textContent='⚠️ Hata';
       box.style.cssText='background:#fef2f2;border:2px solid #dc2626;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
       val.style.color='#dc2626';lbl.style.color='#dc2626';
+      if(lw) lw.style.display='none';
     }
   }else{
     val.textContent='—';
     box.style.cssText='background:var(--accent-light);border:2px solid var(--accent);border-radius:12px;padding:14px;text-align:center;margin-top:12px';
     val.style.color='var(--accent)';lbl.style.color='var(--accent)';
+    if(lw) lw.style.display='none';
   }
 }
 
@@ -551,6 +583,19 @@ function validate1() {
   const ad=document.getElementById('adsoyad');
   if(!ad.value){ad.classList.add('error');document.getElementById('err-ad').classList.add('show');ok=false;}
   else{ad.classList.remove('error');document.getElementById('err-ad').classList.remove('show');}
+
+  if(ad.value && Object.keys(sifreler).length > 0) {
+    const si = document.getElementById('sifre');
+    const dogruSifre = String(sifreler[ad.value] || '');
+    if(!si.value || si.value !== dogruSifre) {
+      si.classList.add('error');
+      document.getElementById('err-sifre').classList.add('show');
+      ok = false;
+    } else {
+      si.classList.remove('error');
+      document.getElementById('err-sifre').classList.remove('show');
+    }
+  }
   if(!vardiya){document.getElementById('err-vardiya').classList.add('show');ok=false;}
 
   if(!enj1Kilitli){
@@ -698,7 +743,11 @@ async function submitForm(onaylandi) {
 
 function resetForm() {
   vardiya=null; currentStep=1; olcumNo=1; enjSayisi=1; enj1Kilitli=false; enj2Kilitli=false;
-  ['adsoyad','enj1_no','kasa1','enj2_no','kasa2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['adsoyad','enj1_no','kasa1','enj2_no','kasa2','sifre'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('sifre-field').style.display='none';
+  document.getElementById('err-sifre').classList.remove('show');
+  document.getElementById('sifre')?.classList.remove('error');
+  [1,2].forEach(n=>{const lw=document.getElementById('limit-warn'+n);if(lw)lw.style.display='none';});
   ['cevrim1','agirlik1','sayac_bas1','sayac_bit1','cevrim2','agirlik2','sayac_bas2','sayac_bit2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('fire1').value=0;
   document.getElementById('fire2').value=0;
