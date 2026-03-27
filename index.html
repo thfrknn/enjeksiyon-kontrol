@@ -757,7 +757,12 @@ function calcUretim(n) {
   const lw = document.getElementById('limit-warn'+n);
   if(!isNaN(bas)&&!isNaN(bit)){
     const f=bit-bas;
-    if(f>=0){
+    if(f>4000){
+      val.textContent='⚠️ ' + f.toLocaleString('tr-TR');
+      box.style.cssText='background:#fff7ed;border:2px solid #ea580c;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
+      val.style.color='#ea580c';lbl.style.color='#ea580c';
+      if(lw) lw.style.display='none';
+    }else if(f>=0){
       val.textContent=f.toLocaleString('tr-TR');
       box.style.cssText='background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
       val.style.color='#16a34a';lbl.style.color='#16a34a';
@@ -876,6 +881,7 @@ function validate2() {
   const bas1=document.getElementById('sayac_bas1');
   if(!bit1.value){bit1.classList.add('error');document.getElementById('err-bit1').textContent='Gerekli';document.getElementById('err-bit1').classList.add('show');ok=false;}
   else if(parseInt(bit1.value)<parseInt(bas1.value)){bit1.classList.add('error');document.getElementById('err-bit1').textContent='Bitiş < Başlama!';document.getElementById('err-bit1').classList.add('show');ok=false;}
+  else if(parseInt(bit1.value)-parseInt(bas1.value)>4000){bit1.classList.add('error');document.getElementById('err-bit1').textContent='Üretim 4000\'i geçemez, sayacı kontrol et!';document.getElementById('err-bit1').classList.add('show');ok=false;}
   else{bit1.classList.remove('error');document.getElementById('err-bit1').classList.remove('show');}
 
   if(enjSayisi===2){
@@ -885,6 +891,7 @@ function validate2() {
     const bas2=document.getElementById('sayac_bas2');
     if(!bit2.value){bit2.classList.add('error');document.getElementById('err-bit2').textContent='Gerekli';document.getElementById('err-bit2').classList.add('show');ok=false;}
     else if(parseInt(bit2.value)<parseInt(bas2.value)){bit2.classList.add('error');document.getElementById('err-bit2').textContent='Bitiş < Başlama!';document.getElementById('err-bit2').classList.add('show');ok=false;}
+    else if(parseInt(bit2.value)-parseInt(bas2.value)>4000){bit2.classList.add('error');document.getElementById('err-bit2').textContent='Üretim 4000\'i geçemez, sayacı kontrol et!';document.getElementById('err-bit2').classList.add('show');ok=false;}
     else{bit2.classList.remove('error');document.getElementById('err-bit2').classList.remove('show');}
   }
   // Fire > üretim kontrolü
