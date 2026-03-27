@@ -844,6 +844,10 @@ function validate1() {
     }
   }
   if(!vardiya){document.getElementById('err-vardiya').classList.add('show');ok=false;}
+  if(!ok){
+    const first = document.querySelector('#page-1 .error, #page-1 .err-msg.show');
+    if(first) first.scrollIntoView({behavior:'smooth', block:'center'});
+  }
   return ok;
 }
 
@@ -904,6 +908,10 @@ function validate2() {
   };
   chkFire(1);
   if(enjSayisi===2) chkFire(2);
+  if(!ok){
+    const first = document.querySelector('#page-2 .error, #page-2 .err-msg.show');
+    if(first) first.scrollIntoView({behavior:'smooth', block:'center'});
+  }
   return ok;
 }
 
