@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#2563eb">
+<meta name="theme-color" content="#16a34a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Enjeksiyon Kontrol">
-<title>Enjeksiyon Kontrol</title>
+<meta name="apple-mobile-web-app-title" content="Ersanlar Plastik">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<title>Ersanlar Plastik</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -20,7 +23,7 @@
   --shadow:0 2px 12px rgba(0,0,0,0.08);--radius:16px;
 }
 body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh;padding-bottom:40px}
-header{background:var(--accent);color:white;padding:18px 20px 14px;text-align:center}
+header{background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);color:white;padding:18px 20px 14px;text-align:center}
 header h1{font-size:21px;font-weight:800}
 header p{font-size:13px;opacity:.85;margin-top:2px}
 #header-date{font-size:12px;opacity:.7;margin-top:5px;font-weight:600}
@@ -43,7 +46,7 @@ header p{font-size:13px;opacity:.85;margin-top:2px}
 .field:last-child{margin-bottom:0}
 label{display:block;font-size:15px;font-weight:700;color:var(--text);margin-bottom:7px}
 label .req{color:var(--warn)}
-select,input[type="number"],input[type="time"],input[type="date"]{
+select,input[type="number"],input[type="time"],input[type="date"],input[type="password"]{
   width:100%;padding:14px 16px;font-size:17px;font-family:'Nunito',sans-serif;font-weight:600;
   color:var(--text);background:var(--bg);border:2px solid var(--border);border-radius:12px;
   outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
@@ -101,6 +104,12 @@ input.error,select.error{border-color:var(--warn)!important}
 .skey{color:var(--text2);font-weight:600;flex-shrink:0;margin-right:12px}
 .sval{font-weight:800;color:var(--text);text-align:right}
 .sdivider{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--accent);padding:10px 0 5px;border-bottom:2px solid var(--accent-light);margin-bottom:4px}
+.enj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.enj-gbtn{padding:12px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;text-align:center;transition:all .15s;line-height:1.2}
+.enj-gbtn.sel{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+.enj-gbtn:active{transform:scale(.95)}
+.enj-gbtn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.enj-grid.error{outline:2px solid var(--warn);outline-offset:2px;border-radius:10px}
 .draft-banner{background:#fff7ed;border:2px solid #f97316;border-radius:var(--radius);padding:16px 18px;margin:16px 16px 0;display:none;flex-direction:column;gap:10px}
 .draft-banner-top{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:800;color:#c2410c}
 .draft-banner-top span{font-size:22px}
@@ -115,6 +124,17 @@ input.error,select.error{border-color:var(--warn)!important}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.ok{background:var(--success);color:white}
 .toast.err{background:var(--warn);color:white}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:white;border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.modal-icon{font-size:52px;margin-bottom:10px}
+.modal-title{font-size:19px;font-weight:800;color:#dc2626;margin-bottom:10px}
+.modal-body{font-size:14px;color:var(--text2);font-weight:600;line-height:1.6;margin-bottom:22px}
+.modal-body strong{color:var(--text);font-weight:800}
+.modal-btns{display:flex;gap:10px}
+.modal-btn-cancel{flex:1;padding:14px;border-radius:12px;border:2px solid var(--border);background:white;color:var(--text2);font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;cursor:pointer}
+.modal-btn-confirm{flex:1;padding:14px;border-radius:12px;border:none;background:#dc2626;color:white;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer}
+.modal-btn-confirm:active{opacity:.85}
+.modal-btn-cancel:active{background:var(--bg)}
 .loading{display:none;position:fixed;inset:0;background:rgba(255,255,255,.88);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-size:16px;font-weight:700;color:var(--accent)}
 .loading.show{display:flex}
 .spinner{width:44px;height:44px;border:4px solid var(--accent-light);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
@@ -126,8 +146,8 @@ input.error,select.error{border-color:var(--warn)!important}
 <body>
 
 <header>
-  <h1>⚙️ Enjeksiyon Kontrol</h1>
-  <p>Operatör Veri Giriş Formu</p>
+  <h1>🏭 Ersanlar Plastik</h1>
+  <p>Enjeksiyon Operatör Giriş Formu</p>
   <div id="header-date"></div>
 </header>
 
@@ -152,14 +172,12 @@ input.error,select.error{border-color:var(--warn)!important}
   <div id="status-box" style="display:none"></div>
 
   <div class="section">
-    <div class="stitle"><span>👤</span> Kim Olduğunuzu Seçin</div>
+    <div class="stitle"><span>👤</span> Kimlik Doğrulama</div>
     <div class="field">
-      <label>Adınız <span class="req">*</span></label>
-      <div id="skel-ad" class="skeleton"></div>
-      <select id="adsoyad" style="display:none" onchange="onAdChange()">
-        <option value="">— Seçiniz —</option>
-      </select>
-      <div class="err-msg" id="err-ad">Lütfen isim seçin</div>
+      <label>Kullanıcı ID <span class="req">*</span></label>
+      <input type="text" id="kullanici_id" placeholder="ID numaranızı girin" inputmode="numeric" oninput="onIdChange()">
+      <div id="hosgeldin" class="ibox green" style="display:none;margin-top:10px"><span>👋</span><span id="hosgeldin-text"></span></div>
+      <div class="err-msg" id="err-ad">Geçersiz ID numarası</div>
     </div>
     <div class="field" id="sifre-field" style="display:none">
       <label>Şifre <span class="req">*</span></label>
@@ -182,7 +200,7 @@ input.error,select.error{border-color:var(--warn)!important}
     <div class="row2">
       <div class="field">
         <label>Tarih</label>
-        <input type="date" id="tarih" onchange="checkStatus()">
+        <input type="date" id="tarih" readonly style="background:var(--accent-light);border-color:var(--accent);color:var(--accent)">
       </div>
       <div class="field">
         <label>Ölçüm Saati</label>
@@ -213,13 +231,21 @@ input.error,select.error{border-color:var(--warn)!important}
 
     <div id="enj1-sec" class="field">
       <label>Enjeksiyon No <span class="req">*</span></label>
-      <select id="enj1_no">
-        <option value="">— Seçiniz —</option>
-        <option>Enjeksiyon 1</option><option>Enjeksiyon 2</option><option>Enjeksiyon 3</option>
-        <option>Enjeksiyon 4</option><option>Enjeksiyon 5</option><option>Enjeksiyon 6</option>
-        <option>Enjeksiyon 7</option><option>Enjeksiyon 8</option><option>Enjeksiyon 9</option>
-        <option>Enjeksiyon 10</option><option>Enjeksiyon 11</option><option>Enjeksiyon 12</option>
-      </select>
+      <input type="hidden" id="enj1_no" value="">
+      <div class="enj-grid" id="enj1-grid">
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 1',this)">Enj 1</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 2',this)">Enj 2</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 3',this)">Enj 3</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 4',this)">Enj 4</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 5',this)">Enj 5</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 6',this)">Enj 6</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 7',this)">Enj 7</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 8',this)">Enj 8</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 9',this)">Enj 9</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 10',this)">Enj 10</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 11',this)">Enj 11</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 12',this)">Enj 12</button>
+      </div>
       <div class="err-msg" id="err-enj1">Lütfen enjeksiyon seçin</div>
     </div>
     <div id="enj1-ro" style="display:none" class="field">
@@ -239,37 +265,6 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
   </div>
 
-  <!-- ENJ 2 BİLGİ (gizli başlar) -->
-  <div class="section" id="enj2-section" style="display:none">
-    <div class="stitle"><span>2️⃣</span> 2. Enjeksiyon Bilgileri</div>
-
-    <div id="enj2-sec" class="field">
-      <label>Enjeksiyon No <span class="req">*</span></label>
-      <select id="enj2_no">
-        <option value="">— Seçiniz —</option>
-        <option>Enjeksiyon 1</option><option>Enjeksiyon 2</option><option>Enjeksiyon 3</option>
-        <option>Enjeksiyon 4</option><option>Enjeksiyon 5</option><option>Enjeksiyon 6</option>
-        <option>Enjeksiyon 7</option><option>Enjeksiyon 8</option><option>Enjeksiyon 9</option>
-        <option>Enjeksiyon 10</option><option>Enjeksiyon 11</option><option>Enjeksiyon 12</option>
-      </select>
-      <div class="err-msg" id="err-enj2">Lütfen enjeksiyon seçin</div>
-    </div>
-    <div id="enj2-ro" style="display:none" class="field">
-      <span class="ro-label">Enjeksiyon No</span>
-      <div class="ro-field">🏭 <span id="enj2-ro-val"></span></div>
-    </div>
-
-    <div id="kasa2-sec" class="field">
-      <label>Kasa Ebatı <span class="req">*</span></label>
-      <select id="kasa2"><option value="">— Seçiniz —</option></select>
-      <div class="err-msg" id="err-kasa2">Lütfen kasa ebatı seçin</div>
-    </div>
-    <div id="kasa2-ro" style="display:none" class="field">
-      <span class="ro-label">Kasa Ebatı</span>
-      <div class="ro-field">📦 <span id="kasa2-ro-val"></span></div>
-    </div>
-  </div>
-
   <!-- ENJ 1 ÖLÇÜM -->
   <div class="section">
     <div class="stitle"><span>1️⃣</span> <span id="olcum-enj1-title">Enjeksiyon 1 — Ölçümler</span></div>
@@ -286,7 +281,7 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
     <div class="row2">
       <div class="field">
-        <label>Sayaç Başlama <span class="req">*</span></label>
+        <label id="lbl-bas1">Sayaç Başlama <span class="req">*</span></label>
         <input type="number" id="sayac_bas1" placeholder="0" style="font-size:18px;font-weight:800" oninput="calcUretim(1)">
         <div class="err-msg" id="err-bas1">Gerekli</div>
       </div>
@@ -305,15 +300,55 @@ input.error,select.error{border-color:var(--warn)!important}
       <label>Fire</label>
       <div class="counter">
         <button class="cbtn" onclick="adjFire(1,-1)">−</button>
-        <input class="cval" type="number" id="fire1" value="0" min="0">
+        <input class="cval" type="number" id="fire1" value="0" min="0" oninput="clampFire(1)">
         <button class="cbtn" onclick="adjFire(1,1)">+</button>
       </div>
+      <div class="err-msg" id="err-fire1">Fire, üretim adedinden fazla olamaz</div>
+    </div>
+  </div>
+
+  <!-- ENJ 2 BİLGİ (gizli başlar) -->
+  <div class="section" id="enj2-section" style="display:none">
+    <div class="stitle"><span>2️⃣</span> 2. Enjeksiyon Bilgileri</div>
+
+    <div id="enj2-sec" class="field">
+      <label>Enjeksiyon No <span class="req">*</span></label>
+      <input type="hidden" id="enj2_no" value="">
+      <div class="enj-grid" id="enj2-grid">
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 1',this)">Enj 1</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 2',this)">Enj 2</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 3',this)">Enj 3</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 4',this)">Enj 4</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 5',this)">Enj 5</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 6',this)">Enj 6</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 7',this)">Enj 7</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 8',this)">Enj 8</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 9',this)">Enj 9</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 10',this)">Enj 10</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 11',this)">Enj 11</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 12',this)">Enj 12</button>
+      </div>
+      <div class="err-msg" id="err-enj2">Lütfen enjeksiyon seçin</div>
+    </div>
+    <div id="enj2-ro" style="display:none" class="field">
+      <span class="ro-label">Enjeksiyon No</span>
+      <div class="ro-field">🏭 <span id="enj2-ro-val"></span></div>
+    </div>
+
+    <div id="kasa2-sec" class="field">
+      <label>Kasa Ebatı <span class="req">*</span></label>
+      <select id="kasa2"><option value="">— Seçiniz —</option></select>
+      <div class="err-msg" id="err-kasa2">Lütfen kasa ebatı seçin</div>
+    </div>
+    <div id="kasa2-ro" style="display:none" class="field">
+      <span class="ro-label">Kasa Ebatı</span>
+      <div class="ro-field">📦 <span id="kasa2-ro-val"></span></div>
     </div>
   </div>
 
   <!-- ENJ 2 ÖLÇÜM (gizli başlar) -->
   <div class="section" id="olcum-enj2-section" style="display:none">
-    <div class="stitle"><span>2️⃣</span> Enjeksiyon 2 — Ölçümler</div>
+    <div class="stitle"><span>2️⃣</span> <span id="olcum-enj2-title">Enjeksiyon 2 — Ölçümler</span></div>
 
     <div class="field">
       <label>Çevrim Süresi <span class="req">*</span></label>
@@ -327,7 +362,7 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
     <div class="row2">
       <div class="field">
-        <label>Sayaç Başlama <span class="req">*</span></label>
+        <label id="lbl-bas2">Sayaç Başlama <span class="req">*</span></label>
         <input type="number" id="sayac_bas2" placeholder="0" style="font-size:18px;font-weight:800" oninput="calcUretim(2)">
         <div class="err-msg" id="err-bas2">Gerekli</div>
       </div>
@@ -346,9 +381,10 @@ input.error,select.error{border-color:var(--warn)!important}
       <label>Fire</label>
       <div class="counter">
         <button class="cbtn" onclick="adjFire(2,-1)">−</button>
-        <input class="cval" type="number" id="fire2" value="0" min="0">
+        <input class="cval" type="number" id="fire2" value="0" min="0" oninput="clampFire(2)">
         <button class="cbtn" onclick="adjFire(2,1)">+</button>
       </div>
+      <div class="err-msg" id="err-fire2">Fire, üretim adedinden fazla olamaz</div>
     </div>
   </div>
 
@@ -368,7 +404,7 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
     <div class="nav-row">
       <button class="btn btn-back" onclick="goStep(2)">←</button>
-      <button class="btn btn-submit" id="submit-btn" onclick="submitForm(false)">📤 Gönder</button>
+      <button class="btn btn-submit" id="submit-btn" onclick="onGonderClick(false)">📤 Gönder</button>
     </div>
   </div>
 
@@ -384,11 +420,23 @@ input.error,select.error{border-color:var(--warn)!important}
       <div id="onay-summary-body"></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn btn-submit" id="onay-btn" onclick="submitForm(true)">✅ Onaylıyorum — Gönder</button>
+      <button class="btn btn-submit" id="onay-btn" onclick="onGonderClick(true)">✅ Onaylıyorum — Gönder</button>
       <button class="btn" style="background:var(--border);color:var(--text2);padding:14px" onclick="goStep(2)">← Düzelt</button>
     </div>
   </div>
 
+</div>
+
+<div class="modal-overlay" id="limit-modal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">Üretim Limiti Aşıldı!</div>
+    <div class="modal-body" id="limit-modal-body"></div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="closeLimitModal()">İptal</button>
+      <button class="modal-btn-confirm" onclick="confirmLimitAndSubmit()">Evet, Gönder</button>
+    </div>
+  </div>
 </div>
 
 <div class="loading" id="loading"><div class="spinner"></div><span>Kaydediliyor...</span></div>
@@ -399,7 +447,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_XncWVGH4JG5okF0CP
 
 let vardiya = null, currentStep = 1, olcumNo = 1, enjSayisi = 1;
 let enj1Kilitli = false, enj2Kilitli = false;
-let sifreler = {}, uretimLimiti = 0;
+let kullanicilar = {}, uretimLimiti = 0, _adSoyad = '';
 
 window.onload = async function() {
   const now = new Date();
@@ -417,10 +465,11 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
 window.addEventListener('pagehide', saveDraft);
 
 function saveDraft() {
-  if(!document.getElementById('adsoyad').value) return; // Ad seçilmemişse kaydetme
+  if(!document.getElementById('kullanici_id').value) return;
   const d = {
     ts: Date.now(),
-    adsoyad:    document.getElementById('adsoyad').value,
+    kullanici_id: document.getElementById('kullanici_id').value,
+    adSoyad:    _adSoyad,
     vardiya:    vardiya,
     tarih:      document.getElementById('tarih').value,
     enjSayisi:  enjSayisi,
@@ -448,12 +497,13 @@ function checkAndShowDraft() {
     const raw = localStorage.getItem('enj_draft');
     if(!raw) return;
     const d = JSON.parse(raw);
-    if(!d.adsoyad) return;
+    if(!d.kullanici_id && !d.adsoyad) return;
+    const displayName = d.adSoyad || d.kullanici_id || d.adsoyad;
     const mins = Math.round((Date.now() - d.ts) / 60000);
     const zaman = mins < 1 ? 'az önce' : mins < 60 ? mins+' dakika önce' : Math.round(mins/60)+' saat önce';
     const adim = d.step===2 ? '(Ölçüm sayfasında)' : d.step===3 ? '(Özet sayfasında)' : '';
     document.getElementById('draft-banner-sub').textContent =
-      d.adsoyad + ' — ' + (d.vardiya||'') + ' vardiyası — ' + zaman + ' ' + adim;
+      displayName + ' — ' + (d.vardiya||'') + ' vardiyası — ' + zaman + ' ' + adim;
     document.getElementById('draft-banner').style.display = 'flex';
   } catch(e) { localStorage.removeItem('enj_draft'); }
 }
@@ -463,10 +513,11 @@ function restoreDraft() {
     const d = JSON.parse(localStorage.getItem('enj_draft'));
     if(!d) return;
     document.getElementById('draft-banner').style.display = 'none';
-    // Ad
-    const adSel = document.getElementById('adsoyad');
-    adSel.value = d.adsoyad;
-    onAdChange(); // şifreyi localStorage'dan yükler
+    // ID
+    const idEl = document.getElementById('kullanici_id');
+    idEl.value = d.kullanici_id || d.adsoyad || '';
+    if(d.adSoyad) _adSoyad = d.adSoyad;
+    onIdChange(); // şifreyi localStorage'dan yükler
     // Vardiya
     if(d.vardiya) setVardiya(d.vardiya);
     // Tarih
@@ -478,7 +529,15 @@ function restoreDraft() {
      'cevrim1','agirlik1','sayac_bas1','sayac_bit1','fire1',
      'cevrim2','agirlik2','sayac_bas2','sayac_bit2','fire2'
     ].forEach(id=>{ const el=document.getElementById(id); if(el&&d[id]!==undefined) el.value=d[id]; });
+    // Enj grid buton seçimini görsel olarak geri yükle
+    [1,2].forEach(n=>{
+      const val=d['enj'+n+'_no'];
+      if(val) document.getElementById('enj'+n+'-grid')?.querySelectorAll('.enj-gbtn').forEach(b=>{
+        if(b.getAttribute('onclick').includes("'"+val+"'")) b.classList.add('sel');
+      });
+    });
     calcUretim(1); calcUretim(2);
+    syncEnjDisabled();
     if(d.step && d.step > 1) goStep(d.step);
     checkStatus();
     showToast('Kaldığın yerden devam ediyorsun', 'ok');
@@ -501,9 +560,11 @@ async function loadLists() {
     const cb = 'cb_'+Date.now();
     window[cb] = function(json) {
       delete window[cb]; document.getElementById('jsonp-s')?.remove();
-      sifreler = json.sifreler || {};
+      kullanicilar = json.kullanicilar || {};
       uretimLimiti = parseInt(json.uretimLimiti) || 0;
-      fillSelect('adsoyad','skel-ad', json.operatorler||[]);
+      // Mark input as ready so tests can detect when data is loaded
+      const idEl = document.getElementById('kullanici_id');
+      if(idEl) idEl.dataset.ready = '1';
       const ebatlar = json.kasaEbatlari||[];
       fillSelect('kasa1','skel-kasa1', ebatlar);
       // kasa2 için de doldur (skeleton yok)
@@ -539,16 +600,22 @@ function setEnjSayisi(n) {
   // toggle kilitli modda pasif
   document.getElementById('enj-toggle-row').style.opacity = (enj1Kilitli) ? '0.5' : '1';
   document.getElementById('enj-toggle-row').style.pointerEvents = (enj1Kilitli) ? 'none' : 'auto';
+  syncEnjDisabled();
 }
 
-function onAdChange() {
-  const ad = document.getElementById('adsoyad').value;
+function onIdChange() {
+  const id = document.getElementById('kullanici_id').value.trim();
+  const kullanici = kullanicilar[id];
   const sf = document.getElementById('sifre-field');
   const si = document.getElementById('sifre');
   const hatirla = document.getElementById('hatirla');
-  if(ad) {
+  const hosgeldin = document.getElementById('hosgeldin');
+  if(kullanici) {
+    _adSoyad = kullanici.name;
     sf.style.display = 'block';
-    const kayitliSifre = localStorage.getItem('sifre_'+ad);
+    hosgeldin.style.display = 'flex';
+    document.getElementById('hosgeldin-text').textContent = 'Hoş Geldin, ' + kullanici.name + '!';
+    const kayitliSifre = localStorage.getItem('sifre_'+id);
     if(kayitliSifre) {
       si.value = kayitliSifre;
       hatirla.checked = true;
@@ -559,9 +626,76 @@ function onAdChange() {
     document.getElementById('err-sifre').classList.remove('show');
     si.classList.remove('error');
   } else {
+    _adSoyad = '';
     sf.style.display = 'none';
+    hosgeldin.style.display = 'none';
   }
-  if(vardiya) checkStatus();
+  document.getElementById('kullanici_id').classList.remove('error');
+  document.getElementById('err-ad').classList.remove('show');
+  if(vardiya && kullanici) checkStatus();
+}
+
+function selectEnj(n, val, btn) {
+  document.getElementById('enj'+n+'-grid').querySelectorAll('.enj-gbtn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('enj'+n+'_no').value = val;
+  document.getElementById('enj'+n+'-grid').classList.remove('error');
+  document.getElementById('err-enj'+n).classList.remove('show');
+  // Ölçüm başlığını güncelle (çevrim karışmasın)
+  document.getElementById('olcum-enj'+n+'-title').textContent = val + ' — Ölçümler';
+  // Çift enjeksiyonda aynı makine seçimini engelle
+  syncEnjDisabled();
+  // Önceki sayaç değerini çek
+  fetchLastCounter(n, val);
+}
+
+function syncEnjDisabled() {
+  if(enjSayisi !== 2) {
+    document.getElementById('enj1-grid').querySelectorAll('.enj-gbtn').forEach(b=>b.disabled=false);
+    document.getElementById('enj2-grid').querySelectorAll('.enj-gbtn').forEach(b=>b.disabled=false);
+    return;
+  }
+  const val1 = document.getElementById('enj1_no').value;
+  const val2 = document.getElementById('enj2_no').value;
+  document.getElementById('enj1-grid').querySelectorAll('.enj-gbtn').forEach(b=>{
+    b.disabled = val2 ? b.getAttribute('onclick').includes("'"+val2+"'") : false;
+  });
+  document.getElementById('enj2-grid').querySelectorAll('.enj-gbtn').forEach(b=>{
+    b.disabled = val1 ? b.getAttribute('onclick').includes("'"+val1+"'") : false;
+  });
+}
+
+function fetchLastCounter(n, enjNo) {
+  const bas = document.getElementById('sayac_bas'+n);
+  bas.value = ''; setBasEditable(n); calcUretim(n);
+  const cb = 'cbLC'+n+'_'+Date.now();
+  window[cb] = function(json) {
+    delete window[cb]; document.getElementById('lcs'+n)?.remove();
+    if(json.sayacBit !== null && json.sayacBit !== undefined) {
+      bas.value = json.sayacBit;
+      setBasReadonly(n);
+      calcUretim(n);
+    }
+  };
+  const s = document.createElement('script');
+  s.id = 'lcs'+n;
+  s.src = SCRIPT_URL+'?action=getLastCounter&enj_no='+encodeURIComponent(enjNo)+'&callback='+cb;
+  s.onerror = ()=>{ delete window[cb]; };
+  document.head.appendChild(s);
+}
+
+function setBasReadonly(n) {
+  const el = document.getElementById('sayac_bas'+n);
+  el.setAttribute('readonly','');
+  el.style.cssText='font-size:18px;font-weight:800;background:var(--accent-light);border-color:var(--accent);color:var(--accent)';
+  document.getElementById('lbl-bas'+n).innerHTML='Sayaç Başlama <small style="color:var(--accent);font-size:12px;font-weight:700">(önceki kayıt)</small>';
+}
+
+function setBasEditable(n) {
+  const el = document.getElementById('sayac_bas'+n);
+  el.removeAttribute('readonly');
+  el.style.cssText='font-size:18px;font-weight:800';
+  document.getElementById('lbl-bas'+n).innerHTML='Sayaç Başlama <span class="req">*</span>';
 }
 
 function clearSifreErr() {
@@ -574,11 +708,12 @@ function setVardiya(v) {
   ['sabah','aksam','gece'].forEach(x=>document.getElementById('v-'+x).className='vbtn');
   document.getElementById('v-'+v.toLowerCase()).classList.add('sel-'+v.toLowerCase());
   document.getElementById('err-vardiya').classList.remove('show');
-  if(document.getElementById('adsoyad').value) checkStatus();
+  const _id = document.getElementById('kullanici_id').value;
+  if(_id && kullanicilar[_id]) checkStatus();
 }
 
 function checkStatus() {
-  const ad    = document.getElementById('adsoyad').value;
+  const ad    = _adSoyad;
   const tarih = document.getElementById('tarih').value;
   const saat  = document.getElementById('olcum_saat').value;
   if(!ad||!vardiya||!tarih) return;
@@ -594,6 +729,15 @@ function checkStatus() {
     }
     showStatusBox(json);
     showEnjSection(json);
+    // Sayaç başlama değerini önceki bitiş değerinden doldur
+    if(enj1Kilitli && json.sayacBit1 != null) {
+      document.getElementById('sayac_bas1').value = json.sayacBit1;
+      setBasReadonly(1); calcUretim(1);
+    }
+    if(enj2Kilitli && json.sayacBit2 != null) {
+      document.getElementById('sayac_bas2').value = json.sayacBit2;
+      setBasReadonly(2); calcUretim(2);
+    }
   };
   const s = document.createElement('script');
   s.id = 'st-s';
@@ -647,7 +791,12 @@ function calcUretim(n) {
   const lw = document.getElementById('limit-warn'+n);
   if(!isNaN(bas)&&!isNaN(bit)){
     const f=bit-bas;
-    if(f>=0){
+    if(f>4000){
+      val.textContent='⚠️ ' + f.toLocaleString('tr-TR');
+      box.style.cssText='background:#fff7ed;border:2px solid #ea580c;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
+      val.style.color='#ea580c';lbl.style.color='#ea580c';
+      if(lw) lw.style.display='none';
+    }else if(f>=0){
       val.textContent=f.toLocaleString('tr-TR');
       box.style.cssText='background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
       val.style.color='#16a34a';lbl.style.color='#16a34a';
@@ -666,9 +815,23 @@ function calcUretim(n) {
   }
 }
 
+function getUretim(n) {
+  const bas=parseInt(document.getElementById('sayac_bas'+n).value)||0;
+  const bit=parseInt(document.getElementById('sayac_bit'+n).value)||0;
+  return Math.max(0,bit-bas);
+}
 function adjFire(n,d) {
   const el=document.getElementById('fire'+n);
-  el.value=Math.max(0,parseInt(el.value||0)+d);
+  const max=getUretim(n);
+  el.value=Math.min(max,Math.max(0,parseInt(el.value||0)+d));
+}
+function clampFire(n) {
+  const el=document.getElementById('fire'+n);
+  const max=getUretim(n);
+  const v=parseInt(el.value)||0;
+  if(v>max){el.value=max;}
+  if(v<0){el.value=0;}
+  document.getElementById('err-fire'+n).classList.toggle('show', parseInt(el.value)>max);
 }
 
 function goStep(n) {
@@ -685,11 +848,12 @@ function goStep(n) {
 function goNext(from) {
   if(from===1&&!validate1()) return;
   if(from===1) {
-    const ad = document.getElementById('adsoyad').value;
+    const id = document.getElementById('kullanici_id').value;
     const si = document.getElementById('sifre').value;
     const hatirla = document.getElementById('hatirla').checked;
-    if(hatirla && si) localStorage.setItem('sifre_'+ad, si);
-    else localStorage.removeItem('sifre_'+ad);
+    _adSoyad = kullanicilar[id]?.name || id;
+    if(hatirla && si) localStorage.setItem('sifre_'+id, si);
+    else localStorage.removeItem('sifre_'+id);
   }
   if(from===2&&!validate2()) return;
   if(from===2) buildSummary();
@@ -698,13 +862,14 @@ function goNext(from) {
 
 function validate1() {
   let ok=true;
-  const ad=document.getElementById('adsoyad');
-  if(!ad.value){ad.classList.add('error');document.getElementById('err-ad').classList.add('show');ok=false;}
-  else{ad.classList.remove('error');document.getElementById('err-ad').classList.remove('show');}
+  const idEl=document.getElementById('kullanici_id');
+  const kullanici = idEl.value ? kullanicilar[idEl.value.trim()] : null;
+  if(!idEl.value||!kullanici){idEl.classList.add('error');document.getElementById('err-ad').classList.add('show');ok=false;}
+  else{idEl.classList.remove('error');document.getElementById('err-ad').classList.remove('show');}
 
-  if(ad.value && Object.keys(sifreler).length > 0) {
+  if(kullanici) {
     const si = document.getElementById('sifre');
-    const dogruSifre = String(sifreler[ad.value] || '');
+    const dogruSifre = String(kullanici.sifre || '');
     if(!si.value || si.value !== dogruSifre) {
       si.classList.add('error');
       document.getElementById('err-sifre').classList.add('show');
@@ -715,6 +880,10 @@ function validate1() {
     }
   }
   if(!vardiya){document.getElementById('err-vardiya').classList.add('show');ok=false;}
+  if(!ok){
+    const first = document.querySelector('#page-1 .error, #page-1 .err-msg.show');
+    if(first) first.scrollIntoView({behavior:'smooth', block:'center'});
+  }
   return ok;
 }
 
@@ -728,16 +897,18 @@ function validate2() {
   // Enjeksiyon seçimleri
   if(!enj1Kilitli){
     const e1=document.getElementById('enj1_no');
-    if(!e1.value){e1.classList.add('error');document.getElementById('err-enj1').classList.add('show');ok=false;}
-    else{e1.classList.remove('error');document.getElementById('err-enj1').classList.remove('show');}
+    const g1=document.getElementById('enj1-grid');
+    if(!e1.value){g1.classList.add('error');document.getElementById('err-enj1').classList.add('show');ok=false;}
+    else{g1.classList.remove('error');document.getElementById('err-enj1').classList.remove('show');}
     const k1=document.getElementById('kasa1');
     if(!k1.value){k1.classList.add('error');document.getElementById('err-kasa1').classList.add('show');ok=false;}
     else{k1.classList.remove('error');document.getElementById('err-kasa1').classList.remove('show');}
   }
   if(enjSayisi===2&&!enj2Kilitli){
     const e2=document.getElementById('enj2_no');
-    if(!e2.value){e2.classList.add('error');document.getElementById('err-enj2').classList.add('show');ok=false;}
-    else{e2.classList.remove('error');document.getElementById('err-enj2').classList.remove('show');}
+    const g2=document.getElementById('enj2-grid');
+    if(!e2.value){g2.classList.add('error');document.getElementById('err-enj2').classList.add('show');ok=false;}
+    else{g2.classList.remove('error');document.getElementById('err-enj2').classList.remove('show');}
     const k2=document.getElementById('kasa2');
     if(!k2.value){k2.classList.add('error');document.getElementById('err-kasa2').classList.add('show');ok=false;}
     else{k2.classList.remove('error');document.getElementById('err-kasa2').classList.remove('show');}
@@ -750,6 +921,7 @@ function validate2() {
   const bas1=document.getElementById('sayac_bas1');
   if(!bit1.value){bit1.classList.add('error');document.getElementById('err-bit1').textContent='Gerekli';document.getElementById('err-bit1').classList.add('show');ok=false;}
   else if(parseInt(bit1.value)<parseInt(bas1.value)){bit1.classList.add('error');document.getElementById('err-bit1').textContent='Bitiş < Başlama!';document.getElementById('err-bit1').classList.add('show');ok=false;}
+  else if(parseInt(bit1.value)-parseInt(bas1.value)>4000){bit1.classList.add('error');document.getElementById('err-bit1').textContent='Üretim 4000\'i geçemez, sayacı kontrol et!';document.getElementById('err-bit1').classList.add('show');ok=false;}
   else{bit1.classList.remove('error');document.getElementById('err-bit1').classList.remove('show');}
 
   if(enjSayisi===2){
@@ -759,7 +931,22 @@ function validate2() {
     const bas2=document.getElementById('sayac_bas2');
     if(!bit2.value){bit2.classList.add('error');document.getElementById('err-bit2').textContent='Gerekli';document.getElementById('err-bit2').classList.add('show');ok=false;}
     else if(parseInt(bit2.value)<parseInt(bas2.value)){bit2.classList.add('error');document.getElementById('err-bit2').textContent='Bitiş < Başlama!';document.getElementById('err-bit2').classList.add('show');ok=false;}
+    else if(parseInt(bit2.value)-parseInt(bas2.value)>4000){bit2.classList.add('error');document.getElementById('err-bit2').textContent='Üretim 4000\'i geçemez, sayacı kontrol et!';document.getElementById('err-bit2').classList.add('show');ok=false;}
     else{bit2.classList.remove('error');document.getElementById('err-bit2').classList.remove('show');}
+  }
+  // Fire > üretim kontrolü
+  const chkFire = (n) => {
+    const u = getUretim(n);
+    const f = parseInt(document.getElementById('fire'+n).value)||0;
+    const errEl = document.getElementById('err-fire'+n);
+    if(f > u){ errEl.classList.add('show'); ok=false; }
+    else { errEl.classList.remove('show'); }
+  };
+  chkFire(1);
+  if(enjSayisi===2) chkFire(2);
+  if(!ok){
+    const first = document.querySelector('#page-2 .error, #page-2 .err-msg.show');
+    if(first) first.scrollIntoView({behavior:'smooth', block:'center'});
   }
   return ok;
 }
@@ -780,7 +967,14 @@ function buildSummary() {
   rows.push(['Çevrim', d.cevrim1+' sn']);
   rows.push(['Ağırlık', d.agirlik1+' gr']);
   rows.push(['Sayaç', d.sayac_bas1+' → '+d.sayac_bit1]);
-  rows.push(['Üretim', u1.toLocaleString('tr-TR')+' adet']);
+  const limitAsimi = uretimLimiti > 0;
+  const u1Asimi = limitAsimi && u1 > uretimLimiti;
+  const u2Asimi = limitAsimi && enjSayisi===2 && u2 > uretimLimiti;
+
+  const uretimVal = (u, asimi) =>
+    u.toLocaleString('tr-TR') + ' adet' + (asimi ? ' <span style="color:#dc2626;font-weight:800"> ⚠️</span>' : '');
+
+  rows.push({type:'uretim', key:'Üretim', val: uretimVal(u1, u1Asimi), asimi: u1Asimi});
   rows.push(['Fire', d.fire1+' adet']);
 
   if(enjSayisi===2){
@@ -790,14 +984,24 @@ function buildSummary() {
     rows.push(['Çevrim', d.cevrim2+' sn']);
     rows.push(['Ağırlık', d.agirlik2+' gr']);
     rows.push(['Sayaç', d.sayac_bas2+' → '+d.sayac_bit2]);
-    rows.push(['Üretim', u2.toLocaleString('tr-TR')+' adet']);
+    rows.push({type:'uretim', key:'Üretim', val: uretimVal(u2, u2Asimi), asimi: u2Asimi});
     rows.push(['Fire', d.fire2+' adet']);
   }
 
   const html = rows.map(r=>{
     if(r.type==='div') return '<div class="sdivider">'+r.text+'</div>';
+    if(r.type==='uretim') return '<div class="sitem"><span class="skey">'+r.key+'</span><span class="sval">'+r.val+'</span></div>';
     return '<div class="sitem"><span class="skey">'+r[0]+'</span><span class="sval">'+r[1]+'</span></div>';
   }).join('');
+
+  // Global: gönderimde limit popup için
+  window._limitAsimi = u1Asimi || u2Asimi;
+  window._limitAsimiMesaj = (() => {
+    const parts = [];
+    if(u1Asimi) parts.push('Enj 1 üretimi <strong>'+u1.toLocaleString('tr-TR')+'</strong> adet');
+    if(u2Asimi) parts.push('Enj 2 üretimi <strong>'+u2.toLocaleString('tr-TR')+'</strong> adet');
+    return parts.join('<br>') + '<br><br>Sistem limiti: <strong>'+uretimLimiti.toLocaleString('tr-TR')+'</strong> adet<br><br>Değer limiti çok yüksek, onaylıyor musunuz?';
+  })();
 
   if(olcumNo===3){
     document.getElementById('normal-ozet').style.display='none';
@@ -822,7 +1026,7 @@ function getData() {
   const b2=parseInt(document.getElementById('sayac_bas2').value)||0;
   const e2=parseInt(document.getElementById('sayac_bit2').value)||0;
   return {
-    adsoyad: document.getElementById('adsoyad').value,
+    adsoyad: _adSoyad || document.getElementById('kullanici_id').value,
     vardiya, olcumNo, enjSayisi,
     tarih:      document.getElementById('tarih').value,
     olcum_saat: document.getElementById('olcum_saat').value,
@@ -851,7 +1055,7 @@ async function submitForm(onaylandi) {
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     clearDraft();
     document.getElementById('loading').classList.remove('show');
-    const msgs={1:'✅ 1. ölçüm kaydedildi!',2:'✅ 2. ölçüm kaydedildi!',3:'✅ Vardiya tamamlandı!'};
+    const msgs={1:'✅ Ölçümünüz kaydedildi İyi Günler',2:'✅ 2. ölçüm kaydedildi!',3:'✅ Vardiya tamamlandı!'};
     showToast(msgs[olcumNo]||'✅ Kaydedildi!','ok');
     setTimeout(resetForm,2200);
   }catch(e){
@@ -868,11 +1072,21 @@ function resetForm() {
   // Şifre: hatırla işaretliyse temizleme
   const hatirla = document.getElementById('hatirla');
   const sifreEl = document.getElementById('sifre');
-  const adEl    = document.getElementById('adsoyad');
-  if(!hatirla.checked) { sifreEl.value=''; adEl.value=''; document.getElementById('sifre-field').style.display='none'; }
+  const idEl    = document.getElementById('kullanici_id');
+  _adSoyad = '';
+  if(!hatirla.checked) {
+    sifreEl.value=''; idEl.value='';
+    document.getElementById('sifre-field').style.display='none';
+    document.getElementById('hosgeldin').style.display='none';
+  } else {
+    // Şifre hatırlıysa _adSoyad'ı geri yükle
+    const id = idEl.value;
+    if(id && kullanicilar[id]) _adSoyad = kullanicilar[id].name;
+  }
   document.getElementById('err-sifre').classList.remove('show');
   sifreEl.classList.remove('error');
   ['enj1_no','kasa1','enj2_no','kasa2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  [1,2].forEach(n=>document.getElementById('enj'+n+'-grid')?.querySelectorAll('.enj-gbtn').forEach(b=>b.classList.remove('sel')));
   [1,2].forEach(n=>{const lw=document.getElementById('limit-warn'+n);if(lw)lw.style.display='none';});
   ['cevrim1','agirlik1','sayac_bas1','sayac_bit1','cevrim2','agirlik2','sayac_bas2','sayac_bit2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('fire1').value=0;
@@ -894,9 +1108,31 @@ function resetForm() {
   document.getElementById('normal-ozet').style.display='block';
   document.getElementById('onay-ozet').style.display='none';
   setEnjSayisi(1);
+  setBasEditable(1); setBasEditable(2);
   document.getElementById('tarih').value=new Date().toISOString().split('T')[0];
   tickClock();
   goStep(1);
+}
+
+let _pendingOnaylandi = false;
+
+function onGonderClick(onaylandi) {
+  if(window._limitAsimi) {
+    _pendingOnaylandi = onaylandi;
+    document.getElementById('limit-modal-body').innerHTML = window._limitAsimiMesaj;
+    document.getElementById('limit-modal').style.display = 'flex';
+  } else {
+    submitForm(onaylandi);
+  }
+}
+
+function closeLimitModal() {
+  document.getElementById('limit-modal').style.display = 'none';
+}
+
+function confirmLimitAndSubmit() {
+  closeLimitModal();
+  submitForm(_pendingOnaylandi);
 }
 
 function showToast(msg,type='ok'){
