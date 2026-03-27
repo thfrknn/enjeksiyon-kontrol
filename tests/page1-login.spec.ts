@@ -4,9 +4,9 @@ import { setupMocks } from './fixtures/api-mocks';
 
 test.describe('Sayfa 1 — Giriş', () => {
 
-  test('TC-01: Uygulama açılır ve operatör listesi dolar', async ({ page }) => {
+  test('TC-01: Uygulama açılır ve ID giriş alanı hazır olur', async ({ page }) => {
     await gotoApp(page);
-    await expect(page.locator('#adsoyad option[value="Ali Veli"]')).toBeAttached();
+    await expect(page.locator('#kullanici_id[data-ready="1"]')).toBeAttached();
     await expect(page.locator('#step-1')).toHaveClass(/active/);
   });
 
@@ -19,7 +19,7 @@ test.describe('Sayfa 1 — Giriş', () => {
 
   test('TC-03: Şifre boş bırakılırsa ileri gidilemez', async ({ page }) => {
     await gotoApp(page);
-    await page.selectOption('#adsoyad', { label: 'Ali Veli' });
+    await page.fill('#kullanici_id', '101');
     await page.waitForSelector('#sifre-field', { state: 'visible' });
     await page.click('button:has-text("İleri")');
     await expect(page.locator('#err-sifre')).toHaveClass(/show/);
@@ -28,7 +28,7 @@ test.describe('Sayfa 1 — Giriş', () => {
 
   test('TC-04: Yanlış şifre girilirse ileri gidilemez', async ({ page }) => {
     await gotoApp(page);
-    await page.selectOption('#adsoyad', { label: 'Ali Veli' });
+    await page.fill('#kullanici_id', '101');
     await page.waitForSelector('#sifre-field', { state: 'visible' });
     await page.fill('#sifre', '9999');
     await page.click('#v-sabah');
@@ -39,7 +39,7 @@ test.describe('Sayfa 1 — Giriş', () => {
 
   test('TC-05: Vardiya seçilmezse ileri gidilemez', async ({ page }) => {
     await gotoApp(page);
-    await page.selectOption('#adsoyad', { label: 'Ali Veli' });
+    await page.fill('#kullanici_id', '101');
     await page.waitForSelector('#sifre-field', { state: 'visible' });
     await page.fill('#sifre', '1234');
     // Vardiya seçmeden ileri
@@ -61,20 +61,20 @@ test.describe('Sayfa 1 — Giriş', () => {
     await page.click('button:has-text("İleri")');
     await expect(page.locator('#page-2')).toHaveClass(/active/);
 
-    const saved = await page.evaluate(() => localStorage.getItem('sifre_Ali Veli'));
+    const saved = await page.evaluate(() => localStorage.getItem('sifre_101'));
     expect(saved).toBe('1234');
   });
 
-  test('TC-08: Kayıtlı şifre operatör seçilince otomatik dolar', async ({ page }) => {
+  test('TC-08: Kayıtlı şifre ID girilince otomatik dolar', async ({ page }) => {
     await setupMocks(page);
     await page.addInitScript(() => {
       localStorage.clear();
-      localStorage.setItem('sifre_Ali Veli', '1234');
+      localStorage.setItem('sifre_101', '1234');
     });
     await page.goto('/index.html');
-    await page.waitForSelector('#adsoyad', { state: 'visible' });
+    await page.waitForSelector('#kullanici_id[data-ready="1"]', { state: 'attached' });
 
-    await page.selectOption('#adsoyad', { label: 'Ali Veli' });
+    await page.fill('#kullanici_id', '101');
     await page.waitForSelector('#sifre-field', { state: 'visible' });
 
     await expect(page.locator('#sifre')).toHaveValue('1234');
@@ -85,12 +85,12 @@ test.describe('Sayfa 1 — Giriş', () => {
     await setupMocks(page);
     await page.addInitScript(() => {
       localStorage.clear();
-      localStorage.setItem('sifre_Ali Veli', '1234');
+      localStorage.setItem('sifre_101', '1234');
     });
     await page.goto('/index.html');
-    await page.waitForSelector('#adsoyad', { state: 'visible' });
+    await page.waitForSelector('#kullanici_id[data-ready="1"]', { state: 'attached' });
 
-    await page.selectOption('#adsoyad', { label: 'Ali Veli' });
+    await page.fill('#kullanici_id', '101');
     await page.waitForSelector('#sifre-field', { state: 'visible' });
     // Hatırla'yı kaldır
     await page.uncheck('#hatirla');
@@ -99,7 +99,7 @@ test.describe('Sayfa 1 — Giriş', () => {
     await page.click('button:has-text("İleri")');
     await expect(page.locator('#page-2')).toHaveClass(/active/);
 
-    const saved = await page.evaluate(() => localStorage.getItem('sifre_Ali Veli'));
+    const saved = await page.evaluate(() => localStorage.getItem('sifre_101'));
     expect(saved).toBeNull();
   });
 

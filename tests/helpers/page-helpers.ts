@@ -12,21 +12,21 @@ export async function gotoApp(page: Page, overrides = {}) {
   await page.evaluate(() => localStorage.clear());
   // Reload so this test starts clean
   await page.reload();
-  // Wait until getLists JSONP mock has populated and shown the operator select
-  await page.waitForSelector('#adsoyad', { state: 'visible', timeout: 8000 });
+  // Wait until getLists JSONP mock has populated kullanicilar (sets data-ready="1")
+  await page.waitForSelector('#kullanici_id[data-ready="1"]', { state: 'attached', timeout: 8000 });
 }
 
 export interface Page1Opts {
-  operator?: string;
+  operatorId?: string;
   password?: string;
   vardiya?: 'SABAH' | 'AKSAM' | 'GECE';
   hatirla?: boolean;
 }
 
 export async function fillPage1(page: Page, opts: Page1Opts = {}) {
-  const { operator = 'Ali Veli', password = '1234', vardiya = 'SABAH', hatirla = false } = opts;
+  const { operatorId = '101', password = '1234', vardiya = 'SABAH', hatirla = false } = opts;
 
-  await page.selectOption('#adsoyad', { label: operator });
+  await page.fill('#kullanici_id', operatorId);
   await page.waitForSelector('#sifre-field', { state: 'visible' });
   await page.fill('#sifre', password);
 

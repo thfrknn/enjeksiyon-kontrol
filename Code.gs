@@ -8,7 +8,7 @@
 // X=Onay
 //
 // Ayarlar sekmesi:
-// A=Operatörler  B=Kasa Ebatları  C=Şifreler  D=Üretim Limiti (D2'de tek değer)
+// A=Operatörler  B=Kasa Ebatları  C=Şifreler  D=Üretim Limiti (D2'de tek değer)  E=Kullanıcı ID'leri
 // ================================================================
 
 function doGet(e) {
@@ -22,18 +22,20 @@ function doGet(e) {
     const opCol    = ayarlar.getRange('A2:A50').getValues().flat().filter(v => v !== '');
     const kasaCol  = ayarlar.getRange('B2:B50').getValues().flat().filter(v => v !== '');
     const sifreCol = ayarlar.getRange('C2:C50').getValues().flat();
+    const idCol    = ayarlar.getRange('E2:E50').getValues().flat();
 
-    // Ad → şifre eşlemesi (C sütunu A ile aynı sırada)
-    const sifreler = {};
+    // ID → { name, sifre } eşlemesi (E sütunu A ile aynı sırada)
+    const kullanicilar = {};
     opCol.forEach((ad, i) => {
       const sifre = sifreCol[i];
-      if (ad && sifre !== '') sifreler[String(ad)] = String(sifre);
+      const id    = String(idCol[i] || '').trim();
+      if (ad && id) kullanicilar[id] = { name: String(ad), sifre: String(sifre || '') };
     });
 
     // Üretim limiti D2'den (tek bir sayı)
     const uretimLimiti = Number(ayarlar.getRange('D2').getValue()) || 0;
 
-    return jsonp(cb, { operatorler: opCol, kasaEbatlari: kasaCol, sifreler, uretimLimiti });
+    return jsonp(cb, { kasaEbatlari: kasaCol, kullanicilar, uretimLimiti });
   }
 
   if (e.parameter.action === 'getStatus') {

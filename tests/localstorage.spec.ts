@@ -12,7 +12,7 @@ test.describe('localStorage — Draft ve Şifre', () => {
     const raw = await page.evaluate(() => localStorage.getItem('enj_draft'));
     expect(raw).not.toBeNull();
     const draft = JSON.parse(raw!);
-    expect(draft.adsoyad).toBe('Ali Veli');
+    expect(draft.kullanici_id).toBe('101');
     expect(draft.vardiya).toBe('SABAH');
   });
 
@@ -24,7 +24,7 @@ test.describe('localStorage — Draft ve Şifre', () => {
     // page.reload() does NOT trigger the localStorage.clear() from gotoApp
     // because gotoApp clears via evaluate (not addInitScript)
     await page.reload();
-    await page.waitForSelector('#adsoyad', { state: 'visible' });
+    await page.waitForSelector('#kullanici_id[data-ready="1"]', { state: 'attached' });
 
     await expect(page.locator('#draft-banner')).toBeVisible();
     await expect(page.locator('#draft-banner-sub')).toContainText('Ali Veli');
@@ -36,13 +36,13 @@ test.describe('localStorage — Draft ve Şifre', () => {
     await page.evaluate(() => (window as any).saveDraft()); // saves step=2
 
     await page.reload();
-    await page.waitForSelector('#adsoyad', { state: 'visible' });
+    await page.waitForSelector('#kullanici_id[data-ready="1"]', { state: 'attached' });
     await expect(page.locator('#draft-banner')).toBeVisible();
 
     await page.click('button:has-text("Devam Et")');
 
-    // Draft restores operator, vardiya and step
-    await expect(page.locator('#adsoyad')).toHaveValue('Ali Veli');
+    // Draft restores ID, vardiya and step
+    await expect(page.locator('#kullanici_id')).toHaveValue('101');
     await expect(page.locator('#v-sabah')).toHaveClass(/sel/);
     await expect(page.locator('#page-2')).toHaveClass(/active/);
   });
@@ -53,7 +53,7 @@ test.describe('localStorage — Draft ve Şifre', () => {
     await page.evaluate(() => (window as any).saveDraft());
 
     await page.reload();
-    await page.waitForSelector('#adsoyad', { state: 'visible' });
+    await page.waitForSelector('#kullanici_id[data-ready="1"]', { state: 'attached' });
     await expect(page.locator('#draft-banner')).toBeVisible();
 
     await page.click('button:has-text("Sil")');

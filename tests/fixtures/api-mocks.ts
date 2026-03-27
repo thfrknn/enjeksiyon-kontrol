@@ -1,9 +1,8 @@
 import { Page } from '@playwright/test';
 
 export const DEFAULT_LISTS = {
-  operatorler: ['Ali Veli'],
   kasaEbatlari: ['400x600'],
-  sifreler: { 'Ali Veli': '1234' },
+  kullanicilar: { '101': { name: 'Ali Veli', sifre: '1234' } },
   uretimLimiti: 2000,
 };
 
