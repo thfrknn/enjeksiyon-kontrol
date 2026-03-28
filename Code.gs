@@ -21,8 +21,9 @@ function doGet(e) {
 
     const opCol    = ayarlar.getRange('A2:A50').getValues().flat().filter(v => v !== '');
     const kasaCol  = ayarlar.getRange('B2:B50').getValues().flat().filter(v => v !== '');
-    const sifreCol = ayarlar.getRange('C2:C50').getValues().flat();
-    const idCol    = ayarlar.getRange('E2:E50').getValues().flat();
+    // getDisplayValues: hücrede görünen metni alır → başındaki sıfırları korur
+    const sifreCol = ayarlar.getRange('C2:C50').getDisplayValues().flat();
+    const idCol    = ayarlar.getRange('E2:E50').getDisplayValues().flat();
 
     // ID → { name, sifre } eşlemesi (E sütunu A ile aynı sırada)
     const kullanicilar = {};
