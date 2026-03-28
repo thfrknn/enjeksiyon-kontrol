@@ -824,15 +824,20 @@ function showEnjSection(json) {
 
 // Kasa ağırlık sınırları — orijinal min/max değerlerine +%10 tolerans uygulanmış
 const KASA_AGIRLIK = {
-  '30x40x10': { min: 231, max: 286 },
-  '30x40x14': { min: 345, max: 369 },
-  '30x40x15': { min: 344, max: 369 },
-  '30x40x18': { min: 398, max: 414 },
-  '30x40x22': { min: 545, max: 574 },
-  '30x50x12': { min: 334, max: 411 },
-  '30x50x22': { min: 549, max: 582 },
-  '35x50x16': { min: 539, max: 594 },
-  '40x60x18': { min: 612, max: 655 },
+  '30x40x10': { min: 220, max: 342 },  // orig 200–311
+  '30x40x14': { min: 248, max: 552 },  // orig 225–502
+  '30x40x15': { min: 344, max: 369 },  // orig 313–335
+  '30x40x18': { min: 369, max: 429 },  // orig 335–390
+  '30x40x22': { min: 457, max: 594 },  // orig 415–540
+  '30x50x11': { min: 323, max: 393 },  // orig 294–357
+  '30x50x12': { min: 334, max: 411 },  // orig 304–374
+  '30x50x14': { min: 407, max: 461 },  // orig 370–419
+  '30x50x18': { min: 444, max: 536 },  // orig 404–487
+  '30x50x22': { min: 442, max: 617 },  // orig 402–561
+  '35x50x16': { min: 539, max: 685 },  // orig 490–623
+  '35x50x26': { min: 1023, max: 1172 }, // orig 930–1065
+  '35x50x30': { min: 1064, max: 1356 }, // orig 967–1233
+  '40x60x18': { min: 528, max: 685 },  // orig 480–623
 };
 
 function getKasaBounds(n) {
