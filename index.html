@@ -6,11 +6,11 @@
 <meta name="theme-color" content="#16a34a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Ersanlar Plastik">
+<meta name="apple-mobile-web-app-title" content="Ersan Plastik">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<title>Ersanlar Plastik</title>
+<title>Ersan Plastik</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -62,6 +62,7 @@ input.error,select.error{border-color:var(--warn)!important}
 .vbtn .vi{font-size:20px}
 .vbtn .vt{font-size:10px;opacity:.8}
 .vbtn:active{transform:scale(.95)}
+.vbtn:disabled{opacity:.35;cursor:not-allowed;transform:none}
 .vbtn.sel-sabah{border-color:#d97706;background:#fffbeb;color:#d97706}
 .vbtn.sel-aksam{border-color:#0891b2;background:#ecfeff;color:#0891b2}
 .vbtn.sel-gece{border-color:#7c3aed;background:#f5f3ff;color:#7c3aed}
@@ -146,7 +147,7 @@ input.error,select.error{border-color:var(--warn)!important}
 <body>
 
 <header>
-  <h1>🏭 Ersanlar Plastik</h1>
+  <h1>🏭 Ersan Plastik</h1>
   <p>Enjeksiyon Operatör Giriş Formu</p>
   <div id="header-date"></div>
 </header>
@@ -176,7 +177,7 @@ input.error,select.error{border-color:var(--warn)!important}
     <div class="field">
       <div id="hosgeldin" class="ibox green" style="display:none;margin-bottom:10px"><span>👋</span><span id="hosgeldin-text"></span></div>
       <label>Kullanıcı ID <span class="req">*</span></label>
-      <input type="text" id="kullanici_id" placeholder="ID numaranızı girin" inputmode="numeric" oninput="onIdChange()">
+      <input type="text" id="kullanici_id" placeholder="ID numaranızı girin" inputmode="numeric" maxlength="3" oninput="onIdChange()">
       <div class="err-msg" id="err-ad">Geçersiz ID numarası</div>
     </div>
     <div class="field" id="sifre-field" style="display:none">
@@ -445,9 +446,9 @@ input.error,select.error{border-color:var(--warn)!important}
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_XncWVGH4JG5okF0CP71PJWWtyw6MSUcxriwH9qtcYMreKj12OpKdWON6HHoBEwVFYQ/exec';
 
-let vardiya = null, currentStep = 1, olcumNo = 1, enjSayisi = 1;
-let enj1Kilitli = false, enj2Kilitli = false;
-let kullanicilar = {}, uretimLimiti = 0, _adSoyad = '';
+var vardiya = null, currentStep = 1, olcumNo = 1, enjSayisi = 1;
+var enj1Kilitli = false, enj2Kilitli = false;
+var kullanicilar = {}, uretimLimiti = 0, _adSoyad = '';
 
 window.onload = async function() {
   const now = new Date();
@@ -456,7 +457,9 @@ window.onload = async function() {
   document.getElementById('tarih').value = now.toISOString().split('T')[0];
   tickClock(); setInterval(tickClock, 10000);
   setInterval(saveDraft, 5000); // Her 5 saniyede otomatik kaydet
+  setInterval(updateVardiyaButtons, 30000); // Her 30 saniyede vardiya kontrolü
   await loadLists();
+  updateVardiyaButtons(); // İlk açılışta geçerli vardiyayı vurgula / pasifleştir
   checkAndShowDraft();
 };
 
@@ -604,34 +607,39 @@ function setEnjSayisi(n) {
 }
 
 function onIdChange() {
-  const id = document.getElementById('kullanici_id').value.trim();
+  const idEl = document.getElementById('kullanici_id');
+  const id = idEl.value.trim();
   const kullanici = kullanicilar[id];
   const sf = document.getElementById('sifre-field');
   const si = document.getElementById('sifre');
   const hatirla = document.getElementById('hatirla');
   const hosgeldin = document.getElementById('hosgeldin');
+
   if(kullanici) {
     _adSoyad = kullanici.name;
     sf.style.display = 'block';
     hosgeldin.style.display = 'flex';
     document.getElementById('hosgeldin-text').textContent = 'Hoş Geldin, ' + kullanici.name + '!';
     const kayitliSifre = localStorage.getItem('sifre_'+id);
-    if(kayitliSifre) {
-      si.value = kayitliSifre;
-      hatirla.checked = true;
-    } else {
-      si.value = '';
-      hatirla.checked = false;
-    }
+    if(kayitliSifre) { si.value = kayitliSifre; hatirla.checked = true; }
+    else             { si.value = ''; hatirla.checked = false; }
     document.getElementById('err-sifre').classList.remove('show');
     si.classList.remove('error');
+    idEl.classList.remove('error');
+    document.getElementById('err-ad').classList.remove('show');
   } else {
     _adSoyad = '';
     sf.style.display = 'none';
     hosgeldin.style.display = 'none';
+    // Hata yalnızca 3 karakter girilip eşleşme yoksa göster
+    if(id.length === 3) {
+      idEl.classList.add('error');
+      document.getElementById('err-ad').classList.add('show');
+    } else {
+      idEl.classList.remove('error');
+      document.getElementById('err-ad').classList.remove('show');
+    }
   }
-  document.getElementById('kullanici_id').classList.remove('error');
-  document.getElementById('err-ad').classList.remove('show');
   if(vardiya && kullanici) checkStatus();
 }
 
@@ -703,7 +711,39 @@ function clearSifreErr() {
   document.getElementById('sifre').classList.remove('error');
 }
 
+// Vardiya zaman aralıkları: ± 15 dakika esneklik
+// AKSAM gece yarısını geçtiğinden end < start → isVardiyaActive içinde özel kontrol
+const _VR = {
+  SABAH: { s: 8*60+45,  e: 17*60+15 }, // 08:45–17:15
+  AKSAM: { s: 16*60+45, e: 1*60+15  }, // 16:45–01:15 (gece yarısını geçer)
+  GECE:  { s: 0*60+45,  e: 9*60+15  }, // 00:45–09:15
+};
+
+function isVardiyaActive(v) {
+  const now = new Date();
+  const m = now.getHours() * 60 + now.getMinutes();
+  const r = _VR[v];
+  return r.e < r.s ? (m >= r.s || m <= r.e) : (m >= r.s && m <= r.e);
+}
+
+function updateVardiyaButtons() {
+  ['SABAH','AKSAM','GECE'].forEach(v => {
+    document.getElementById('v-'+v.toLowerCase()).disabled = !isVardiyaActive(v);
+  });
+  // Seçili vardiya artık geçersizse sıfırla
+  if(vardiya && !isVardiyaActive(vardiya)) {
+    vardiya = null;
+    ['sabah','aksam','gece'].forEach(x=>document.getElementById('v-'+x).className='vbtn');
+  }
+  // Tek geçerli varsa otomatik seç
+  if(!vardiya) {
+    const aktif = ['SABAH','AKSAM','GECE'].filter(v => isVardiyaActive(v));
+    if(aktif.length === 1) setVardiya(aktif[0]);
+  }
+}
+
 function setVardiya(v) {
+  if(!isVardiyaActive(v)) return; // Zaman dışı seçimi engelle
   vardiya = v;
   ['sabah','aksam','gece'].forEach(x=>document.getElementById('v-'+x).className='vbtn');
   document.getElementById('v-'+v.toLowerCase()).classList.add('sel-'+v.toLowerCase());
@@ -1098,6 +1138,7 @@ function resetForm() {
   const sb=document.getElementById('submit-btn');if(sb)sb.disabled=false;
   const ob=document.getElementById('onay-btn');if(ob)ob.disabled=false;
   ['v-sabah','v-aksam','v-gece'].forEach(id=>document.getElementById(id).className='vbtn');
+  updateVardiyaButtons();
   document.getElementById('status-box').style.display='none';
   document.getElementById('enj1-sec').style.display='block'; document.getElementById('enj1-ro').style.display='none';
   document.getElementById('kasa1-sec').style.display='block'; document.getElementById('kasa1-ro').style.display='none';
