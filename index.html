@@ -277,7 +277,7 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
     <div class="field">
       <label>Kasa Ağırlığı <span class="req">*</span></label>
-      <div class="ui"><input type="number" id="agirlik1" placeholder="0.0" min="0" step="0.1"><span class="ub">gr</span></div>
+      <div class="ui"><input type="number" id="agirlik1" placeholder="0.0" min="0" step="0.1" oninput="checkKasaAgirlik(1)"><span class="ub">gr</span></div>
       <div class="err-msg" id="err-agirlik1">Gerekli</div>
     </div>
     <div class="row2">
@@ -358,7 +358,7 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
     <div class="field">
       <label>Kasa Ağırlığı <span class="req">*</span></label>
-      <div class="ui"><input type="number" id="agirlik2" placeholder="0.0" min="0" step="0.1"><span class="ub">gr</span></div>
+      <div class="ui"><input type="number" id="agirlik2" placeholder="0.0" min="0" step="0.1" oninput="checkKasaAgirlik(2)"><span class="ub">gr</span></div>
       <div class="err-msg" id="err-agirlik2">Gerekli</div>
     </div>
     <div class="row2">
@@ -822,6 +822,57 @@ function showEnjSection(json) {
   }
 }
 
+// Kasa ağırlık sınırları — orijinal min/max değerlerine +%10 tolerans uygulanmış
+const KASA_AGIRLIK = {
+  '30x40x10': { min: 231, max: 286 },
+  '30x40x14': { min: 345, max: 369 },
+  '30x40x15': { min: 344, max: 369 },
+  '30x40x18': { min: 398, max: 414 },
+  '30x40x22': { min: 545, max: 574 },
+  '30x50x12': { min: 334, max: 411 },
+  '30x50x22': { min: 549, max: 582 },
+  '35x50x16': { min: 539, max: 594 },
+  '40x60x18': { min: 612, max: 655 },
+};
+
+function getKasaBounds(n) {
+  const locked = n === 1 ? enj1Kilitli : enj2Kilitli;
+  const kasa = locked
+    ? document.getElementById('kasa'+n+'-ro-val').textContent
+    : document.getElementById('kasa'+n).value;
+  if(!kasa) return null;
+  const key = kasa.trim().toLowerCase().replace(/\s+/g,'');
+  for(const [k, v] of Object.entries(KASA_AGIRLIK)) {
+    if(k.toLowerCase() === key) return v;
+  }
+  return null;
+}
+
+function checkKasaAgirlik(n) {
+  const agEl  = document.getElementById('agirlik'+n);
+  const errEl = document.getElementById('err-agirlik'+n);
+  const val   = parseFloat(agEl.value);
+  if(!agEl.value || isNaN(val)) return false;
+  const b = getKasaBounds(n);
+  if(!b) return false; // kasa listede yoksa kontrol etme
+  if(val < b.min) {
+    agEl.classList.add('error');
+    errEl.textContent = '⚠️ Çok düşük! Min: ' + b.min + 'g';
+    errEl.classList.add('show');
+    return true;
+  }
+  if(val > b.max) {
+    agEl.classList.add('error');
+    errEl.textContent = '⚠️ Çok yüksek! Maks: ' + b.max + 'g';
+    errEl.classList.add('show');
+    return true;
+  }
+  agEl.classList.remove('error');
+  errEl.textContent = 'Gerekli';
+  errEl.classList.remove('show');
+  return false;
+}
+
 function calcUretim(n) {
   const bas = parseInt(document.getElementById('sayac_bas'+n).value);
   const bit = parseInt(document.getElementById('sayac_bit'+n).value);
@@ -956,6 +1007,7 @@ function validate2() {
   if(!ok) return false; // Enj seçilmeden ölçüm validasyonuna geçme
   // Ölçümler
   chk('cevrim1','err-cevrim1'); chk('agirlik1','err-agirlik1');
+  if(document.getElementById('agirlik1').value && checkKasaAgirlik(1)) ok=false;
   chk('sayac_bas1','err-bas1');
   const bit1=document.getElementById('sayac_bit1');
   const bas1=document.getElementById('sayac_bas1');
@@ -966,6 +1018,7 @@ function validate2() {
 
   if(enjSayisi===2){
     chk('cevrim2','err-cevrim2'); chk('agirlik2','err-agirlik2');
+    if(document.getElementById('agirlik2').value && checkKasaAgirlik(2)) ok=false;
     chk('sayac_bas2','err-bas2');
     const bit2=document.getElementById('sayac_bit2');
     const bas2=document.getElementById('sayac_bas2');
