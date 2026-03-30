@@ -498,10 +498,33 @@ window.onload = async function() {
   tickClock();
   updateVardiyaButtons(); 
   checkAndShowDraft();
+  garbageCollector(); // Sayfa yüklenmesinde çalıştır
+  setInterval(garbageCollector, 5 * 60 * 1000); // 5 dakikada bir
 };
 
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') saveDraft(); });
 window.addEventListener('pagehide', saveDraft);
+
+function garbageCollector() {
+  const now = new Date(Date.now() + _timeOffset);
+  const currentDate = now.toISOString().split('T')[0];
+  const currentVardiya = vardiya;
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('fireLog_') || key.startsWith('fpUnlock_')) {
+      const parts = key.split('_');
+      if (parts.length >= 3) {
+        const keyDate = parts[1];
+        const keyVardiya = parts[2];
+        if (keyDate !== currentDate || keyVardiya !== currentVardiya) {
+          keysToRemove.push(key);
+        }
+      }
+    }
+  }
+  keysToRemove.forEach(key => localStorage.removeItem(key));
+}
 
 function saveDraft() {
   if(!document.getElementById('kullanici_id').value) return;
@@ -1035,8 +1058,8 @@ function closeFireModal() {
 function confirmInstantFire() {
   if (!_pendingFire) return;
 
-  const fireData = _pendingFire;  // Kalan veri yerel değişkene
-  closeFireModal();              // Kapayıp ekrandan kaldır
+  const fireData = _pendingFire;
+  closeFireModal();
   executeInstantFire(fireData.n, fireData.amount, fireData.enjNo);
 }
 
@@ -1430,7 +1453,10 @@ async function submitForm(onaylandi) {
       if(s) s.remove();
 
       if(json && json.result === 'ok') {
-        clearFireLogs();
+        // Sadece vardiya bitiminde (ölçüm 3 onaylandığında) fire logları temizlenir
+        if (olcumNo === 3 && onaylandi) {
+          clearFireLogs();
+        }
         clearDraft();
         document.getElementById('loading').classList.remove('show');
         const msgs={1:'✅ Ölçümünüz kaydedildi! İyi Günler',2:'✅ 2. ölçüm kaydedildi!',3:'✅ Vardiya tamamlandı!'};
