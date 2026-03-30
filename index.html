@@ -1074,15 +1074,31 @@ function loadAccumulatedFire(n, enjNo) {
   var tarih = getFpTarih();
   if(!vardiya || !enjNo) return;
 
-  var total = getFpTotal(tarih, vardiya, enjNo);
+  var log = getFpLog(tarih, vardiya, enjNo);
+  var total = log.reduce(function(s,e){return s+(e.amount||0);},0);
+  
   var tBox  = document.getElementById('fire-toplam-box'+n);
   var tVal  = document.getElementById('fire-toplam'+n);
+  var histEl = document.getElementById('fire-history'+n);
+  var histList = document.getElementById('fire-history-list'+n);
   
   if(total > 0) {
     if(tVal) tVal.textContent = total;
-    if(tBox) tBox.style.display = 'block';
+    if(tBox) tBox.style.display = 'flex';
+    
+    if(histEl && histList) {
+      var running = 0;
+      histList.innerHTML = log.map(function(e) {
+        running += e.amount;
+        var d = new Date(e.ts);
+        var hm = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+        return '<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f1f5f9; font-size:13px;"><span style="color:var(--text2)">' + hm + '</span><span style="color:var(--warn); font-weight:800;">+' + e.amount + '</span><span style="font-size:11px; color:var(--text2)">→ ' + running + '</span></div>';
+      }).join('');
+      histEl.style.display = 'block';
+    }
   } else {
     if(tBox) tBox.style.display = 'none';
+    if(histEl) histEl.style.display = 'none';
   }
   updateFireLockDisplay();
 }
