@@ -218,6 +218,12 @@ function doGet(e) {
       olcumNo === 3 ? (onaylandi ? 'ONAYLANDI' : 'BEKLİYOR') : '' // X
     ]);
 
+    // Canlı İzleme FIFO Kaydırma
+    updateCanliIzleme(e.parameter.enj1_no, e.parameter.kasa1, e.parameter.cevrim1, e.parameter.agirlik1, e.parameter.sayac_bas1 + '→' + e.parameter.sayac_bit1, e.parameter.uretim1, e.parameter.fire1, vardiyaTarih, vardiya);
+    if (enjSayisi === 2) {
+      updateCanliIzleme(e.parameter.enj2_no, e.parameter.kasa2, e.parameter.cevrim2, e.parameter.agirlik2, e.parameter.sayac_bas2 + '→' + e.parameter.sayac_bit2, e.parameter.uretim2, e.parameter.fire2, vardiyaTarih, vardiya);
+    }
+
     return jsonp(cb, { result: 'ok', olcum: olcumNo });
   }
 
@@ -263,6 +269,55 @@ function yazBaslik(sheet) {
   h.setBackground('#2563eb');
   h.setFontColor('#ffffff');
   sheet.setFrozenRows(1);
+}
+
+function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, tarih, vardiya) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let izlemeSheet = ss.getSheetByName('Canlı İzleme');
+  if (!izlemeSheet) {
+    izlemeSheet = ss.insertSheet('Canlı İzleme');
+    // Başlıkları yaz
+    const headers = [];
+    for (let i = 1; i <= 12; i++) {
+      headers.push('Enj ' + i);
+      headers.push('Tarih/Vardiya');
+      headers.push('Kasa Ebatı');
+      headers.push('Çevrim (sn)');
+      headers.push('Ağırlık (gr)');
+      headers.push('Başlangıç-Bitiş');
+      headers.push('Üretim');
+      headers.push('Kümülatif Fire');
+    }
+    izlemeSheet.appendRow(headers);
+    const headerRange = izlemeSheet.getRange(1, 1, 1, headers.length);
+    headerRange.setFontWeight('bold').setBackground('#16a34a').setFontColor('#ffffff');
+    izlemeSheet.setFrozenRows(1);
+    // 12 satır ekle (Enj 1'den 12'ye)
+    for (let i = 0; i < 12; i++) {
+      izlemeSheet.appendRow([]);
+    }
+  }
+
+  // Enjeksiyon numarasını al (örneğin "Enjeksiyon 1" -> 1)
+  const enjNum = parseInt(enjNo.replace(/\D/g, '')) || 1;
+  if (enjNum < 1 || enjNum > 12) return;
+
+  const row = enjNum + 1; // Başlık sonrası satır
+  const colStart = (enjNum - 1) * 7 + 1; // Her blok 7 sütun
+
+  // Mevcut verileri oku (FIFO için)
+  const currentData = izlemeSheet.getRange(row, colStart, 1, 21).getValues()[0]; // 3 blok x 7 sütun
+
+  // FIFO: 1 Önceki -> 2 Önceki, Son -> 1 Önceki, Yeni -> Son
+  const yeniSon = [tarih + ' ' + vardiya, kasa, cevrim, agirlik, sayac, uretim, fire];
+  const yeniBirOnceki = currentData.slice(0, 7); // Son Vardiya -> 1 Önceki
+  const yeniIkiOnceki = currentData.slice(7, 14); // 1 Önceki -> 2 Önceki
+
+  // Yeni satır verisi
+  const yeniRowData = yeniSon.concat(yeniBirOnceki).concat(yeniIkiOnceki);
+
+  // Yaz
+  izlemeSheet.getRange(row, colStart, 1, 21).setValues([yeniRowData]);
 }
 
 function jsonp(callback, obj) {
