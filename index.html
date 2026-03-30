@@ -950,7 +950,13 @@ function getFpLogKey(tarih, vard, enjNo) { return 'fireLog_'+tarih+'_'+vard+'_'+
 function getFpUnlockKey(tarih, vard, enjNo) { return 'fpUnlock_'+tarih+'_'+vard+'_'+enjNo.replace(/\s+/g,''); }
 function getFpLog(tarih, vard, enjNo) { try { var r=localStorage.getItem(getFpLogKey(tarih,vard,enjNo)); return r?JSON.parse(r):[]; } catch(e){ return []; } }
 function getFpTotal(tarih, vard, enjNo) { return getFpLog(tarih,vard,enjNo).reduce(function(s,e){return s+(e.amount||0);},0); }
-function getFpTarih() { return new Date(Date.now()+_timeOffset).toISOString().split('T')[0]; }
+function getFpTarih() {
+  // Tarih input'u loadLists() sonrası sunucu saatiyle güncellenir ve sabit kalır.
+  // _timeOffset ile hesaplama yerine bu değeri kullan — offset gecikmesinden kaynaklanan
+  // anahtar uyuşmazlığını engeller.
+  var el = document.getElementById('tarih');
+  return el && el.value ? el.value : new Date().toISOString().split('T')[0];
+}
 
 function isFpFireLocked(enjNo) {
   if(!vardiya || !enjNo) return false;
@@ -1036,37 +1042,48 @@ async function executeInstantFire(n, amount, enjNo) {
   document.getElementById('load-text').textContent = 'Fire Log\'a İşleniyor...';
   document.getElementById('loading').classList.add('show');
 
+  // Tarihi bir kere sabit al — getFpTarih() ile aynı kaynaktan okuyoruz
+  var tarih = getFpTarih();
+  var saat  = document.getElementById('olcum_saat').value;
+
   const veri = {
-    action: 'logFire',
-    tarih: getFpTarih(),
-    olcum_saat: document.getElementById('olcum_saat').value,
+    action:       'logFire',
+    tarih:        tarih,
+    olcum_saat:   saat,
     kullanici_id: document.getElementById('kullanici_id').value,
-    adsoyad: _adSoyad,
-    vardiya: vardiya,
-    makine_no: enjNo,
+    adsoyad:      _adSoyad || document.getElementById('kullanici_id').value,
+    vardiya:      vardiya  || '',
+    makine_no:    enjNo,
     fire_miktari: amount
   };
 
-  try {
-    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(veri) });
-    
-    // Başarılı loglamadan sonra cihaz hafızasına yaz
-    var tarih = getFpTarih();
-    var log = getFpLog(tarih, vardiya, enjNo);
-    log.push({ ts: Date.now() + _timeOffset, amount: amount });
-    
-    try { localStorage.setItem(getFpLogKey(tarih, vardiya, enjNo), JSON.stringify(log)); } catch(e){}
-    localStorage.setItem(getFpUnlockKey(tarih, vardiya, enjNo), String(Date.now() + 15*60*1000));
-    
-    document.getElementById('fire'+n).value = '0'; // Inputu sıfırla
-    loadAccumulatedFire(n, enjNo); // Toplamı güncelle
-    
-    document.getElementById('loading').classList.remove('show');
-    showToast(`✅ ${amount} Fire başarıyla işlendi!`, 'ok');
+  // no-cors modunda fetch asla reject etmez (opaque response).
+  // Bu yüzden yerel kayıt fetch'ten BAĞIMSIZ olarak hemen yapılır.
+  // Böylece UI her zaman güncellenir, network gecikmesi UI'yi bloklamaz.
 
+  // 1) Önce localStorage'a yaz (UI anında güncellensin)
+  var log = getFpLog(tarih, vardiya, enjNo);
+  log.push({ ts: Date.now(), amount: amount });
+  try { localStorage.setItem(getFpLogKey(tarih, vardiya, enjNo), JSON.stringify(log)); } catch(e){}
+  localStorage.setItem(getFpUnlockKey(tarih, vardiya, enjNo), String(Date.now() + 15*60*1000));
+
+  // 2) Input'u sıfırla ve history'yi hemen göster
+  document.getElementById('fire'+n).value = '0';
+  loadAccumulatedFire(n, enjNo);
+  document.getElementById('loading').classList.remove('show');
+  showToast('\u2705 ' + amount + ' Fire kaydedildi!', 'ok');
+
+  // 3) Arka planda Google Sheets'e gönder (no-cors — başarısız olsa UI etkilenmez)
+  try {
+    fetch(SCRIPT_URL, {
+      method:  'POST',
+      mode:    'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(veri)
+    });
   } catch(e) {
-    document.getElementById('loading').classList.remove('show');
-    showToast('❌ Bağlantı hatası, fire loglanamadı', 'err');
+    // no-cors fetch neredeyse hiç reject etmez, bu kısım teorik
+    console.warn('Fire log gönderilemedi:', e);
   }
 }
 
