@@ -1,5 +1,5 @@
 // ================================================================
-// ENJEKSİYON KONTROL — Google Apps Script v9 (Fire Log Entegreli)
+// ENJEKSİYON KONTROL — Google Apps Script v10 (Fire Log Entegreli)
 // ================================================================
 
 function doGet(e) {
@@ -43,7 +43,7 @@ function doGet(e) {
 
     const normTarih = vardiyaBaslangicTarih(tarih, saat, vardiya);
     const lastRow   = sheet.getLastRow();
-    const vals = sheet.getRange(2, 1, lastRow - 1, 21).getValues();
+    const vals = sheet.getRange(2, 1, lastRow - 1, 24).getValues(); // 24 kolon: A-X
 
     let olcumNo = 1, enj1 = null, kasa1 = null, enj2 = null, kasa2 = null, enjSayisi = 1;
     let sayacBit1 = null, sayacBit2 = null;
@@ -77,7 +77,7 @@ function doGet(e) {
     if (!sheet || sheet.getLastRow() < 2) return jsonp(cb, { sayacBit: null });
     
     const lastRow = sheet.getLastRow();
-    const vals = sheet.getRange(2, 1, lastRow - 1, 21).getValues();
+    const vals = sheet.getRange(2, 1, lastRow - 1, 24).getValues();
     let sayacBit = null;
     
     for (let i = 0; i < vals.length; i++) {
@@ -112,18 +112,28 @@ function doPost(e) {
         const header = logSheet.getRange('A1:H1');
         header.setFontWeight('bold').setBackground('#ea580c').setFontColor('#ffffff');
         logSheet.setFrozenRows(1);
+        logSheet.setColumnWidth(1, 160);
+        logSheet.setColumnWidth(4, 140);
       }
-      
-      const vardiyaTarih = vardiyaBaslangicTarih(data.tarih, data.olcum_saat, data.vardiya);
+
+      // Null-safe: tarih veya saat eksikse bugünü kullan
+      const fireTarih   = data.tarih    || new Date().toISOString().split('T')[0];
+      const fireSaat    = data.olcum_saat || '';
+      const fireVardiya = data.vardiya   || '';
+
+      const vardiyaTarih = (fireTarih && fireVardiya)
+        ? vardiyaBaslangicTarih(fireTarih, fireSaat, fireVardiya)
+        : fireTarih;
+
       logSheet.appendRow([
         new Date().toLocaleString('tr-TR'),
         vardiyaTarih,
-        data.kullanici_id,
-        data.adsoyad,
-        data.vardiya,
-        data.makine_no,
-        data.fire_miktari,
-        data.olcum_saat
+        data.kullanici_id || '',
+        data.adsoyad      || '',
+        fireVardiya,
+        data.makine_no    || '',
+        Number(data.fire_miktari) || 0,
+        fireSaat
       ]);
       return ContentService
         .createTextOutput(JSON.stringify({ result: 'ok' }))
