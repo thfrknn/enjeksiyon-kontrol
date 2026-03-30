@@ -201,7 +201,7 @@ input.error,select.error{border-color:var(--warn)!important}
     <div class="row2">
       <div class="field">
         <label>Tarih</label>
-        <input type="date" id="tarih" readonly style="background:var(--accent-light);border-color:var(--accent);color:var(--accent)">
+        <input type="text" id="tarih" readonly style="background:var(--accent-light);border-color:var(--accent);color:var(--accent);pointer-events:none;user-select:none;-webkit-user-select:none">
       </div>
       <div class="field">
         <label>Ölçüm Saati</label>
@@ -272,12 +272,12 @@ input.error,select.error{border-color:var(--warn)!important}
 
     <div class="field">
       <label>Çevrim Süresi <span class="req">*</span></label>
-      <div class="ui"><input type="number" id="cevrim1" placeholder="0" min="0"><span class="ub">sn</span></div>
+      <div class="ui"><input type="number" id="cevrim1" placeholder="0" min="0" inputmode="numeric"><span class="ub">sn</span></div>
       <div class="err-msg" id="err-cevrim1">Gerekli</div>
     </div>
     <div class="field">
       <label>Kasa Ağırlığı <span class="req">*</span></label>
-      <div class="ui"><input type="number" id="agirlik1" placeholder="0.0" min="0" step="0.1" oninput="checkKasaAgirlik(1)"><span class="ub">gr</span></div>
+      <div class="ui"><input type="number" id="agirlik1" placeholder="0.0" min="0" step="0.1" inputmode="decimal" oninput="checkKasaAgirlik(1)"><span class="ub">gr</span></div>
       <div class="err-msg" id="err-agirlik1">Gerekli</div>
     </div>
     <div class="row2">
@@ -299,12 +299,14 @@ input.error,select.error{border-color:var(--warn)!important}
     <div class="ibox orange" id="limit-warn1" style="display:none">⚠️ Üretim limiti aşıldı!</div>
     <div class="field" style="margin-top:14px">
       <label>Fire</label>
-      <div class="counter">
-        <button class="cbtn" onclick="adjFire(1,-1)">−</button>
-        <input class="cval" type="number" id="fire1" value="0" min="0" oninput="clampFire(1)">
-        <button class="cbtn" onclick="adjFire(1,1)">+</button>
+      <div class="counter" id="fire-counter1">
+        <button class="cbtn" onmousedown="startFireAdj(1,-1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()" ontouchstart="startFireAdj(1,-1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">−</button>
+        <input class="cval" type="number" id="fire1" value="0" min="0" inputmode="numeric" oninput="clampFire(1)">
+        <button class="cbtn" onmousedown="startFireAdj(1,1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()" ontouchstart="startFireAdj(1,1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">+</button>
       </div>
       <div class="err-msg" id="err-fire1">Fire, üretim adedinden fazla olamaz</div>
+      <div class="ibox orange" id="fire-lock-msg1" style="display:none;margin-top:8px">🔒 Fire <span id="fire-lock-cd1">--:--</span> sonra eklenebilir</div>
+      <div class="ibox blue" id="fire-toplam-box1" style="display:none;margin-top:8px">📊 Vardiya toplam fire: <strong id="fire-toplam1">0</strong> adet</div>
     </div>
   </div>
 
@@ -353,12 +355,12 @@ input.error,select.error{border-color:var(--warn)!important}
 
     <div class="field">
       <label>Çevrim Süresi <span class="req">*</span></label>
-      <div class="ui"><input type="number" id="cevrim2" placeholder="0" min="0"><span class="ub">sn</span></div>
+      <div class="ui"><input type="number" id="cevrim2" placeholder="0" min="0" inputmode="numeric"><span class="ub">sn</span></div>
       <div class="err-msg" id="err-cevrim2">Gerekli</div>
     </div>
     <div class="field">
       <label>Kasa Ağırlığı <span class="req">*</span></label>
-      <div class="ui"><input type="number" id="agirlik2" placeholder="0.0" min="0" step="0.1" oninput="checkKasaAgirlik(2)"><span class="ub">gr</span></div>
+      <div class="ui"><input type="number" id="agirlik2" placeholder="0.0" min="0" step="0.1" inputmode="decimal" oninput="checkKasaAgirlik(2)"><span class="ub">gr</span></div>
       <div class="err-msg" id="err-agirlik2">Gerekli</div>
     </div>
     <div class="row2">
@@ -380,12 +382,14 @@ input.error,select.error{border-color:var(--warn)!important}
     <div class="ibox orange" id="limit-warn2" style="display:none">⚠️ Üretim limiti aşıldı!</div>
     <div class="field" style="margin-top:14px">
       <label>Fire</label>
-      <div class="counter">
-        <button class="cbtn" onclick="adjFire(2,-1)">−</button>
-        <input class="cval" type="number" id="fire2" value="0" min="0" oninput="clampFire(2)">
-        <button class="cbtn" onclick="adjFire(2,1)">+</button>
+      <div class="counter" id="fire-counter2">
+        <button class="cbtn" onmousedown="startFireAdj(2,-1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()" ontouchstart="startFireAdj(2,-1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">−</button>
+        <input class="cval" type="number" id="fire2" value="0" min="0" inputmode="numeric" oninput="clampFire(2)">
+        <button class="cbtn" onmousedown="startFireAdj(2,1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()" ontouchstart="startFireAdj(2,1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">+</button>
       </div>
       <div class="err-msg" id="err-fire2">Fire, üretim adedinden fazla olamaz</div>
+      <div class="ibox orange" id="fire-lock-msg2" style="display:none;margin-top:8px">🔒 Fire <span id="fire-lock-cd2">--:--</span> sonra eklenebilir</div>
+      <div class="ibox blue" id="fire-toplam-box2" style="display:none;margin-top:8px">📊 Vardiya toplam fire: <strong id="fire-toplam2">0</strong> adet</div>
     </div>
   </div>
 
@@ -449,6 +453,8 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_XncWVGH4JG5okF0CP
 var vardiya = null, currentStep = 1, olcumNo = 1, enjSayisi = 1;
 var enj1Kilitli = false, enj2Kilitli = false;
 var kullanicilar = {}, uretimLimiti = 0, _adSoyad = '';
+var _timeOffset = 0, _t0 = 0;
+var _fireAdjTimer = null, _fireAdjInterval = null;
 
 window.onload = async function() {
   const now = new Date();
@@ -458,7 +464,12 @@ window.onload = async function() {
   tickClock(); setInterval(tickClock, 10000);
   setInterval(saveDraft, 5000); // Her 5 saniyede otomatik kaydet
   setInterval(updateVardiyaButtons, 30000); // Her 30 saniyede vardiya kontrolü
+  setInterval(updateFireLockDisplay, 1000); // Her saniye fire kilidini güncelle
   await loadLists();
+  // Sunucu saati senkronize edildikten sonra tarih ve saati güncelle
+  const synced = new Date(Date.now() + _timeOffset);
+  document.getElementById('tarih').value = synced.toISOString().split('T')[0];
+  tickClock();
   updateVardiyaButtons(); // İlk açılışta geçerli vardiyayı vurgula / pasifleştir
   checkAndShowDraft();
 };
@@ -553,16 +564,22 @@ function clearDraft() {
 }
 
 function tickClock() {
-  const n = new Date();
+  const n = new Date(Date.now() + _timeOffset);
   document.getElementById('olcum_saat').value =
     String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
 }
 
 async function loadLists() {
   return new Promise(resolve => {
+    _t0 = Date.now();
     const cb = 'cb_'+Date.now();
     window[cb] = function(json) {
       delete window[cb]; document.getElementById('jsonp-s')?.remove();
+      // Sunucu saati senkronizasyonu
+      if(json.serverTime) {
+        const latency = (Date.now() - _t0) / 2;
+        _timeOffset = json.serverTime - (_t0 + latency);
+      }
       kullanicilar = json.kullanicilar || {};
       uretimLimiti = parseInt(json.uretimLimiti) || 0;
       // Mark input as ready so tests can detect when data is loaded
@@ -720,7 +737,8 @@ const _VR = {
 };
 
 function isVardiyaActive(v) {
-  const now = new Date();
+  if(window.__testMode) return true; // Testlerde tüm vardiyalar aktif
+  const now = new Date(Date.now() + _timeOffset);
   const m = now.getHours() * 60 + now.getMinutes();
   const r = _VR[v];
   return r.e < r.s ? (m >= r.s || m <= r.e) : (m >= r.s && m <= r.e);
@@ -778,6 +796,16 @@ function checkStatus() {
       document.getElementById('sayac_bas2').value = json.sayacBit2;
       setBasReadonly(2); calcUretim(2);
     }
+    // Kümülatif fire göster
+    [1,2].forEach(n => {
+      const box = document.getElementById('fire-toplam-box'+n);
+      const val = document.getElementById('fire-toplam'+n);
+      const toplam = json['fireToplam'+n];
+      if(box && val && toplam != null && toplam > 0) {
+        val.textContent = toplam;
+        box.style.display = 'flex';
+      }
+    });
   };
   const s = document.createElement('script');
   s.id = 'st-s';
@@ -916,10 +944,49 @@ function getUretim(n) {
   const bit=parseInt(document.getElementById('sayac_bit'+n).value)||0;
   return Math.max(0,bit-bas);
 }
+function isFireLocked() {
+  const t = parseInt(localStorage.getItem('fireUnlockTime')||'0');
+  return t > Date.now();
+}
 function adjFire(n,d) {
+  if(isFireLocked()) return;
   const el=document.getElementById('fire'+n);
   const max=getUretim(n);
   el.value=Math.min(max,Math.max(0,parseInt(el.value||0)+d));
+}
+function startFireAdj(n,d) {
+  if(isFireLocked()) return;
+  adjFire(n,d);
+  _fireAdjTimer = setTimeout(function() {
+    _fireAdjInterval = setInterval(function() { adjFire(n,d); }, 80);
+  }, 400);
+}
+function stopFireAdj() {
+  clearTimeout(_fireAdjTimer); clearInterval(_fireAdjInterval);
+  _fireAdjTimer = null; _fireAdjInterval = null;
+}
+function updateFireLockDisplay() {
+  const t = parseInt(localStorage.getItem('fireUnlockTime')||'0');
+  const remaining = t - Date.now();
+  const locked = remaining > 0;
+  [1,2].forEach(function(n) {
+    const msg = document.getElementById('fire-lock-msg'+n);
+    if(!msg) return;
+    if(locked) {
+      const secs = Math.ceil(remaining/1000);
+      const m = Math.floor(secs/60), s = secs%60;
+      const cd = document.getElementById('fire-lock-cd'+n);
+      if(cd) cd.textContent = m+':'+String(s).padStart(2,'0');
+      msg.style.display = 'flex';
+      // Sayaç butonlarını kilitle
+      const ctr = document.getElementById('fire-counter'+n);
+      if(ctr) ctr.querySelectorAll('.cbtn').forEach(function(b){ b.disabled=true; });
+    } else {
+      msg.style.display = 'none';
+      const ctr = document.getElementById('fire-counter'+n);
+      if(ctr) ctr.querySelectorAll('.cbtn').forEach(function(b){ b.disabled=false; });
+    }
+  });
 }
 function clampFire(n) {
   const el=document.getElementById('fire'+n);
@@ -1152,6 +1219,8 @@ async function submitForm(onaylandi) {
   try{
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     clearDraft();
+    // 15 dakika fire kilidi
+    localStorage.setItem('fireUnlockTime', String(Date.now() + 15*60*1000));
     document.getElementById('loading').classList.remove('show');
     const msgs={1:'✅ Ölçümünüz kaydedildi İyi Günler',2:'✅ 2. ölçüm kaydedildi!',3:'✅ Vardiya tamamlandı!'};
     showToast(msgs[olcumNo]||'✅ Kaydedildi!','ok');
@@ -1189,6 +1258,10 @@ function resetForm() {
   ['cevrim1','agirlik1','sayac_bas1','sayac_bit1','cevrim2','agirlik2','sayac_bas2','sayac_bit2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('fire1').value=0;
   document.getElementById('fire2').value=0;
+  [1,2].forEach(function(n){
+    const b=document.getElementById('fire-toplam-box'+n);
+    if(b)b.style.display='none';
+  });
   [1,2].forEach(n=>{
     document.getElementById('result-val'+n).textContent='—';
     document.getElementById('result-box'+n)&&(document.getElementById('uretim-box'+n).style.cssText='background:var(--accent-light);border:2px solid var(--accent);border-radius:12px;padding:14px;text-align:center;margin-top:12px');
@@ -1208,7 +1281,7 @@ function resetForm() {
   document.getElementById('onay-ozet').style.display='none';
   setEnjSayisi(1);
   setBasEditable(1); setBasEditable(2);
-  document.getElementById('tarih').value=new Date().toISOString().split('T')[0];
+  document.getElementById('tarih').value=new Date(Date.now()+_timeOffset).toISOString().split('T')[0];
   tickClock();
   goStep(1);
 }

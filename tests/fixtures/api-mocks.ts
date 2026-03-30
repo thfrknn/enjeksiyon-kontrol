@@ -4,6 +4,7 @@ export const DEFAULT_LISTS = {
   kasaEbatlari: ['400x600'],
   kullanicilar: { '101': { name: 'Ali Veli', sifre: '1234' } },
   uretimLimiti: 2000,
+  serverTime: Date.now(),
 };
 
 export const DEFAULT_STATUS_NEW = {
@@ -15,6 +16,8 @@ export const DEFAULT_STATUS_NEW = {
   enjSayisi: 1,
   sayacBit1: null,
   sayacBit2: null,
+  fireToplam1: 0,
+  fireToplam2: 0,
 };
 
 // null means "no previous record" → sayac_bas stays editable in tests
@@ -47,6 +50,9 @@ export async function setupMocks(page: Page, overrides: MockOverrides = {}) {
   );
 
   await page.addInitScript(({ lists, status, lastCounter }) => {
+    // Override time-based vardiya check so tests work at any hour
+    (window as any).__testMode = true;
+
     // Intercept JSONP script tag appends
     const origAppend = Element.prototype.appendChild;
     // @ts-ignore

@@ -36,7 +36,7 @@ function doGet(e) {
     // Üretim limiti D2'den (tek bir sayı)
     const uretimLimiti = Number(ayarlar.getRange('D2').getValue()) || 0;
 
-    return jsonp(cb, { kasaEbatlari: kasaCol, kullanicilar, uretimLimiti });
+    return jsonp(cb, { kasaEbatlari: kasaCol, kullanicilar, uretimLimiti, serverTime: new Date().getTime() });
   }
 
   if (e.parameter.action === 'getStatus') {
@@ -58,6 +58,7 @@ function doGet(e) {
 
     let olcumNo = 1, enj1 = null, kasa1 = null, enj2 = null, kasa2 = null, enjSayisi = 1;
     let sayacBit1 = null, sayacBit2 = null;
+    let fireToplam1 = 0, fireToplam2 = 0;
 
     for (let i = 0; i < vals.length; i++) {
       if (String(vals[i][2]).trim() === String(adsoyad).trim() &&
@@ -72,10 +73,13 @@ function doGet(e) {
         // M=idx12 Enj1SayaçBit, U=idx20 Enj2SayaçBit
         const b1 = parseInt(vals[i][12]); if(!isNaN(b1)) sayacBit1 = b1;
         const b2 = parseInt(vals[i][20]); if(!isNaN(b2)) sayacBit2 = b2;
+        // O=idx14 Enj1Fire, W=idx22 Enj2Fire — kümülatif toplam
+        const f1 = parseInt(vals[i][14]); if(!isNaN(f1)) fireToplam1 += f1;
+        const f2 = parseInt(vals[i][22]); if(!isNaN(f2)) fireToplam2 += f2;
       }
     }
 
-    return jsonp(cb, { olcumNo, enj1, kasa1, enj2, kasa2, enjSayisi, sayacBit1, sayacBit2 });
+    return jsonp(cb, { olcumNo, enj1, kasa1, enj2, kasa2, enjSayisi, sayacBit1, sayacBit2, fireToplam1, fireToplam2 });
   }
 
   if (e.parameter.action === 'getLastCounter') {
