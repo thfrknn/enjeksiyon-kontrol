@@ -218,10 +218,11 @@ function doGet(e) {
       olcumNo === 3 ? (onaylandi ? 'ONAYLANDI' : 'BEKLİYOR') : '' // X
     ]);
 
-    // Canlı İzleme FIFO Kaydırma
-    updateCanliIzleme(e.parameter.enj1_no, e.parameter.kasa1, e.parameter.cevrim1, e.parameter.agirlik1, e.parameter.sayac_bas1 + '→' + e.parameter.sayac_bit1, e.parameter.uretim1, e.parameter.fire1, vardiyaTarih, vardiya);
+    // Canlı İzleme güncelle (sütun-bazlı, max 5 log, vardiya bazlı sıfırlama)
+    const adSoyad = e.parameter.adsoyad || '';
+    updateCanliIzleme(e.parameter.enj1_no, e.parameter.kasa1, e.parameter.cevrim1, e.parameter.agirlik1, e.parameter.sayac_bas1 + '→' + e.parameter.sayac_bit1, e.parameter.uretim1, e.parameter.fire1, vardiyaTarih, vardiya, adSoyad);
     if (enjSayisi === 2) {
-      updateCanliIzleme(e.parameter.enj2_no, e.parameter.kasa2, e.parameter.cevrim2, e.parameter.agirlik2, e.parameter.sayac_bas2 + '→' + e.parameter.sayac_bit2, e.parameter.uretim2, e.parameter.fire2, vardiyaTarih, vardiya);
+      updateCanliIzleme(e.parameter.enj2_no, e.parameter.kasa2, e.parameter.cevrim2, e.parameter.agirlik2, e.parameter.sayac_bas2 + '→' + e.parameter.sayac_bit2, e.parameter.uretim2, e.parameter.fire2, vardiyaTarih, vardiya, adSoyad);
     }
 
     return jsonp(cb, { result: 'ok', olcum: olcumNo });
@@ -271,53 +272,96 @@ function yazBaslik(sheet) {
   sheet.setFrozenRows(1);
 }
 
-function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, tarih, vardiya) {
+// ================================================================
+// CANLI İZLEME — Her makine için 1 sütun (A=Enj1 … L=Enj12)
+// Satır 1 : Başlıklar (Enjeksiyon 1 … Enjeksiyon 12)
+// Satır 2-6: O makine için max 5 ölçüm logu
+//
+// Her hücre 3 satır:
+//   2026-03-30 SABAH | Ali Veli | 17:30
+//   30x40x14 · 320gr · 19sn
+//   100000→103000 (Δ3000) · 🔥40
+//
+// Kural:
+//   • Aynı vardiya  → sıradaki boş satıra yaz (max 5)
+//   • 5 satır doldu → en eskiyi sil (FIFO), sona ekle
+//   • Farklı vardiya → sütunu temizle, sıfırdan başla
+// ================================================================
+function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, tarih, vardiya, adSoyad) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let izlemeSheet = ss.getSheetByName('Canlı İzleme');
-  if (!izlemeSheet) {
-    izlemeSheet = ss.insertSheet('Canlı İzleme');
-    // Başlıkları yaz
-    const headers = [];
-    for (let i = 1; i <= 12; i++) {
-      headers.push('Enj ' + i);
-      headers.push('Tarih/Vardiya');
-      headers.push('Kasa Ebatı');
-      headers.push('Çevrim (sn)');
-      headers.push('Ağırlık (gr)');
-      headers.push('Başlangıç-Bitiş');
-      headers.push('Üretim');
-      headers.push('Kümülatif Fire');
-    }
-    izlemeSheet.appendRow(headers);
-    const headerRange = izlemeSheet.getRange(1, 1, 1, headers.length);
-    headerRange.setFontWeight('bold').setBackground('#16a34a').setFontColor('#ffffff');
-    izlemeSheet.setFrozenRows(1);
-    // 12 satır ekle (Enj 1'den 12'ye)
-    for (let i = 0; i < 12; i++) {
-      izlemeSheet.appendRow([]);
+  let sheet = ss.getSheetByName('Canlı İzleme');
+  if (!sheet) return; // Sekme yoksa sessizce geç
+
+  // Başlık satırı yoksa kur
+  if (String(sheet.getRange(1, 1).getValue()).trim() !== 'Enjeksiyon 1') {
+    _setupCanlıBaslik(sheet);
+  }
+
+  const m = String(enjNo).match(/(\d+)\s*$/);
+  if (!m) return;
+  const col = parseInt(m[1]);
+  if (col < 1 || col > 12) return;
+
+  const shiftKey  = tarih + ' ' + vardiya;
+  const MAX       = 5;
+  const START_ROW = 2;
+
+  // Hücre içeriğini oluştur (3 satır)
+  const content = shiftKey + ' | ' + (adSoyad || '') + '\n'
+    + kasa + ' · ' + agirlik + 'gr · ' + cevrim + 'sn\n'
+    + sayac + ' (Δ' + uretim + ') · 🔥' + fire;
+
+  const range = sheet.getRange(START_ROW, col, MAX, 1);
+  const vals  = range.getValues();
+
+  let firstNonEmpty = null;
+  let nextEmptyIdx  = -1;
+
+  for (let i = 0; i < MAX; i++) {
+    const v = String(vals[i][0] || '').trim();
+    if (v !== '') {
+      if (firstNonEmpty === null) firstNonEmpty = v;
+    } else {
+      if (nextEmptyIdx === -1) nextEmptyIdx = i;
     }
   }
 
-  // Enjeksiyon numarasını al (örneğin "Enjeksiyon 1" -> 1)
-  const enjNum = parseInt(enjNo.replace(/\D/g, '')) || 1;
-  if (enjNum < 1 || enjNum > 12) return;
+  const isEmpty   = firstNonEmpty === null;
+  const sameShift = !isEmpty && firstNonEmpty.indexOf(shiftKey) !== -1;
 
-  const row = enjNum + 1; // Başlık sonrası satır
-  const colStart = (enjNum - 1) * 7 + 1; // Her blok 7 sütun
+  if (isEmpty || !sameShift) {
+    range.clearContent();
+    sheet.getRange(START_ROW, col).setValue(content);
+  } else if (nextEmptyIdx !== -1) {
+    sheet.getRange(START_ROW + nextEmptyIdx, col).setValue(content);
+  } else {
+    // FIFO: en eskiyi at, sona ekle
+    const yeni = [];
+    for (let i = 1; i < MAX; i++) yeni.push([vals[i][0]]);
+    yeni.push([content]);
+    range.setValues(yeni);
+  }
 
-  // Mevcut verileri oku (FIFO için)
-  const currentData = izlemeSheet.getRange(row, colStart, 1, 21).getValues()[0]; // 3 blok x 7 sütun
+  range.setWrap(true);
+  range.setVerticalAlignment('top');
+  range.setFontSize(10);
+  for (let r = START_ROW; r < START_ROW + MAX; r++) {
+    sheet.setRowHeight(r, 72);
+  }
+}
 
-  // FIFO: 1 Önceki -> 2 Önceki, Son -> 1 Önceki, Yeni -> Son
-  const yeniSon = [tarih + ' ' + vardiya, kasa, cevrim, agirlik, sayac, uretim, fire];
-  const yeniBirOnceki = currentData.slice(0, 7); // Son Vardiya -> 1 Önceki
-  const yeniIkiOnceki = currentData.slice(7, 14); // 1 Önceki -> 2 Önceki
-
-  // Yeni satır verisi
-  const yeniRowData = yeniSon.concat(yeniBirOnceki).concat(yeniIkiOnceki);
-
-  // Yaz
-  izlemeSheet.getRange(row, colStart, 1, 21).setValues([yeniRowData]);
+function _setupCanlıBaslik(sheet) {
+  const basliklar = [];
+  for (let i = 1; i <= 12; i++) basliklar.push('Enjeksiyon ' + i);
+  const h = sheet.getRange(1, 1, 1, 12);
+  h.setValues([basliklar]);
+  h.setFontWeight('bold');
+  h.setBackground('#1e3a8a');
+  h.setFontColor('#ffffff');
+  h.setHorizontalAlignment('center');
+  h.setFontSize(11);
+  sheet.setFrozenRows(1);
+  for (let i = 1; i <= 12; i++) sheet.setColumnWidth(i, 210);
 }
 
 function jsonp(callback, obj) {
