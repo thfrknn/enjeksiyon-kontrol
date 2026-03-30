@@ -142,6 +142,15 @@ input.error,select.error{border-color:var(--warn)!important}
 @keyframes spin{to{transform:rotate(360deg)}}
 .skeleton{height:52px;border-radius:12px;background:linear-gradient(90deg,#e8eef4 25%,#f4f8fc 50%,#e8eef4 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}
 @keyframes shimmer{to{background-position:-200% 0}}
+.fire-total-box{background:#fef2f2;border:2px solid var(--warn);border-radius:12px;padding:14px;text-align:center;margin-bottom:12px}
+.fire-total-lbl{font-size:12px;font-weight:700;text-transform:uppercase;color:var(--warn);letter-spacing:.5px}
+.fire-total-val{font-size:36px;font-weight:800;color:var(--warn);line-height:1.1;margin-top:4px}
+.fire-hist-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+.fire-hist-item:last-child{border-bottom:none}
+.fire-hist-time{color:var(--text2);font-weight:600}
+.fire-hist-amt{font-weight:800;color:var(--warn)}
+.fire-hist-sum{font-size:12px;color:var(--text2);font-weight:600}
+.btn-fire{background:#fff1f2;color:var(--warn);border:2px solid #fecaca}
 </style>
 </head>
 <body>
@@ -212,6 +221,9 @@ input.error,select.error{border-color:var(--warn)!important}
 
   <div class="nav-row">
     <button class="btn btn-next" onclick="goNext(1)">İleri →</button>
+  </div>
+  <div class="nav-row" style="margin-top:10px">
+    <button class="btn btn-fire" onclick="goFirePage()">🔥 Fire Kaydet</button>
   </div>
 </div>
 
@@ -432,6 +444,93 @@ input.error,select.error{border-color:var(--warn)!important}
 
 </div>
 
+<!-- ===== SAYFA 4: FIRE KAYDET ===== -->
+<div class="page" id="page-4">
+
+  <div class="section">
+    <div class="stitle"><span>🔥</span> Hızlı Fire Kaydı</div>
+
+    <!-- Compact header: zaten giriş yapıldıysa -->
+    <div id="fp-auth-header" class="ibox green" style="display:none;margin-bottom:4px">
+      <span>👤</span>
+      <span><strong id="fp-auth-name"></strong> — <span id="fp-auth-shift"></span> vardiyası</span>
+    </div>
+
+    <!-- Auth formu: sayfa 1 doldurulmadıysa -->
+    <div id="fp-auth-form">
+      <div class="field">
+        <label>Kullanıcı ID <span class="req">*</span></label>
+        <input type="text" id="fp-id" placeholder="ID numaranızı girin" inputmode="numeric" maxlength="3" oninput="onFpIdChange()">
+        <div class="err-msg" id="fp-err-id">Geçersiz ID numarası</div>
+      </div>
+      <div class="field" id="fp-sifre-field" style="display:none">
+        <label>Şifre <span class="req">*</span></label>
+        <input type="password" id="fp-sifre" placeholder="••••" inputmode="numeric" oninput="checkFpAuth()">
+        <div class="err-msg" id="fp-err-sifre">Şifre yanlış</div>
+      </div>
+      <div class="field">
+        <label>Vardiya <span class="req">*</span></label>
+        <div class="vardiya-row">
+          <button class="vbtn" id="fv-sabah" onclick="setFpVardiya('SABAH')"><span class="vi">☀️</span>Sabah<span class="vt">09:00–17:00</span></button>
+          <button class="vbtn" id="fv-aksam" onclick="setFpVardiya('AKSAM')"><span class="vi">🌆</span>Akşam<span class="vt">17:00–01:00</span></button>
+          <button class="vbtn" id="fv-gece"  onclick="setFpVardiya('GECE')"><span class="vi">🌙</span>Gece<span class="vt">01:00–09:00</span></button>
+        </div>
+        <div class="err-msg" id="fp-err-vardiya">Lütfen vardiya seçin</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Makine seçimi (auth tamamlanınca gösterilir) -->
+  <div class="section" id="fp-enj-section" style="display:none">
+    <div class="stitle"><span>🏭</span> Makine Seçin</div>
+    <div class="enj-grid" id="fp-enj-grid">
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 1',this)">Enj 1</button>
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 2',this)">Enj 2</button>
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 3',this)">Enj 3</button>
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 4',this)">Enj 4</button>
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 5',this)">Enj 5</button>
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 6',this)">Enj 6</button>
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 7',this)">Enj 7</button>
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 8',this)">Enj 8</button>
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 9',this)">Enj 9</button>
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 10',this)">Enj 10</button>
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 11',this)">Enj 11</button>
+      <button class="enj-gbtn" type="button" onclick="selectFpEnj('Enjeksiyon 12',this)">Enj 12</button>
+    </div>
+    <div class="err-msg" id="fp-err-enj">Lütfen makine seçin</div>
+  </div>
+
+  <!-- Fire girişi (makine seçilince gösterilir) -->
+  <div class="section" id="fp-fire-section" style="display:none">
+    <div class="stitle"><span>📊</span> <span id="fp-fire-title">Fire Girişi</span></div>
+
+    <div class="fire-total-box" id="fp-total-box" style="display:none">
+      <div class="fire-total-lbl">Bu vardiya toplam fire</div>
+      <div class="fire-total-val" id="fp-total-val">0</div>
+    </div>
+
+    <div class="ibox orange" id="fp-lock-box" style="display:none;margin-bottom:12px">
+      🔒 Bir sonraki giriş için <strong id="fp-lock-cd">--:--</strong> bekleyin
+    </div>
+
+    <div class="field" id="fp-input-wrap">
+      <label>Eklenecek Fire Miktarı</label>
+      <div class="ui"><input type="number" id="fp-miktar" placeholder="0" min="1" inputmode="numeric"><span class="ub">adet</span></div>
+      <div class="err-msg" id="fp-err-miktar">En az 1 adet girilmeli</div>
+    </div>
+    <button class="btn btn-submit" id="fp-submit" onclick="submitFpFire()" style="margin-top:4px">➕ Fire Ekle</button>
+
+    <div id="fp-history" style="display:none;margin-top:20px">
+      <div class="stitle"><span>📋</span> Bugünkü Girişler</div>
+      <div id="fp-history-list"></div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn btn-back" onclick="backFromFirePage()">← Geri</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="limit-modal" style="display:none">
   <div class="modal-box">
     <div class="modal-icon">⚠️</div>
@@ -455,6 +554,8 @@ var enj1Kilitli = false, enj2Kilitli = false;
 var kullanicilar = {}, uretimLimiti = 0, _adSoyad = '';
 var _timeOffset = 0, _t0 = 0;
 var _fireAdjTimer = null, _fireAdjInterval = null;
+var _fpId = '', _fpVardiya = null, _fpEnjNo = '';
+var _fpLockInterval = null;
 
 window.onload = async function() {
   const now = new Date();
@@ -672,6 +773,8 @@ function selectEnj(n, val, btn) {
   syncEnjDisabled();
   // Önceki sayaç değerini çek
   fetchLastCounter(n, val);
+  // Fire log'dan birikmiş fireyi yükle
+  loadAccumulatedFire(n, val);
 }
 
 function syncEnjDisabled() {
@@ -838,6 +941,7 @@ function showEnjSection(json) {
   if(enj1Kilitli) {
     document.getElementById('enj1-ro-val').textContent  = json.enj1;
     document.getElementById('kasa1-ro-val').textContent = json.kasa1;
+    loadAccumulatedFire(1, json.enj1);
   }
   // Enj 2
   document.getElementById('enj2-sec').style.display  = enj2Kilitli ? 'none'  : 'block';
@@ -847,6 +951,7 @@ function showEnjSection(json) {
   if(enj2Kilitli) {
     document.getElementById('enj2-ro-val').textContent  = json.enj2;
     document.getElementById('kasa2-ro-val').textContent = json.kasa2;
+    loadAccumulatedFire(2, json.enj2);
   }
 }
 
@@ -1218,6 +1323,7 @@ async function submitForm(onaylandi) {
   const data=getData(); data.onaylandi=onaylandi;
   try{
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    clearFireLogs(); // fire log'ları temizle (submit öncesi getData çalışır)
     clearDraft();
     // 15 dakika fire kilidi
     localStorage.setItem('fireUnlockTime', String(Date.now() + 15*60*1000));
@@ -1259,6 +1365,10 @@ function resetForm() {
   document.getElementById('fire1').value=0;
   document.getElementById('fire2').value=0;
   [1,2].forEach(function(n){
+    const fEl=document.getElementById('fire'+n);
+    if(fEl){fEl.readOnly=false;fEl.style.background='';fEl.style.color='';}
+    const ctr=document.getElementById('fire-counter'+n);
+    if(ctr)ctr.querySelectorAll('.cbtn').forEach(function(b){b.disabled=false;});
     const b=document.getElementById('fire-toplam-box'+n);
     if(b)b.style.display='none';
   });
@@ -1311,6 +1421,241 @@ function showToast(msg,type='ok'){
   const t=document.getElementById('toast');
   t.textContent=msg;t.className='toast '+type+' show';
   setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ===== FIRE KAYDET SAYFASI =====
+
+function goFirePage() {
+  const p1Id = document.getElementById('kullanici_id').value.trim();
+  const p1Si = document.getElementById('sifre').value;
+  const p1k  = kullanicilar[p1Id];
+  const p1Ok = p1k && p1Si === String(p1k.sifre||'') && vardiya;
+
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('page-4').classList.add('active');
+  window.scrollTo(0,0);
+
+  if(p1Ok) {
+    // Sayfa 1 doğrulandı: kompakt header göster
+    _fpId = p1Id; _fpVardiya = vardiya;
+    document.getElementById('fp-auth-form').style.display   = 'none';
+    document.getElementById('fp-auth-header').style.display = 'flex';
+    document.getElementById('fp-auth-name').textContent     = p1k.name;
+    var vl={SABAH:'Sabah',AKSAM:'Akşam',GECE:'Gece'};
+    document.getElementById('fp-auth-shift').textContent    = vl[vardiya]||vardiya;
+    document.getElementById('fp-enj-section').style.display = 'block';
+  } else {
+    // Auth formu göster
+    _fpId = ''; _fpVardiya = null;
+    document.getElementById('fp-auth-form').style.display   = 'block';
+    document.getElementById('fp-auth-header').style.display = 'none';
+    document.getElementById('fp-enj-section').style.display = 'none';
+    var fpIdEl = document.getElementById('fp-id');
+    fpIdEl.value = p1Id; onFpIdChange();
+    if(p1k && p1Si) document.getElementById('fp-sifre').value = p1Si;
+    updateFpVardiyaButtons();
+    if(vardiya) setFpVardiya(vardiya);
+  }
+  // Makine seçimini sıfırla
+  _fpEnjNo = '';
+  document.getElementById('fp-enj-grid').querySelectorAll('.enj-gbtn').forEach(function(b){ b.classList.remove('sel'); });
+  document.getElementById('fp-fire-section').style.display = 'none';
+  clearInterval(_fpLockInterval);
+  _fpLockInterval = setInterval(updateFpLock, 1000);
+}
+
+function backFromFirePage() {
+  clearInterval(_fpLockInterval);
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('page-'+currentStep).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function onFpIdChange() {
+  var id = document.getElementById('fp-id').value.trim();
+  var k  = kullanicilar[id];
+  var sf = document.getElementById('fp-sifre-field');
+  if(k) {
+    sf.style.display = 'block';
+    document.getElementById('fp-id').classList.remove('error');
+    document.getElementById('fp-err-id').classList.remove('show');
+    var saved = localStorage.getItem('sifre_'+id);
+    if(saved) document.getElementById('fp-sifre').value = saved;
+  } else {
+    sf.style.display = 'none';
+    if(id.length===3){ document.getElementById('fp-id').classList.add('error'); document.getElementById('fp-err-id').classList.add('show'); }
+    else             { document.getElementById('fp-id').classList.remove('error'); document.getElementById('fp-err-id').classList.remove('show'); }
+  }
+  checkFpAuth();
+}
+
+function checkFpAuth() {
+  var id = document.getElementById('fp-id').value.trim();
+  var si = document.getElementById('fp-sifre').value;
+  var k  = kullanicilar[id];
+  if(k && String(k.sifre||'') === si && _fpVardiya) {
+    _fpId = id;
+    document.getElementById('fp-enj-section').style.display = 'block';
+  } else {
+    document.getElementById('fp-enj-section').style.display  = 'none';
+    document.getElementById('fp-fire-section').style.display = 'none';
+  }
+}
+
+function updateFpVardiyaButtons() {
+  ['SABAH','AKSAM','GECE'].forEach(function(v){
+    var btn=document.getElementById('fv-'+v.toLowerCase());
+    if(btn) btn.disabled=!isVardiyaActive(v);
+  });
+  if(_fpVardiya && !isVardiyaActive(_fpVardiya)){
+    _fpVardiya=null;
+    ['sabah','aksam','gece'].forEach(function(x){var b=document.getElementById('fv-'+x);if(b)b.className='vbtn';});
+  }
+  if(!_fpVardiya){
+    var aktif=['SABAH','AKSAM','GECE'].filter(function(v){return isVardiyaActive(v);});
+    if(aktif.length===1) setFpVardiya(aktif[0]);
+  }
+}
+
+function setFpVardiya(v) {
+  if(!isVardiyaActive(v)) return;
+  _fpVardiya = v;
+  ['sabah','aksam','gece'].forEach(function(x){var b=document.getElementById('fv-'+x);if(b)b.className='vbtn';});
+  document.getElementById('fv-'+v.toLowerCase()).classList.add('sel-'+v.toLowerCase());
+  document.getElementById('fp-err-vardiya').classList.remove('show');
+  checkFpAuth();
+}
+
+function selectFpEnj(val, btn) {
+  document.getElementById('fp-enj-grid').querySelectorAll('.enj-gbtn').forEach(function(b){ b.classList.remove('sel'); });
+  btn.classList.add('sel');
+  _fpEnjNo = val;
+  document.getElementById('fp-err-enj').classList.remove('show');
+  document.getElementById('fp-fire-title').textContent    = val + ' — Fire Girişi';
+  document.getElementById('fp-fire-section').style.display = 'block';
+  renderFpFireSection();
+}
+
+// localStorage yardımcıları
+function getFpLogKey(id, tarih, vard, enjNo) {
+  return 'fireLog_'+id+'_'+tarih+'_'+vard+'_'+enjNo.replace(/\s+/g,'');
+}
+function getFpUnlockKey(id, tarih, vard, enjNo) {
+  return 'fpUnlock_'+id+'_'+tarih+'_'+vard+'_'+enjNo.replace(/\s+/g,'');
+}
+function getFpLog(id, tarih, vard, enjNo) {
+  try { var r=localStorage.getItem(getFpLogKey(id,tarih,vard,enjNo)); return r?JSON.parse(r):[]; } catch(e){ return []; }
+}
+function getFpTotal(id, tarih, vard, enjNo) {
+  return getFpLog(id,tarih,vard,enjNo).reduce(function(s,e){return s+(e.amount||0);},0);
+}
+function getFpTarih() {
+  return new Date(Date.now()+_timeOffset).toISOString().split('T')[0];
+}
+
+function renderFpFireSection() {
+  if(!_fpId||!_fpVardiya||!_fpEnjNo) return;
+  var tarih = getFpTarih();
+  var log   = getFpLog(_fpId, tarih, _fpVardiya, _fpEnjNo);
+  var total = log.reduce(function(s,e){return s+(e.amount||0);},0);
+  var tBox  = document.getElementById('fp-total-box');
+  var tVal  = document.getElementById('fp-total-val');
+  if(total>0){ tVal.textContent=total; tBox.style.display='block'; }
+  else        { tBox.style.display='none'; }
+  var histEl   = document.getElementById('fp-history');
+  var histList = document.getElementById('fp-history-list');
+  if(log.length>0){
+    var running=0;
+    histList.innerHTML = log.map(function(e){
+      running+=e.amount;
+      var d=new Date(e.ts); var hm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+      return '<div class="fire-hist-item"><span class="fire-hist-time">'+hm+'</span><span class="fire-hist-amt">+'+e.amount+'</span><span class="fire-hist-sum">→ '+running+'</span></div>';
+    }).join('');
+    histEl.style.display='block';
+  } else { histEl.style.display='none'; }
+  updateFpLock();
+}
+
+function updateFpLock() {
+  if(!_fpId||!_fpVardiya||!_fpEnjNo) return;
+  var t   = parseInt(localStorage.getItem(getFpUnlockKey(_fpId,getFpTarih(),_fpVardiya,_fpEnjNo))||'0');
+  var rem = t - Date.now();
+  var lk  = rem > 0;
+  var lBox = document.getElementById('fp-lock-box');
+  var sBtn = document.getElementById('fp-submit');
+  var iWrap= document.getElementById('fp-input-wrap');
+  if(!lBox||!sBtn) return;
+  if(lk){
+    var secs=Math.ceil(rem/1000);
+    document.getElementById('fp-lock-cd').textContent=Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0');
+    lBox.style.display='flex'; sBtn.disabled=true;
+    iWrap.style.opacity='0.4'; iWrap.style.pointerEvents='none';
+  } else {
+    lBox.style.display='none'; sBtn.disabled=false;
+    iWrap.style.opacity='1';   iWrap.style.pointerEvents='auto';
+  }
+}
+
+function submitFpFire() {
+  var ok=true;
+  if(!_fpVardiya){ document.getElementById('fp-err-vardiya').classList.add('show'); ok=false; }
+  if(!_fpEnjNo)  { document.getElementById('fp-err-enj').classList.add('show');     ok=false; }
+  var mEl=document.getElementById('fp-miktar');
+  var mik=parseInt(mEl.value);
+  if(!mik||mik<1){
+    document.getElementById('fp-err-miktar').classList.add('show'); mEl.classList.add('error'); ok=false;
+  } else {
+    document.getElementById('fp-err-miktar').classList.remove('show'); mEl.classList.remove('error');
+  }
+  if(!ok) return;
+  var tarih = getFpTarih();
+  var key   = getFpLogKey(_fpId, tarih, _fpVardiya, _fpEnjNo);
+  var log   = getFpLog(_fpId, tarih, _fpVardiya, _fpEnjNo);
+  log.push({ ts: Date.now()+_timeOffset, amount: mik });
+  try{ localStorage.setItem(key, JSON.stringify(log)); }catch(e){}
+  localStorage.setItem(getFpUnlockKey(_fpId, tarih, _fpVardiya, _fpEnjNo), String(Date.now()+15*60*1000));
+  mEl.value='';
+  renderFpFireSection();
+  showToast('✅ +'+mik+' fire eklendi! Toplam: '+getFpTotal(_fpId,tarih,_fpVardiya,_fpEnjNo),'ok');
+}
+
+// Sayfa 2 entegrasyonu: fire log'dan birikmiş fire yükle
+function loadAccumulatedFire(n, enjNo) {
+  var id   = document.getElementById('kullanici_id').value.trim();
+  var tarih= getFpTarih();
+  if(!id||!vardiya||!enjNo) return;
+  var total = getFpTotal(id, tarih, vardiya, enjNo);
+  var fEl   = document.getElementById('fire'+n);
+  var ctr   = document.getElementById('fire-counter'+n);
+  var tBox  = document.getElementById('fire-toplam-box'+n);
+  var tVal  = document.getElementById('fire-toplam'+n);
+  if(total>0){
+    fEl.value=total; fEl.readOnly=true;
+    fEl.style.background='#fef2f2'; fEl.style.color='var(--warn)';
+    if(ctr) ctr.querySelectorAll('.cbtn').forEach(function(b){b.disabled=true;});
+    if(tBox&&tVal){
+      tBox.innerHTML='📋 Fire log\'dan yüklendi: <strong>'+total+'</strong> adet';
+      tBox.style.display='flex';
+    }
+  } else {
+    fEl.readOnly=false; fEl.style.background=''; fEl.style.color='';
+    if(ctr) ctr.querySelectorAll('.cbtn').forEach(function(b){b.disabled=isFireLocked();});
+  }
+}
+
+// Başarılı submit sonrası fire log'ları temizle
+function clearFireLogs() {
+  var id   = document.getElementById('kullanici_id').value.trim();
+  var tarih= getFpTarih();
+  var v    = vardiya;
+  if(!id||!v) return;
+  var d = getData();
+  [d.enj1_no, enjSayisi>=2?d.enj2_no:null].forEach(function(enjNo){
+    if(enjNo&&enjNo!=='00'){
+      localStorage.removeItem(getFpLogKey(id,tarih,v,enjNo));
+      localStorage.removeItem(getFpUnlockKey(id,tarih,v,enjNo));
+    }
+  });
 }
 </script>
 </body>
