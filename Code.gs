@@ -1,14 +1,5 @@
 // ================================================================
-// ENJEKSİYON KONTROL — Google Apps Script v8
-// Her giriş yeni satır, 2 enjeksiyon desteği
-// Sütunlar:
-// A=KayıtZamanı B=VardiyaTarih C=AdSoyad D=Vardiya E=ÖlçümNo F=EnjSayısı G=ÖlçümSaati
-// H=Enj1No I=Enj1Kasa J=Enj1Çevrim K=Enj1Ağırlık L=Enj1SayaçBaş M=Enj1SayaçBit N=Enj1Üretim O=Enj1Fire
-// P=Enj2No Q=Enj2Kasa R=Enj2Çevrim S=Enj2Ağırlık T=Enj2SayaçBaş U=Enj2SayaçBit V=Enj2Üretim W=Enj2Fire
-// X=Onay
-//
-// Ayarlar sekmesi:
-// A=Operatörler  B=Kasa Ebatları  C=Şifreler  D=Üretim Limiti (D2'de tek değer)  E=Kullanıcı ID'leri
+// ENJEKSİYON KONTROL — Google Apps Script v9 (Fire Log Entegreli)
 // ================================================================
 
 function doGet(e) {
@@ -21,11 +12,9 @@ function doGet(e) {
 
     const opCol    = ayarlar.getRange('A2:A50').getValues().flat().filter(v => v !== '');
     const kasaCol  = ayarlar.getRange('B2:B50').getValues().flat().filter(v => v !== '');
-    // getDisplayValues: hücrede görünen metni alır → başındaki sıfırları korur
     const sifreCol = ayarlar.getRange('C2:C50').getDisplayValues().flat();
     const idCol    = ayarlar.getRange('E2:E50').getDisplayValues().flat();
 
-    // ID → { name, sifre } eşlemesi (E sütunu A ile aynı sırada)
     const kullanicilar = {};
     opCol.forEach((ad, i) => {
       const sifre = sifreCol[i];
@@ -33,10 +22,11 @@ function doGet(e) {
       if (ad && id) kullanicilar[id] = { name: String(ad), sifre: String(sifre || '') };
     });
 
-    // Üretim limiti D2'den (tek bir sayı)
     const uretimLimiti = Number(ayarlar.getRange('D2').getValue()) || 0;
+    // F2 hücresindeki Maksimum Fire Limitini çekiyoruz
+    const maxFireLimit = Number(ayarlar.getRange('F2').getValue()) || 50; 
 
-    return jsonp(cb, { kasaEbatlari: kasaCol, kullanicilar, uretimLimiti, serverTime: new Date().getTime() });
+    return jsonp(cb, { kasaEbatlari: kasaCol, kullanicilar, uretimLimiti, maxFireLimit, serverTime: new Date().getTime() });
   }
 
   if (e.parameter.action === 'getStatus') {
@@ -53,7 +43,6 @@ function doGet(e) {
 
     const normTarih = vardiyaBaslangicTarih(tarih, saat, vardiya);
     const lastRow   = sheet.getLastRow();
-    // 24 sütun oku: M=Enj1SayaçBit(idx12), U=Enj2SayaçBit(idx20)
     const vals = sheet.getRange(2, 1, lastRow - 1, 21).getValues();
 
     let olcumNo = 1, enj1 = null, kasa1 = null, enj2 = null, kasa2 = null, enjSayisi = 1;
@@ -70,15 +59,14 @@ function doGet(e) {
         kasa1 = String(vals[i][8]);
         enj2  = String(vals[i][15]);
         kasa2 = String(vals[i][16]);
-        // M=idx12 Enj1SayaçBit, U=idx20 Enj2SayaçBit
+
         const b1 = parseInt(vals[i][12]); if(!isNaN(b1)) sayacBit1 = b1;
         const b2 = parseInt(vals[i][20]); if(!isNaN(b2)) sayacBit2 = b2;
-        // O=idx14 Enj1Fire, W=idx22 Enj2Fire — kümülatif toplam
+        
         const f1 = parseInt(vals[i][14]); if(!isNaN(f1)) fireToplam1 += f1;
         const f2 = parseInt(vals[i][22]); if(!isNaN(f2)) fireToplam2 += f2;
       }
     }
-
     return jsonp(cb, { olcumNo, enj1, kasa1, enj2, kasa2, enjSayisi, sayacBit1, sayacBit2, fireToplam1, fireToplam2 });
   }
 
@@ -87,16 +75,19 @@ function doGet(e) {
     const ss    = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName('Veriler');
     if (!sheet || sheet.getLastRow() < 2) return jsonp(cb, { sayacBit: null });
+    
     const lastRow = sheet.getLastRow();
-    // H=idx7 Enj1No, M=idx12 Enj1SayaçBit, P=idx15 Enj2No, U=idx20 Enj2SayaçBit
     const vals = sheet.getRange(2, 1, lastRow - 1, 21).getValues();
     let sayacBit = null;
+    
     for (let i = 0; i < vals.length; i++) {
       if (String(vals[i][7]).trim() === String(enjNo).trim()) {
-        const b = parseInt(vals[i][12]); if (!isNaN(b)) sayacBit = b;
+        const b = parseInt(vals[i][12]);
+        if (!isNaN(b)) sayacBit = b;
       }
       if (String(vals[i][15]).trim() === String(enjNo).trim()) {
-        const b = parseInt(vals[i][20]); if (!isNaN(b)) sayacBit = b;
+        const b = parseInt(vals[i][20]);
+        if (!isNaN(b)) sayacBit = b;
       }
     }
     return jsonp(cb, { sayacBit });
@@ -109,14 +100,45 @@ function doPost(e) {
   try {
     const data  = JSON.parse(e.postData.contents);
     const ss    = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet   = ss.getSheetByName('Veriler');
+
+    // ==========================================
+    // YENİ: Anında Fire Kaydı (Fire Log Sekmesi)
+    // ==========================================
+    if (data.action === 'logFire') {
+      let logSheet = ss.getSheetByName('Fire Log');
+      if (!logSheet) {
+        logSheet = ss.insertSheet('Fire Log');
+        logSheet.appendRow(['Kayıt Zamanı', 'Vardiya Tarihi', 'Kullanıcı ID', 'Ad Soyad', 'Vardiya', 'Makine No', 'Eklenen Fire', 'Ölçüm Saati']);
+        const header = logSheet.getRange('A1:H1');
+        header.setFontWeight('bold').setBackground('#ea580c').setFontColor('#ffffff');
+        logSheet.setFrozenRows(1);
+      }
+      
+      const vardiyaTarih = vardiyaBaslangicTarih(data.tarih, data.olcum_saat, data.vardiya);
+      logSheet.appendRow([
+        new Date().toLocaleString('tr-TR'),
+        vardiyaTarih,
+        data.kullanici_id,
+        data.adsoyad,
+        data.vardiya,
+        data.makine_no,
+        data.fire_miktari,
+        data.olcum_saat
+      ]);
+      return ContentService
+        .createTextOutput(JSON.stringify({ result: 'ok' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ==========================================
+    // NORMAL: Ana Ölçüm Form Gönderimi (Veriler)
+    // ==========================================
+    let sheet = ss.getSheetByName('Veriler');
     if (!sheet) sheet = ss.insertSheet('Veriler');
     if (sheet.getLastRow() === 0) yazBaslik(sheet);
 
     const vardiyaTarih = vardiyaBaslangicTarih(data.tarih, data.olcum_saat, data.vardiya);
     const enjSayisi    = data.enjSayisi || 1;
-
-    // 2. enjeksiyon yoksa "00" yaz
     const enj2No   = enjSayisi === 2 ? data.enj2_no   : '00';
     const kasa2    = enjSayisi === 2 ? data.kasa2      : '00';
     const cevrim2  = enjSayisi === 2 ? data.cevrim2    : '00';
@@ -134,6 +156,7 @@ function doPost(e) {
       data.olcumNo,                        // E
       enjSayisi,                           // F
       data.olcum_saat,                     // G
+      
       // Enjeksiyon 1
       data.enj1_no,                        // H
       data.kasa1,                          // I
@@ -142,7 +165,8 @@ function doPost(e) {
       data.sayac_bas1,                     // L
       data.sayac_bit1,                     // M
       data.uretim1,                        // N
-      data.fire1,                          // O
+      data.fire1,                          // O (Kümülatif Toplam)
+      
       // Enjeksiyon 2
       enj2No,                              // P
       kasa2,                               // Q
@@ -151,7 +175,8 @@ function doPost(e) {
       bas2,                                // T
       bit2,                                // U
       uretim2,                             // V
-      fire2,                               // W
+      fire2,                               // W (Kümülatif Toplam)
+      
       // Onay
       data.olcumNo === 3 ? (data.onaylandi ? 'ONAYLANDI' : 'BEKLİYOR') : '' // X
     ]);
@@ -194,10 +219,7 @@ function yazBaslik(sheet) {
 }
 
 function jsonp(callback, obj) {
-  const body = callback
-    ? callback + '(' + JSON.stringify(obj) + ')'
-    : JSON.stringify(obj);
-  return ContentService
-    .createTextOutput(body)
+  const body = callback ? callback + '(' + JSON.stringify(obj) + ')' : JSON.stringify(obj);
+  return ContentService.createTextOutput(body)
     .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
 }
