@@ -1033,10 +1033,10 @@ function closeFireModal() {
 }
 
 function confirmInstantFire() {
-  if(!_pendingFire) return;
+  if (!_pendingFire) return;
 
-  const fireData = _pendingFire;
-  closeFireModal();
+  const fireData = _pendingFire;  // Kalan veri yerel değişkene
+  closeFireModal();              // Kapayıp ekrandan kaldır
   executeInstantFire(fireData.n, fireData.amount, fireData.enjNo);
 }
 
