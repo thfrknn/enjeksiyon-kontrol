@@ -1042,11 +1042,35 @@ async function executeInstantFire(n, amount, enjNo) {
   document.getElementById('load-text').textContent = 'Fire Log\'a İşleniyor...';
   document.getElementById('loading').classList.add('show');
 
-  // Tarihi bir kere sabit al — getFpTarih() ile aynı kaynaktan okuyoruz
   var tarih = getFpTarih();
   var saat  = document.getElementById('olcum_saat').value;
 
-  const veri = {
+  // 1) Önce localStorage'a yaz — UI anında güncellenir, network'e bağımlı değil
+  var log = getFpLog(tarih, vardiya, enjNo);
+  log.push({ ts: Date.now(), amount: amount });
+  try { localStorage.setItem(getFpLogKey(tarih, vardiya, enjNo), JSON.stringify(log)); } catch(ex){}
+  localStorage.setItem(getFpUnlockKey(tarih, vardiya, enjNo), String(Date.now() + 15*60*1000));
+
+  // 2) Input sıfırla, history'yi göster, loading kapat
+  document.getElementById('fire'+n).value = '0';
+  loadAccumulatedFire(n, enjNo);
+  document.getElementById('loading').classList.remove('show');
+  showToast('\u2705 ' + amount + ' Fire kaydedildi!', 'ok');
+
+  // 3) Arka planda Google Sheets'e JSONP (GET) ile gönder
+  // NEDEN GET?: fetch+no-cors+Content-Type:application/json kombinasyonu
+  // "preflighted" isteğe dönüşür; Apps Script OPTIONS'a yanıt vermez,
+  // doPost hiç çalışmaz. JSONP script tag ile bu sorun tamamen ortadan kalkar.
+  var cb = 'cbFire_' + Date.now();
+  window[cb] = function(json) {
+    delete window[cb];
+    var s = document.getElementById('jsonp-fire-'+n);
+    if(s) s.remove();
+    if(json && json.result !== 'ok') {
+      console.warn('Fire log sunucuya kaydedilemedi:', json);
+    }
+  };
+  var params = new URLSearchParams({
     action:       'logFire',
     tarih:        tarih,
     olcum_saat:   saat,
@@ -1054,37 +1078,14 @@ async function executeInstantFire(n, amount, enjNo) {
     adsoyad:      _adSoyad || document.getElementById('kullanici_id').value,
     vardiya:      vardiya  || '',
     makine_no:    enjNo,
-    fire_miktari: amount
-  };
-
-  // no-cors modunda fetch asla reject etmez (opaque response).
-  // Bu yüzden yerel kayıt fetch'ten BAĞIMSIZ olarak hemen yapılır.
-  // Böylece UI her zaman güncellenir, network gecikmesi UI'yi bloklamaz.
-
-  // 1) Önce localStorage'a yaz (UI anında güncellensin)
-  var log = getFpLog(tarih, vardiya, enjNo);
-  log.push({ ts: Date.now(), amount: amount });
-  try { localStorage.setItem(getFpLogKey(tarih, vardiya, enjNo), JSON.stringify(log)); } catch(e){}
-  localStorage.setItem(getFpUnlockKey(tarih, vardiya, enjNo), String(Date.now() + 15*60*1000));
-
-  // 2) Input'u sıfırla ve history'yi hemen göster
-  document.getElementById('fire'+n).value = '0';
-  loadAccumulatedFire(n, enjNo);
-  document.getElementById('loading').classList.remove('show');
-  showToast('\u2705 ' + amount + ' Fire kaydedildi!', 'ok');
-
-  // 3) Arka planda Google Sheets'e gönder (no-cors — başarısız olsa UI etkilenmez)
-  try {
-    fetch(SCRIPT_URL, {
-      method:  'POST',
-      mode:    'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(veri)
-    });
-  } catch(e) {
-    // no-cors fetch neredeyse hiç reject etmez, bu kısım teorik
-    console.warn('Fire log gönderilemedi:', e);
-  }
+    fire_miktari: amount,
+    callback:     cb
+  });
+  var s = document.createElement('script');
+  s.id  = 'jsonp-fire-'+n;
+  s.src = SCRIPT_URL + '?' + params.toString();
+  s.onerror = function() { delete window[cb]; console.warn('Fire log JSONP hatası'); };
+  document.head.appendChild(s);
 }
 
 function loadAccumulatedFire(n, enjNo) {
@@ -1404,21 +1405,88 @@ async function submitForm(onaylandi) {
   document.getElementById('loading').classList.add('show');
   if(sb) sb.disabled=true;
   if(ob) ob.disabled=true;
-  const data=getData(); data.onaylandi=onaylandi;
-  try{
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-    clearFireLogs(); // BAŞARILI İLETİM SONRASI LOCAL CLEAR
-    clearDraft();
-    document.getElementById('loading').classList.remove('show');
-    const msgs={1:'✅ Ölçümünüz kaydedildi İyi Günler',2:'✅ 2. ölçüm kaydedildi!',3:'✅ Vardiya tamamlandı!'};
-    showToast(msgs[olcumNo]||'✅ Kaydedildi!','ok');
-    setTimeout(resetForm,2200);
-  }catch(e){
-    document.getElementById('loading').classList.remove('show');
-    if(sb) sb.disabled=false;
-    if(ob) ob.disabled=false;
-    showToast('❌ Bağlantı hatası, tekrar dene','err');
-  }
+
+  const data = getData();
+  data.onaylandi = onaylandi;
+
+  return new Promise(function(resolve) {
+    var cb = 'cbSubmit_' + Date.now();
+    var timerOut = setTimeout(function() {
+      // 15 saniye timeout — no-cors'tan daha güvenilir ama network kesilirse
+      delete window[cb];
+      document.getElementById('loading').classList.remove('show');
+      if(sb) sb.disabled=false;
+      if(ob) ob.disabled=false;
+      showToast('❌ Bağlantı zaman aşımı, tekrar dene','err');
+      resolve();
+    }, 15000);
+
+    window[cb] = function(json) {
+      clearTimeout(timerOut);
+      delete window[cb];
+      var s = document.getElementById('jsonp-submit');
+      if(s) s.remove();
+
+      if(json && json.result === 'ok') {
+        clearFireLogs();
+        clearDraft();
+        document.getElementById('loading').classList.remove('show');
+        const msgs={1:'✅ Ölçümünüz kaydedildi! İyi Günler',2:'✅ 2. ölçüm kaydedildi!',3:'✅ Vardiya tamamlandı!'};
+        showToast(msgs[olcumNo]||'✅ Kaydedildi!','ok');
+        setTimeout(resetForm, 2200);
+      } else {
+        document.getElementById('loading').classList.remove('show');
+        if(sb) sb.disabled=false;
+        if(ob) ob.disabled=false;
+        showToast('❌ Kayıt hatası, tekrar dene','err');
+        console.error('submitForm hatası:', json);
+      }
+      resolve();
+    };
+
+    // JSONP GET parametreleri — tüm alanlar URL parametresi olarak gönderilir
+    var params = new URLSearchParams({
+      action:      'submitForm',
+      callback:    cb,
+      adsoyad:     data.adsoyad     || '',
+      vardiya:     data.vardiya     || '',
+      olcumNo:     data.olcumNo     || 1,
+      enjSayisi:   data.enjSayisi   || 1,
+      tarih:       data.tarih       || '',
+      olcum_saat:  data.olcum_saat  || '',
+      enj1_no:     data.enj1_no     || '',
+      kasa1:       data.kasa1       || '',
+      cevrim1:     data.cevrim1     || '',
+      agirlik1:    data.agirlik1    || '',
+      sayac_bas1:  data.sayac_bas1  || '',
+      sayac_bit1:  data.sayac_bit1  || '',
+      uretim1:     data.uretim1     || 0,
+      fire1:       data.fire1       || 0,
+      enj2_no:     data.enj2_no     || '00',
+      kasa2:       data.kasa2       || '00',
+      cevrim2:     data.cevrim2     || '00',
+      agirlik2:    data.agirlik2    || '00',
+      sayac_bas2:  data.sayac_bas2  || '00',
+      sayac_bit2:  data.sayac_bit2  || '00',
+      uretim2:     data.uretim2     || 0,
+      fire2:       data.fire2       || '00',
+      onaylandi:   onaylandi ? 'true' : 'false'
+    });
+
+    var s = document.createElement('script');
+    s.id  = 'jsonp-submit';
+    s.src = SCRIPT_URL + '?' + params.toString();
+    s.onerror = function() {
+      clearTimeout(timerOut);
+      delete window[cb];
+      document.getElementById('loading').classList.remove('show');
+      if(sb) sb.disabled=false;
+      if(ob) ob.disabled=false;
+      showToast('❌ Bağlantı hatası, tekrar dene','err');
+      resolve();
+    };
+    document.head.appendChild(s);
+  });
 }
 
 function resetForm() {
