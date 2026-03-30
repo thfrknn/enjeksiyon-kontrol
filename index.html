@@ -1034,8 +1034,10 @@ function closeFireModal() {
 
 function confirmInstantFire() {
   if(!_pendingFire) return;
+
+  const fireData = _pendingFire;
   closeFireModal();
-  executeInstantFire(_pendingFire.n, _pendingFire.amount, _pendingFire.enjNo);
+  executeInstantFire(fireData.n, fireData.amount, fireData.enjNo);
 }
 
 async function executeInstantFire(n, amount, enjNo) {
