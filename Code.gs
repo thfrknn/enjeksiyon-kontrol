@@ -273,55 +273,57 @@ function yazBaslik(sheet) {
 }
 
 // ================================================================
-// CANLI İZLEME — Makine başına sabit 1 satır (12 satır toplam)
-// Her gönderimde ilgili makinenin satırı güncellenir (üzerine yazılır).
+// CANLI İZLEME — 3 vardiya × 12 makine = 36 sabit satır
 //
 // Satır düzeni:
-//   Satır 1  : Başlık
-//   Satır 2  : Enjeksiyon 1
-//   Satır 3  : Enjeksiyon 2
-//   ...
-//   Satır 13 : Enjeksiyon 12
+//   Satır  1     : Sütun başlıkları
+//   Satır  2     : ── SABAH ──  (bölüm başlığı)
+//   Satır  3–14  : SABAH  Enjeksiyon 1–12
+//   Satır 15     : ── AKSAM ──
+//   Satır 16–27  : AKSAM  Enjeksiyon 1–12
+//   Satır 28     : ── GECE ──
+//   Satır 29–40  : GECE   Enjeksiyon 1–12
 //
 // Sütunlar:
-//   A: Makine  B: Ad Soyad  C: Vardiya  D: Tarih
-//   E: Kasa  F: Çevrim(sn)  G: Ağırlık(gr)  H: Üretim  I: Fire  J: Saat
+//   A: Makine  B: Ad Soyad  C: Tarih  D: Kasa
+//   E: Çevrim(sn)  F: Ağırlık(gr)  G: Üretim  H: Fire  I: Saat
 //
-// Satır rengi vardiyaya göre:
-//   SABAH → açık sarı (#fef9c3)
-//   AKSAM → açık mavi (#dbeafe)
-//   GECE  → açık mor  (#f3e8ff)
+// Gönderim gelince ilgili vardiya+makine satırı üzerine yazılır.
 // ================================================================
+
+// Vardiya → bölüm başlangıç satırı (ilk makine satırı)
+var _VARDIYA_BASE = { 'SABAH': 3, 'AKSAM': 16, 'GECE': 29 };
+
+// Vardiya renkleri
+var _VARDIYA_BG   = { 'SABAH': '#fef9c3', 'AKSAM': '#dbeafe', 'GECE': '#f3e8ff' };
+var _BOLUM_BG     = { 'SABAH': '#f59e0b', 'AKSAM': '#3b82f6', 'GECE': '#7c3aed' };
+
 function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, tarih, vardiya, adSoyad) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('Canlı İzleme');
+  const sheet = ss.getSheetByName('Canlı İzleme');
   if (!sheet) return;
 
-  // Başlık veya makine satırları eksikse yeniden kur
+  // Yapı bozulduysa yeniden kur
   if (String(sheet.getRange(1, 1).getValue()).trim() !== 'Makine') {
     _setupCanlıBaslik(sheet);
   }
 
-  // Makine numarasını bul (enjNo içinden sayı çek)
   const m = String(enjNo).match(/(\d+)\s*$/);
   if (!m) return;
-  const col = parseInt(m[1]);
-  if (col < 1 || col > 12) return;
-  const targetRow = col + 1; // Satır 2 = Enj1, Satır 13 = Enj12
+  const enjIdx = parseInt(m[1]);
+  if (enjIdx < 1 || enjIdx > 12) return;
 
-  // Vardiya renk haritası
-  const renkMap = { 'SABAH': '#fef9c3', 'AKSAM': '#dbeafe', 'GECE': '#f3e8ff' };
-  const bg = renkMap[vardiya] || '#ffffff';
+  const base = _VARDIYA_BASE[vardiya];
+  if (!base) return;
+  const targetRow = base + (enjIdx - 1);
 
-  // Güncel saat
   const saat = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm');
+  const bg   = _VARDIYA_BG[vardiya] || '#ffffff';
 
-  // Satırı güncelle
-  const range = sheet.getRange(targetRow, 1, 1, 10);
+  const range = sheet.getRange(targetRow, 1, 1, 9);
   range.setValues([[
-    enjNo   || '',
+    'Enjeksiyon ' + enjIdx,
     adSoyad || '',
-    vardiya || '',
     tarih   || '',
     kasa    || '',
     cevrim  || '',
@@ -334,6 +336,8 @@ function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, ta
   range.setVerticalAlignment('middle');
   range.setFontSize(10);
   range.setHorizontalAlignment('center');
+  // Makine adı ve operatör adı sola hizalı + kalın
+  sheet.getRange(targetRow, 1).setFontWeight('bold').setHorizontalAlignment('left');
   sheet.getRange(targetRow, 2).setFontWeight('bold').setHorizontalAlignment('left');
 }
 
@@ -341,34 +345,50 @@ function _setupCanlıBaslik(sheet) {
   sheet.clearContents();
   sheet.clearFormats();
 
-  // Başlık satırı
-  const headers = ['Makine', 'Ad Soyad', 'Vardiya', 'Tarih', 'Kasa', 'Çevrim(sn)', 'Ağırlık(gr)', 'Üretim', 'Fire', 'Saat'];
-  const h = sheet.getRange(1, 1, 1, headers.length);
-  h.setValues([headers]);
-  h.setFontWeight('bold');
-  h.setBackground('#1e3a8a');
-  h.setFontColor('#ffffff');
-  h.setHorizontalAlignment('center');
-  h.setFontSize(11);
+  const COLS = 9;
+
+  // Sütun başlıkları (Satır 1)
+  const headers = ['Makine', 'Ad Soyad', 'Tarih', 'Kasa', 'Çevrim(sn)', 'Ağırlık(gr)', 'Üretim', 'Fire', 'Saat'];
+  const hRange = sheet.getRange(1, 1, 1, COLS);
+  hRange.setValues([headers]);
+  hRange.setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff')
+        .setHorizontalAlignment('center').setFontSize(11);
   sheet.setFrozenRows(1);
 
-  // 12 makine satırını önceden yaz (A sütunu sabit)
-  for (let i = 1; i <= 12; i++) {
-    sheet.getRange(i + 1, 1).setValue('Enjeksiyon ' + i);
-  }
-  sheet.getRange(2, 1, 12, 1).setFontWeight('bold').setBackground('#f1f5f9');
+  // 3 vardiya bölümü
+  const vardiyalar = ['SABAH', 'AKSAM', 'GECE'];
+  vardiyalar.forEach(function(v) {
+    const labelRow = _VARDIYA_BASE[v] - 1;
+    const dataStart = _VARDIYA_BASE[v];
+    const bgLabel = _BOLUM_BG[v];
+    const bgData  = _VARDIYA_BG[v];
+
+    // Bölüm başlık satırı (birleştirilmiş)
+    const lRange = sheet.getRange(labelRow, 1, 1, COLS);
+    lRange.merge();
+    lRange.setValue('── ' + v + ' ──');
+    lRange.setBackground(bgLabel).setFontColor('#ffffff').setFontWeight('bold')
+          .setHorizontalAlignment('center').setFontSize(11);
+
+    // 12 makine satırı — A sütununa makine adı yaz
+    for (let i = 1; i <= 12; i++) {
+      const r = dataStart + (i - 1);
+      sheet.getRange(r, 1).setValue('Enjeksiyon ' + i)
+           .setFontWeight('bold').setBackground(bgData).setHorizontalAlignment('left');
+      sheet.getRange(r, 2, 1, COLS - 1).setBackground(bgData);
+    }
+  });
 
   // Sütun genişlikleri
   sheet.setColumnWidth(1, 120);  // Makine
   sheet.setColumnWidth(2, 140);  // Ad Soyad
-  sheet.setColumnWidth(3, 80);   // Vardiya
-  sheet.setColumnWidth(4, 100);  // Tarih
-  sheet.setColumnWidth(5, 100);  // Kasa
-  sheet.setColumnWidth(6, 90);   // Çevrim(sn)
-  sheet.setColumnWidth(7, 90);   // Ağırlık(gr)
-  sheet.setColumnWidth(8, 80);   // Üretim
-  sheet.setColumnWidth(9, 70);   // Fire
-  sheet.setColumnWidth(10, 70);  // Saat
+  sheet.setColumnWidth(3, 100);  // Tarih
+  sheet.setColumnWidth(4, 100);  // Kasa
+  sheet.setColumnWidth(5, 90);   // Çevrim(sn)
+  sheet.setColumnWidth(6, 90);   // Ağırlık(gr)
+  sheet.setColumnWidth(7, 80);   // Üretim
+  sheet.setColumnWidth(8, 70);   // Fire
+  sheet.setColumnWidth(9, 70);   // Saat
 }
 
 function jsonp(callback, obj) {
