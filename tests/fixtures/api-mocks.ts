@@ -1,5 +1,12 @@
 import { Page } from '@playwright/test';
 
+/** Gönderilen son submitForm JSONP URL parametrelerini döndürür */
+export async function getSubmitParams(page: Page): Promise<URLSearchParams | null> {
+  const src = await page.evaluate(() => (window as any).__lastSubmitSrc as string | null);
+  if (!src) return null;
+  try { return new URL(src).searchParams; } catch { return null; }
+}
+
 export const DEFAULT_LISTS = {
   kasaEbatlari: ['400x600'],
   kullanicilar: { '101': { name: 'Ali Veli', sifre: '1234' } },
@@ -68,10 +75,17 @@ export async function setupMocks(page: Page, overrides: MockOverrides = {}) {
           const action = url.searchParams.get('action');
           const cb = url.searchParams.get('callback');
           let data: object;
-          if (action === 'getLists') data = lists;
-          else if (action === 'getStatus') data = status;
+          if      (action === 'getLists')      data = lists;
+          else if (action === 'getStatus')     data = status;
           else if (action === 'getLastCounter') data = lastCounter;
+          else if (action === 'submitForm')    data = { result: 'ok', olcum: 1 };
+          else if (action === 'logFire')       data = { result: 'ok' };
           else data = {};
+
+          // submitForm URL'ini yakala — şişirme testleri kullanır
+          if (action === 'submitForm') {
+            (window as any).__lastSubmitSrc = child.src;
+          }
 
           // Fire callback after current microtask queue clears
           if (cb) {
