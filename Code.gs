@@ -28,13 +28,23 @@ function doGet(e) {
       if (ad && id) kullanicilar[id] = { name: String(ad), sifre: String(sifre || '') };
     });
 
-    const uretimLimiti = Number(ayarlar.getRange('D2').getValue()) || 0;
     const maxFireLimit = Number(ayarlar.getRange('F2').getValue()) || 50;
+
+    // Kasa bazlı üretim limitleri (B sütunu ↔ D sütunu eşleşmesi)
+    const limitCol = ayarlar.getRange('D2:D50').getValues().flat();
+    const kasaLimitlari = {};
+    kasaCol.forEach((kasa, i) => {
+      const lim = Number(limitCol[i]);
+      if (kasa && lim > 0) kasaLimitlari[String(kasa).trim()] = lim;
+    });
+    // Geriye dönük uyumluluk: global limit olarak D sütununun ilk geçerli değeri
+    const uretimLimiti = Number(limitCol.find(v => Number(v) > 0)) || 0;
 
     return jsonp(cb, {
       kasaEbatlari: kasaCol,
       kullanicilar,
       uretimLimiti,
+      kasaLimitlari,
       maxFireLimit,
       serverTime: new Date().getTime()
     });
@@ -108,6 +118,30 @@ function doGet(e) {
       }
     }
     return jsonp(cb, { sayacBit });
+  }
+
+  // ============================================================
+  // getFireTotal: Belirli makine+tarih+vardiya için sunucu toplamını döndür
+  // ============================================================
+  if (e.parameter.action === 'getFireTotal') {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Fire Log');
+    if (!sheet || sheet.getLastRow() < 2) return jsonp(cb, { total: 0 });
+
+    const enjNo   = String(e.parameter.enj_no  || '').trim();
+    const tarih   = String(e.parameter.tarih   || '').trim();
+    const vardiya = String(e.parameter.vardiya || '').trim();
+
+    const vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 8).getValues();
+    let total = 0;
+    for (const row of vals) {
+      if (String(row[1]).trim() === tarih &&
+          String(row[4]).trim() === vardiya &&
+          String(row[5]).trim() === enjNo) {
+        total += Number(row[6]) || 0;
+      }
+    }
+    return jsonp(cb, { total });
   }
 
   // ============================================================
