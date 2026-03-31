@@ -320,6 +320,15 @@ function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, ta
   const saat = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm');
   const bg   = _VARDIYA_BG[vardiya] || '#ffffff';
 
+  // Mevcut satırı oku — aynı tarihse Üretim+Fire biriktirilir
+  const existing = sheet.getRange(targetRow, 1, 1, 9).getValues()[0];
+  const mevcutTarih  = String(existing[2] || '').trim();
+  const mevcutUretim = parseInt(existing[6]) || 0;
+  const mevcutFire   = parseInt(existing[7]) || 0;
+
+  const yeniUretim = (mevcutTarih === tarih) ? (mevcutUretim + (parseInt(uretim) || 0)) : (parseInt(uretim) || 0);
+  const yeniFire   = (mevcutTarih === tarih) ? (mevcutFire   + (parseInt(fire)   || 0)) : (parseInt(fire)   || 0);
+
   const range = sheet.getRange(targetRow, 1, 1, 9);
   range.setValues([[
     'Enjeksiyon ' + enjIdx,
@@ -328,8 +337,8 @@ function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, ta
     kasa    || '',
     cevrim  || '',
     agirlik || '',
-    uretim  || '',
-    fire    || '0',
+    yeniUretim,
+    yeniFire,
     saat
   ]]);
   range.setBackground(bg);
