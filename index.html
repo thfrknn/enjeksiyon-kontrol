@@ -558,6 +558,14 @@ function checkAndShowDraft() {
     if(!raw) return;
     const d = JSON.parse(raw);
     if(!d.kullanici_id && !d.adsoyad) return;
+
+    // Vardiya bitiş saatini hesapla; + 15 dk geçmişse draft'ı sil
+    const expiry = _draftExpiry(d.ts, d.vardiya);
+    if(expiry && (Date.now() + _timeOffset) > expiry + 15 * 60 * 1000) {
+      localStorage.removeItem('enj_draft');
+      return;
+    }
+
     const displayName = d.adSoyad || d.kullanici_id || d.adsoyad;
     const mins = Math.round((Date.now() - d.ts) / 60000);
     const zaman = mins < 1 ? 'az önce' : mins < 60 ? mins+' dakika önce' : Math.round(mins/60)+' saat önce';
@@ -566,6 +574,18 @@ function checkAndShowDraft() {
       displayName + ' — ' + (d.vardiya||'') + ' vardiyası — ' + zaman + ' ' + adim;
     document.getElementById('draft-banner').style.display = 'flex';
   } catch(e) { localStorage.removeItem('enj_draft'); }
+}
+
+// Draft'ın ait olduğu vardiya bitiş anını (ms) döndürür
+function _draftExpiry(ts, vardiya) {
+  if(!ts || !vardiya) return null;
+  const d  = new Date(ts);
+  const yr = d.getFullYear(), mo = d.getMonth(), dy = d.getDate(), hr = d.getHours();
+  if(vardiya === 'SABAH') return new Date(yr, mo, dy, 15, 0, 0).getTime();
+  if(vardiya === 'AKSAM') return new Date(yr, mo, dy, 23, 0, 0).getTime();
+  // GECE: 23:00 → ertesi gün 07:00 | 00:00-06:59 → aynı gün 07:00
+  if(vardiya === 'GECE')  return new Date(yr, mo, dy + (hr >= 23 ? 1 : 0), 7, 0, 0).getTime();
+  return null;
 }
 
 function restoreDraft() {
