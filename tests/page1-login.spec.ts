@@ -42,7 +42,8 @@ test.describe('Sayfa 1 — Giriş', () => {
     await page.fill('#kullanici_id', '101');
     await page.waitForSelector('#sifre-field', { state: 'visible' });
     await page.fill('#sifre', '1234');
-    // Vardiya seçmeden ileri
+    // updateVardiyaButtons() otomatik seçmiş olabilir; sıfırla
+    await page.evaluate(() => { (window as any).vardiya = null; });
     await page.click('button:has-text("İleri")');
     await expect(page.locator('#err-vardiya')).toHaveClass(/show/);
     await expect(page.locator('#page-1')).toHaveClass(/active/);
