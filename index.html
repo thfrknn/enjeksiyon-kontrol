@@ -307,7 +307,7 @@ input.error,select.error{border-color:var(--warn)!important}
         <button class="cbtn" onmousedown="startFireAdj(1,1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()" ontouchstart="startFireAdj(1,1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">+</button>
       </div>
       <div class="err-msg" id="err-fire1" style="text-align:center; font-size:13px; margin-top:8px;"></div>
-      <button class="btn btn-submit" id="btn-fire-ekle1" onclick="promptInstantFire(1)" style="width:100%; margin-top:10px; padding:12px; font-size:15px; background:#ea580c; border:none;">➕ Fireyi Log'a Ekle</button>
+      <button class="btn btn-submit" id="btn-fire-ekle1" onclick="promptInstantFire(1)" style="width:100%; margin-top:10px; padding:12px; font-size:15px; background:#ea580c; border:none;">➕ Fire Ekle</button>
       <div class="ibox orange" id="fire-lock-msg1" style="display:none; margin-top:10px; margin-bottom:0;">🔒 Fire <span id="fire-lock-cd1">--:--</span> sonra eklenebilir</div>
       <div id="fire-history1" style="display:none; margin-top:14px; border-top:1px solid var(--border); padding-top:10px;">
   <div style="font-size:11px; font-weight:800; color:var(--text2); margin-bottom:6px;">📋 BUGÜNKÜ GİRİŞLER</div>
@@ -398,7 +398,7 @@ input.error,select.error{border-color:var(--warn)!important}
         <button class="cbtn" onmousedown="startFireAdj(2,1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()" ontouchstart="startFireAdj(2,1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">+</button>
       </div>
       <div class="err-msg" id="err-fire2" style="text-align:center; font-size:13px; margin-top:8px;"></div>
-      <button class="btn btn-submit" id="btn-fire-ekle2" onclick="promptInstantFire(2)" style="width:100%; margin-top:10px; padding:12px; font-size:15px; background:#ea580c; border:none;">➕ Fireyi Log'a Ekle</button>
+      <button class="btn btn-submit" id="btn-fire-ekle2" onclick="promptInstantFire(2)" style="width:100%; margin-top:10px; padding:12px; font-size:15px; background:#ea580c; border:none;">➕ Fire Ekle</button>
       <div class="ibox orange" id="fire-lock-msg2" style="display:none; margin-top:10px; margin-bottom:0;">🔒 Fire <span id="fire-lock-cd2">--:--</span> sonra eklenebilir</div>
       <div id="fire-history2" style="display:none; margin-top:14px; border-top:1px solid var(--border); padding-top:10px;">
   <div style="font-size:11px; font-weight:800; color:var(--text2); margin-bottom:6px;">📋 BUGÜNKÜ GİRİŞLER</div>
@@ -581,10 +581,10 @@ function _draftExpiry(ts, vardiya) {
   if(!ts || !vardiya) return null;
   const d  = new Date(ts);
   const yr = d.getFullYear(), mo = d.getMonth(), dy = d.getDate(), hr = d.getHours();
-  if(vardiya === 'SABAH') return new Date(yr, mo, dy, 15, 0, 0).getTime();
-  if(vardiya === 'AKSAM') return new Date(yr, mo, dy, 23, 0, 0).getTime();
-  // GECE: 23:00 → ertesi gün 07:00 | 00:00-06:59 → aynı gün 07:00
-  if(vardiya === 'GECE')  return new Date(yr, mo, dy + (hr >= 23 ? 1 : 0), 7, 0, 0).getTime();
+  if(vardiya === 'SABAH') return new Date(yr, mo, dy, 17, 0, 0).getTime();
+  if(vardiya === 'AKSAM') return new Date(yr, mo, dy + (hr >= 17 ? 1 : 0), 1, 0, 0).getTime();
+  // GECE: 01:00-09:00
+  if(vardiya === 'GECE')  return new Date(yr, mo, dy, 9, 0, 0).getTime();
   return null;
 }
 
@@ -785,9 +785,9 @@ function clearSifreErr() {
 }
 
 const _VR = {
-  SABAH: { s: 8*60+45,  e: 17*60+15 }, 
-  AKSAM: { s: 16*60+45, e: 1*60+15  }, 
-  GECE:  { s: 0*60+45,  e: 9*60+15  }, 
+  SABAH: { s: 9*60,    e: 17*60    },
+  AKSAM: { s: 17*60,   e: 1*60     },
+  GECE:  { s: 1*60,    e: 9*60     },
 };
 
 function isVardiyaActive(v) {
