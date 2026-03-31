@@ -321,7 +321,9 @@ function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, ta
   const bg   = _VARDIYA_BG[vardiya] || '#ffffff';
 
   // Mevcut satırı oku — aynı tarihse Üretim+Fire biriktirilir
-  const existing = sheet.getRange(targetRow, 1, 1, 9).getValues()[0];
+  // getDisplayValues kullanılır: Sheets '2026-03-31' stringini Date'e çevirir,
+  // getValues() ile Date objesi gelir ve string karşılaştırması başarısız olur.
+  const existing = sheet.getRange(targetRow, 1, 1, 9).getDisplayValues()[0];
   const mevcutTarih  = String(existing[2] || '').trim();
   const mevcutUretim = parseInt(existing[6]) || 0;
   const mevcutFire   = parseInt(existing[7]) || 0;
@@ -387,6 +389,9 @@ function _setupCanlıBaslik(sheet) {
       sheet.getRange(r, 2, 1, COLS - 1).setBackground(bgData);
     }
   });
+
+  // Tarih sütununu (C) metin formatında tut — Sheets otomatik Date'e çevirmesin
+  sheet.getRange(2, 3, 40, 1).setNumberFormat('@');
 
   // Sütun genişlikleri
   sheet.setColumnWidth(1, 120);  // Makine
