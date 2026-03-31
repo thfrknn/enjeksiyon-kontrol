@@ -273,95 +273,94 @@ function yazBaslik(sheet) {
 }
 
 // ================================================================
-// CANLI İZLEME — Her makine için 1 sütun (A=Enj1 … L=Enj12)
-// Satır 1 : Başlıklar (Enjeksiyon 1 … Enjeksiyon 12)
-// Satır 2-6: O makine için max 5 ölçüm logu
+// CANLI İZLEME — Satır-bazlı izleme tablosu
+// Her form gönderiminde yeni bir satır eklenir.
 //
-// Her hücre 3 satır:
-//   2026-03-30 SABAH | Ali Veli | 17:30
-//   30x40x14 · 320gr · 19sn
-//   100000→103000 (Δ3000) · 🔥40
+// Sütunlar:
+//   A: Ad Soyad  B: Makine  C: Vardiya  D: Tarih  E: Kasa
+//   F: Çevrim(sn)  G: Ağırlık(gr)  H: Üretim  I: Fire
 //
-// Kural:
-//   • Aynı vardiya  → sıradaki boş satıra yaz (max 5)
-//   • 5 satır doldu → en eskiyi sil (FIFO), sona ekle
-//   • Farklı vardiya → sütunu temizle, sıfırdan başla
+// Satır rengi vardiyaya göre:
+//   SABAH → açık sarı (#fef9c3)
+//   AKSAM → açık mavi (#dbeafe)
+//   GECE  → açık mor  (#f3e8ff)
+//
+// Bakım: 200 satırı aşınca en eski 50 satır silinir.
 // ================================================================
 function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, tarih, vardiya, adSoyad) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('Canlı İzleme');
   if (!sheet) return; // Sekme yoksa sessizce geç
 
-  // Başlık satırı yoksa kur
-  if (String(sheet.getRange(1, 1).getValue()).trim() !== 'Enjeksiyon 1') {
+  // Başlık satırı yoksa (veya eski formattaysa) yeniden kur
+  if (String(sheet.getRange(1, 1).getValue()).trim() !== 'Ad Soyad') {
     _setupCanlıBaslik(sheet);
   }
 
-  const m = String(enjNo).match(/(\d+)\s*$/);
-  if (!m) return;
-  const col = parseInt(m[1]);
-  if (col < 1 || col > 12) return;
+  // Vardiya renk haritası
+  const renkMap = { 'SABAH': '#fef9c3', 'AKSAM': '#dbeafe', 'GECE': '#f3e8ff' };
+  const bg = renkMap[vardiya] || '#ffffff';
 
-  const shiftKey  = tarih + ' ' + vardiya;
-  const MAX       = 5;
-  const START_ROW = 2;
+  // Saat damgası (yerel saat)
+  const now = new Date();
+  const saat = Utilities.formatDate(now, Session.getScriptTimeZone(), 'HH:mm');
 
-  // Hücre içeriğini oluştur (3 satır)
-  const content = shiftKey + ' | ' + (adSoyad || '') + '\n'
-    + kasa + ' · ' + agirlik + 'gr · ' + cevrim + 'sn\n'
-    + sayac + ' (Δ' + uretim + ') · 🔥' + fire;
+  // Yeni satır
+  const row = [
+    adSoyad || '',
+    enjNo   || '',
+    vardiya || '',
+    tarih   || '',
+    kasa    || '',
+    cevrim  || '',
+    agirlik || '',
+    uretim  || '',
+    fire    || '0',
+    saat
+  ];
+  sheet.appendRow(row);
 
-  const range = sheet.getRange(START_ROW, col, MAX, 1);
-  const vals  = range.getValues();
-
-  let firstNonEmpty = null;
-  let nextEmptyIdx  = -1;
-
-  for (let i = 0; i < MAX; i++) {
-    const v = String(vals[i][0] || '').trim();
-    if (v !== '') {
-      if (firstNonEmpty === null) firstNonEmpty = v;
-    } else {
-      if (nextEmptyIdx === -1) nextEmptyIdx = i;
-    }
-  }
-
-  const isEmpty   = firstNonEmpty === null;
-  const sameShift = !isEmpty && firstNonEmpty.indexOf(shiftKey) !== -1;
-
-  if (isEmpty || !sameShift) {
-    range.clearContent();
-    sheet.getRange(START_ROW, col).setValue(content);
-  } else if (nextEmptyIdx !== -1) {
-    sheet.getRange(START_ROW + nextEmptyIdx, col).setValue(content);
-  } else {
-    // FIFO: en eskiyi at, sona ekle
-    const yeni = [];
-    for (let i = 1; i < MAX; i++) yeni.push([vals[i][0]]);
-    yeni.push([content]);
-    range.setValues(yeni);
-  }
-
-  range.setWrap(true);
-  range.setVerticalAlignment('top');
+  const lastRow = sheet.getLastRow();
+  const range   = sheet.getRange(lastRow, 1, 1, row.length);
+  range.setBackground(bg);
+  range.setVerticalAlignment('middle');
   range.setFontSize(10);
-  for (let r = START_ROW; r < START_ROW + MAX; r++) {
-    sheet.setRowHeight(r, 72);
+
+  // Operatör adı kalın
+  sheet.getRange(lastRow, 1).setFontWeight('bold');
+
+  // Sayaç başı→biti aynı hücreye alternatif: üretim sütununa Δ ön eki ekle
+  // (sayac parametresi "bas→bit" formatında; sadece uretim yazıyoruz)
+
+  // Bakım: 200 veri satırını aşarsa en eski 50'yi sil
+  const dataRows = lastRow - 1;
+  if (dataRows > 200) {
+    sheet.deleteRows(2, 50);
   }
 }
 
 function _setupCanlıBaslik(sheet) {
-  const basliklar = [];
-  for (let i = 1; i <= 12; i++) basliklar.push('Enjeksiyon ' + i);
-  const h = sheet.getRange(1, 1, 1, 12);
-  h.setValues([basliklar]);
+  sheet.clearContents();
+  sheet.clearFormats();
+  const headers = ['Ad Soyad', 'Makine', 'Vardiya', 'Tarih', 'Kasa', 'Çevrim(sn)', 'Ağırlık(gr)', 'Üretim', 'Fire', 'Saat'];
+  const h = sheet.getRange(1, 1, 1, headers.length);
+  h.setValues([headers]);
   h.setFontWeight('bold');
   h.setBackground('#1e3a8a');
   h.setFontColor('#ffffff');
   h.setHorizontalAlignment('center');
   h.setFontSize(11);
   sheet.setFrozenRows(1);
-  for (let i = 1; i <= 12; i++) sheet.setColumnWidth(i, 210);
+  sheet.setColumnWidth(1, 140);  // Ad Soyad
+  sheet.setColumnWidth(2, 110);  // Makine
+  sheet.setColumnWidth(3, 80);   // Vardiya
+  sheet.setColumnWidth(4, 100);  // Tarih
+  sheet.setColumnWidth(5, 100);  // Kasa
+  sheet.setColumnWidth(6, 90);   // Çevrim(sn)
+  sheet.setColumnWidth(7, 90);   // Ağırlık(gr)
+  sheet.setColumnWidth(8, 80);   // Üretim
+  sheet.setColumnWidth(9, 70);   // Fire
+  sheet.setColumnWidth(10, 70);  // Saat
 }
 
 function jsonp(callback, obj) {
