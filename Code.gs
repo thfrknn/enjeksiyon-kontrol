@@ -1,5 +1,5 @@
 // ================================================================
-// ENJEKSİYON KONTROL — Google Apps Script v11 (Fire Log Entegreli)
+// ENJEKSİYON KONTROL — Google Apps Script v12 (Fire Log Entegreli)
 // CORS düzeltmesi: logFire artık doGet üzerinden JSONP ile çalışır.
 // doPost'ta Content-Type başlığı sorunu nedeniyle no-cors istekler
 // Google Apps Script'e ulaşamıyordu. Tüm okuma+yazma doGet'te.
