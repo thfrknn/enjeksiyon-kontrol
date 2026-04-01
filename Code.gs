@@ -361,19 +361,22 @@ function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, ta
   if (!base) return;
   const targetRow = base + (enjIdx - 1);
 
-  const saat = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm');
+  const guncellemeSaati = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm');
   const bg   = _VARDIYA_BG[vardiya] || '#ffffff';
 
-  // Mevcut satırı oku — aynı tarihse Üretim+Fire biriktirilir
-  // getDisplayValues kullanılır: Sheets '2026-03-31' stringini Date'e çevirir,
-  // getValues() ile Date objesi gelir ve string karşılaştırması başarısız olur.
+  // Vardiya bazlı kümülatif toplama: Mevcut satır aynı vardiya+tarih ise biriktirir
+  // FIX: Aynı vardiya olsa bile GECE (2026-04-01) ile SABAH (2026-03-31) farklı
+  // vardiya başlangıç tarihlerine sahip, bu yüzden doğru karşılaştırma yapılmalı.
+  // Gönderilen 'tarih' zaten vardiyaBaslangicTarih ile hesaplanmışsa sorun yok.
   const existing = sheet.getRange(targetRow, 1, 1, 9).getDisplayValues()[0];
   const mevcutTarih  = String(existing[2] || '').trim();
   const mevcutUretim = parseInt(existing[6]) || 0;
   const mevcutFire   = parseInt(existing[7]) || 0;
 
-  const yeniUretim = (mevcutTarih === tarih) ? (mevcutUretim + (parseInt(uretim) || 0)) : (parseInt(uretim) || 0);
-  const yeniFire   = (mevcutTarih === tarih) ? (mevcutFire   + (parseInt(fire)   || 0)) : (parseInt(fire)   || 0);
+  // Aynı vardiya başlangıç tarihine ait satır mı? (hem tarih hem vardiya eşleşmeli)
+  const ayniBilgi = (mevcutTarih === tarih);
+  const yeniUretim = ayniBilgi ? (mevcutUretim + (parseInt(uretim) || 0)) : (parseInt(uretim) || 0);
+  const yeniFire   = ayniBilgi ? (mevcutFire   + (parseInt(fire)   || 0)) : (parseInt(fire)   || 0);
 
   const range = sheet.getRange(targetRow, 1, 1, 9);
   range.setValues([[
@@ -385,7 +388,7 @@ function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, ta
     agirlik || '',
     yeniUretim,
     yeniFire,
-    saat
+    guncellemeSaati
   ]]);
   range.setBackground(bg);
   range.setVerticalAlignment('middle');
