@@ -40,13 +40,17 @@ function doGet(e) {
     // Geriye dönük uyumluluk: global limit olarak D sütununun ilk geçerli değeri
     const uretimLimiti = Number(limitCol.find(v => Number(v) > 0)) || 0;
 
+    // Kilitli makineleri al
+    const lockedMachines = getLockedMachines(ss);
+
     return jsonp(cb, {
       kasaEbatlari: kasaCol,
       kullanicilar,
       uretimLimiti,
       kasaLimitlari,
       maxFireLimit,
-      serverTime: new Date().getTime()
+      serverTime: new Date().getTime(),
+      lockedMachines
     });
   }
 
@@ -95,12 +99,9 @@ function doGet(e) {
         const f2 = parseInt(vals[i][22]); if (!isNaN(f2)) fireToplam2 += f2;
       }
     }
-    return jsonp(cb, { olcumNo, enj1, kasa1, enj2, kasa2, enjSayisi, sayacBit1, sayacBit2, fireToplam1, fireToplam2 });
+    const lockedMachines = getLockedMachines(ss);
+    return jsonp(cb, { olcumNo, enj1, kasa1, enj2, kasa2, enjSayisi, sayacBit1, sayacBit2, fireToplam1, fireToplam2, lockedMachines });
   }
-
-  // ============================================================
-  // getLastCounter: Makine için son sayaç bitiş değerini getir
-  // ============================================================
   if (e.parameter.action === 'getLastCounter') {
     const enjNo = e.parameter.enj_no;
     const ss    = SpreadsheetApp.getActiveSpreadsheet();
@@ -213,12 +214,13 @@ function doGet(e) {
     const tarih     = e.parameter.tarih    || '';
     const saat      = e.parameter.olcum_saat || '';
     const vardiya   = e.parameter.vardiya   || '';
+    const close     = e.parameter.close === 'true'; // Makine kapatma bayrağı
 
     const vardiyaTarih = vardiyaBaslangicTarih(tarih, saat, vardiya);
 
     const enj2No   = enjSayisi === 2 ? (e.parameter.enj2_no   || '') : '00';
     const kasa2    = enjSayisi === 2 ? (e.parameter.kasa2      || '') : '00';
-    const cevrim2  = enjSayisi === 2 ? (e.parameter.cevrim2    || '') : '00';
+    const cevrim2  = enjSayisi === 2 ? (close ? '0' : (e.parameter.cevrim2    || '')) : '00';
     const agirlik2 = enjSayisi === 2 ? (e.parameter.agirlik2   || '') : '00';
     const bas2     = enjSayisi === 2 ? (e.parameter.sayac_bas2 || '') : '00';
     const bit2     = enjSayisi === 2 ? (e.parameter.sayac_bit2 || '') : '00';
@@ -239,7 +241,7 @@ function doGet(e) {
       // Enjeksiyon 1
       e.parameter.enj1_no    || '',        // H
       e.parameter.kasa1      || '',        // I
-      e.parameter.cevrim1    || '',        // J
+      close ? '0' : (e.parameter.cevrim1    || ''),        // J - Çevrim (kapalıysa 0)
       e.parameter.agirlik1   || '',        // K
       e.parameter.sayac_bas1 || '',        // L
       e.parameter.sayac_bit1 || '',        // M
@@ -262,9 +264,17 @@ function doGet(e) {
 
     // Canlı İzleme güncelle (sütun-bazlı, max 5 log, vardiya bazlı sıfırlama)
     const adSoyad = e.parameter.adsoyad || '';
-    updateCanliIzleme(e.parameter.enj1_no, e.parameter.kasa1, e.parameter.cevrim1, e.parameter.agirlik1, e.parameter.sayac_bas1 + '→' + e.parameter.sayac_bit1, e.parameter.uretim1, e.parameter.fire1, vardiyaTarih, vardiya, adSoyad);
+    updateCanliIzleme(e.parameter.enj1_no, e.parameter.kasa1, close ? '0' : e.parameter.cevrim1, e.parameter.agirlik1, e.parameter.sayac_bas1 + '→' + e.parameter.sayac_bit1, e.parameter.uretim1, e.parameter.fire1, vardiyaTarih, vardiya, adSoyad);
     if (enjSayisi === 2) {
-      updateCanliIzleme(e.parameter.enj2_no, e.parameter.kasa2, e.parameter.cevrim2, e.parameter.agirlik2, e.parameter.sayac_bas2 + '→' + e.parameter.sayac_bit2, e.parameter.uretim2, e.parameter.fire2, vardiyaTarih, vardiya, adSoyad);
+      updateCanliIzleme(e.parameter.enj2_no, e.parameter.kasa2, cevrim2, e.parameter.agirlik2, e.parameter.sayac_bas2 + '→' + e.parameter.sayac_bit2, e.parameter.uretim2, e.parameter.fire2, vardiyaTarih, vardiya, adSoyad);
+    }
+
+    // Makine kapatma işlemi
+    if (close) {
+      lockMachine(ss, e.parameter.enj1_no, vardiyaTarih, vardiya, adSoyad);
+      if (enjSayisi === 2) {
+        lockMachine(ss, e.parameter.enj2_no, vardiyaTarih, vardiya, adSoyad);
+      }
     }
 
     return jsonp(cb, { result: 'ok', olcum: olcumNo });
@@ -456,4 +466,61 @@ function jsonp(callback, obj) {
   const body = callback ? callback + '(' + JSON.stringify(obj) + ')' : JSON.stringify(obj);
   return ContentService.createTextOutput(body)
     .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+}
+
+// ============================================================
+// MACHINE LOCK FUNCTIONS
+// ============================================================
+
+function getLockedMachines(ss) {
+  let lockSheet = ss.getSheetByName('Machine Locks');
+  if (!lockSheet || lockSheet.getLastRow() < 2) return {};
+
+  const vals = lockSheet.getRange(2, 1, lockSheet.getLastRow() - 1, 5).getValues();
+  const locked = {};
+  for (const row of vals) {
+    const machine = String(row[0]).trim();
+    const status = String(row[4]).trim();
+    if (status === 'LOCKED') {
+      locked[machine] = true;
+    }
+  }
+  return locked;
+}
+
+function lockMachine(ss, machineNo, tarih, vardiya, adSoyad) {
+  let lockSheet = ss.getSheetByName('Machine Locks');
+  if (!lockSheet) {
+    lockSheet = ss.insertSheet('Machine Locks');
+    lockSheet.appendRow(['Makine No', 'Tarih', 'Vardiya', 'Operatör', 'Durum']);
+    const header = lockSheet.getRange('A1:E1');
+    header.setFontWeight('bold').setBackground('#dc2626').setFontColor('#ffffff');
+    lockSheet.setFrozenRows(1);
+    lockSheet.setColumnWidth(1, 100);
+    lockSheet.setColumnWidth(2, 100);
+    lockSheet.setColumnWidth(3, 100);
+    lockSheet.setColumnWidth(4, 140);
+    lockSheet.setColumnWidth(5, 100);
+  }
+
+  // Önce bu makinenin mevcut durumunu kontrol et
+  const lastRow = lockSheet.getLastRow();
+  if (lastRow > 1) {
+    const vals = lockSheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    for (let i = 0; i < vals.length; i++) {
+      if (String(vals[i][0]).trim() === String(machineNo).trim()) {
+        // Zaten kilitli, güncelleme yapma
+        return;
+      }
+    }
+  }
+
+  // Yeni kilit ekle
+  lockSheet.appendRow([
+    machineNo,
+    tarih,
+    vardiya,
+    adSoyad,
+    'LOCKED'
+  ]);
 }
