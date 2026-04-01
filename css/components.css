@@ -1,0 +1,241 @@
+/* ── Form Elements ─────────────────────────────────── */
+label {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 7px;
+}
+label .req { color: var(--warn); }
+
+select,
+input[type="number"],
+input[type="time"],
+input[type="date"],
+input[type="password"],
+input[type="text"] {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 17px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  outline: none;
+  transition: border-color .2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'%3E%3Cpath d='M1 1l6 7 6-7' stroke='%235a7080' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 44px;
+}
+
+select:focus, input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+  background: white;
+}
+
+input.error, select.error { border-color: var(--warn) !important; }
+
+.err-msg {
+  font-size: 13px;
+  color: var(--warn);
+  font-weight: 700;
+  margin-top: 4px;
+  display: none;
+  line-height: 1.4;
+}
+.err-msg.show { display: block; }
+
+.ro-field {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 17px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-light);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+}
+.ro-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* ── Buttons ───────────────────────────────────────── */
+.btn {
+  flex: 1;
+  padding: 17px;
+  border-radius: 14px;
+  border: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn:active      { transform: scale(.97); }
+.btn:disabled    { opacity: .4; cursor: not-allowed; transform: none; }
+.btn-back        { background: var(--border); color: var(--text2); flex: 0 0 72px; }
+.btn-next        { background: var(--accent); color: white; }
+.btn-submit      { background: var(--success); color: white; }
+
+.tbtn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text2);
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+}
+.tbtn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.tbtn:active { transform: scale(.96); }
+
+/* ── Counter ───────────────────────────────────────── */
+.counter {
+  display: flex;
+  align-items: stretch;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  background: var(--white);
+}
+.cbtn {
+  width: 60px;
+  background: var(--bg);
+  border: none;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cbtn:active { background: var(--accent-light); }
+.cval {
+  flex: 1;
+  border: none;
+  border-left: 2px solid var(--border);
+  border-right: 2px solid var(--border);
+  background: white;
+  font-size: 26px;
+  font-weight: 800;
+  font-family: 'Nunito', sans-serif;
+  text-align: center;
+  color: var(--text);
+  padding: 10px 0;
+  outline: none;
+}
+
+/* ── Info boxes ────────────────────────────────────── */
+.ibox {
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ibox.blue   { background: var(--accent-light);  border: 1.5px solid var(--accent);  color: var(--accent); }
+.ibox.orange { background: #fffbeb;               border: 1.5px solid #d97706;        color: #b45309; }
+.ibox.green  { background: var(--success-light);  border: 1.5px solid var(--success); color: var(--success); }
+
+/* ── Unit input wrapper ────────────────────────────── */
+.ui           { position: relative; }
+.ui input     { padding-right: 40px; }
+.ub           { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 700; color: var(--text2); pointer-events: none; }
+
+/* ── Result box ────────────────────────────────────── */
+.result-box   { border-radius: 12px; padding: 14px; text-align: center; margin-top: 12px; background: var(--accent-light); border: 2px solid var(--accent); }
+.result-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--accent); }
+.result-val   { font-size: 32px; font-weight: 800; color: var(--accent); line-height: 1.1; margin-top: 4px; }
+
+/* ── Modal ─────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-box {
+  background: white;
+  border-radius: 20px;
+  padding: 28px 24px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  text-align: center;
+}
+.modal-icon  { font-size: 52px; margin-bottom: 10px; }
+.modal-title { font-size: 19px; font-weight: 800; color: #dc2626; margin-bottom: 10px; }
+.modal-body  { font-size: 14px; color: var(--text2); font-weight: 600; line-height: 1.6; margin-bottom: 22px; }
+.modal-body strong { color: var(--text); font-weight: 800; }
+.modal-btns  { display: flex; gap: 10px; }
+.modal-btn-cancel  { flex: 1; padding: 14px; border-radius: 12px; border: 2px solid var(--border); background: white; color: var(--text2); font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; }
+.modal-btn-confirm { flex: 1; padding: 14px; border-radius: 12px; border: none; background: #dc2626; color: white; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; }
+.modal-btn-confirm:active { opacity: .85; }
+.modal-btn-cancel:active  { background: var(--bg); }
+
+/* ── Toast ─────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  padding: 15px 26px;
+  border-radius: 50px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+  z-index: 999;
+  transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+  white-space: nowrap;
+  box-shadow: 0 8px 30px rgba(0,0,0,.2);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.ok   { background: var(--success); color: white; }
+.toast.err  { background: var(--warn); color: white; }
+
+/* ── Loading overlay ───────────────────────────────── */
+.loading      { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.88); z-index: 500; align-items: center; justify-content: center; flex-direction: column; gap: 14px; font-size: 16px; font-weight: 700; color: var(--accent); }
+.loading.show { display: flex; }
+.spinner      { width: 44px; height: 44px; border: 4px solid var(--accent-light); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Skeleton loader ───────────────────────────────── */
+.skeleton {
+  height: 52px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #e8eef4 25%, #f4f8fc 50%, #e8eef4 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
