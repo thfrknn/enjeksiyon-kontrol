@@ -1,148 +1,21 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#16a34a">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Ersan Plastik">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<title>Ersan Plastik</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{
-  --bg:#f0f4f8;--white:#fff;--border:#d1dce8;
-  --text:#1a2332;--text2:#5a7080;
-  --accent:#2563eb;--accent-light:#eff6ff;
-  --success:#16a34a;--success-light:#f0fdf4;
-  --warn:#dc2626;
-  --shadow:0 2px 12px rgba(0,0,0,0.08);--radius:16px;
-}
-body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh;padding-bottom:40px}
-header{background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);color:white;padding:18px 20px 14px;text-align:center}
-header h1{font-size:21px;font-weight:800}
-header p{font-size:13px;opacity:.85;margin-top:2px}
-#header-date{font-size:12px;opacity:.7;margin-top:5px;font-weight:600}
-.steps{display:flex;background:white;border-bottom:2px solid var(--border)}
-.step{flex:1;padding:12px 4px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--text2);border-bottom:3px solid transparent;text-transform:uppercase}
-.step .sn{width:24px;height:24px;border-radius:50%;background:var(--border);color:var(--text2);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 3px}
-.step.active{color:var(--accent);border-bottom-color:var(--accent)}
-.step.active .sn{background:var(--accent);color:white}
-.step.done{color:var(--success)}
-.step.done .sn{background:var(--success);color:white}
-.page{display:none;padding:16px}
-.page.active{display:block}
-.section{background:var(--white);border-radius:var(--radius);padding:20px;margin-bottom:14px;box-shadow:var(--shadow);border:1px solid var(--border)}
-.stitle{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.stitle span{font-size:16px}
-.enj-block{border:2px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;background:var(--bg)}
-.enj-block:last-child{margin-bottom:0}
-.enj-block-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:6px}
-.field{margin-bottom:16px}
-.field:last-child{margin-bottom:0}
-label{display:block;font-size:15px;font-weight:700;color:var(--text);margin-bottom:7px}
-label .req{color:var(--warn)}
-select,input[type="number"],input[type="time"],input[type="date"],input[type="password"],input[type="text"]{
-  width:100%;padding:14px 16px;font-size:17px;font-family:'Nunito',sans-serif;font-weight:600;
-  color:var(--text);background:var(--bg);border:2px solid var(--border);border-radius:12px;
-  outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'%3E%3Cpath d='M1 1l6 7 6-7' stroke='%235a7080' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;padding-right:44px}
-select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(37,99,235,.12);background:white}
-input.error,select.error{border-color:var(--warn)!important}
-.err-msg{font-size:13px;color:var(--warn);font-weight:700;margin-top:4px;display:none;line-height:1.4}
-.err-msg.show{display:block}
-.ro-field{width:100%;padding:14px 16px;font-size:17px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--accent);background:var(--accent-light);border:2px solid var(--accent);border-radius:12px}
-.ro-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
-.vardiya-row{display:flex;gap:8px}
-.vbtn{flex:1;padding:12px 6px;border-radius:12px;border:2px solid var(--border);background:var(--bg);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .15s}
-.vbtn .vi{font-size:20px}
-.vbtn .vt{font-size:10px;opacity:.8}
-.vbtn:active{transform:scale(.95)}
-.vbtn:disabled{opacity:.35;cursor:not-allowed;transform:none}
-.vbtn.sel-sabah{border-color:#d97706;background:#fffbeb;color:#d97706}
-.vbtn.sel-aksam{border-color:#0891b2;background:#ecfeff;color:#0891b2}
-.vbtn.sel-gece{border-color:#7c3aed;background:#f5f3ff;color:#7c3aed}
-.toggle-row{display:flex;gap:10px;margin-bottom:4px}
-.tbtn{flex:1;padding:14px;border-radius:12px;border:2px solid var(--border);background:var(--bg);font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;color:var(--text2);cursor:pointer;text-align:center;transition:all .15s}
-.tbtn.active{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
-.tbtn:active{transform:scale(.96)}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.result-box{border-radius:12px;padding:14px;text-align:center;margin-top:12px;background:var(--accent-light);border:2px solid var(--accent)}
-.result-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent)}
-.result-val{font-size:32px;font-weight:800;color:var(--accent);line-height:1.1;margin-top:4px}
-.counter{display:flex;align-items:stretch;border-radius:12px;overflow:hidden;border:2px solid var(--border);background:var(--white)}
-.cbtn{width:60px;background:var(--bg);border:none;font-size:28px;font-weight:700;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center}
-.cbtn:active{background:var(--accent-light)}
-.cval{flex:1;border:none;border-left:2px solid var(--border);border-right:2px solid var(--border);background:white;font-size:26px;font-weight:800;font-family:'Nunito',sans-serif;text-align:center;color:var(--text);padding:10px 0;outline:none}
-.ui{position:relative}
-.ui input{padding-right:40px}
-.ub{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--text2);pointer-events:none}
-.ibox{border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
-.ibox.blue{background:var(--accent-light);border:1.5px solid var(--accent);color:var(--accent)}
-.ibox.orange{background:#fffbeb;border:1.5px solid #d97706;color:#b45309}
-.ibox.green{background:var(--success-light);border:1.5px solid var(--success);color:var(--success)}
-.onay-card{background:var(--white);border-radius:var(--radius);padding:24px;margin-bottom:14px;box-shadow:var(--shadow);border:2px solid var(--success);text-align:center}
-.onay-icon{font-size:48px;margin-bottom:10px}
-.onay-title{font-size:18px;font-weight:800;color:var(--success);margin-bottom:6px}
-.onay-sub{font-size:14px;color:var(--text2);margin-bottom:18px}
-.onay-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
-.ostat{background:var(--bg);border-radius:12px;padding:14px;border:1.5px solid var(--border)}
-.ostat-val{font-size:26px;font-weight:800;color:var(--text);margin-bottom:2px}
-.ostat-lbl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
-.nav-row{display:flex;gap:12px;margin-top:4px}
-.btn{flex:1;padding:17px;border-radius:14px;border:none;font-family:'Nunito',sans-serif;font-size:17px;font-weight:800;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
-.btn:active{transform:scale(.97)}
-.btn-back{background:var(--border);color:var(--text2);flex:0 0 72px}
-.btn-next{background:var(--accent);color:white}
-.btn-submit{background:var(--success);color:white}
-.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.sitem{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
-.sitem:last-child{border-bottom:none}
-.skey{color:var(--text2);font-weight:600;flex-shrink:0;margin-right:12px}
-.sval{font-weight:800;color:var(--text);text-align:right}
-.sdivider{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--accent);padding:10px 0 5px;border-bottom:2px solid var(--accent-light);margin-bottom:4px}
-.enj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.enj-gbtn{padding:12px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;text-align:center;transition:all .15s;line-height:1.2}
-.enj-gbtn.sel{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
-.enj-gbtn:active{transform:scale(.95)}
-.enj-gbtn:disabled{opacity:.35;cursor:not-allowed;transform:none}
-.enj-grid.error{outline:2px solid var(--warn);outline-offset:2px;border-radius:10px}
-.draft-banner{background:#fff7ed;border:2px solid #f97316;border-radius:var(--radius);padding:16px 18px;margin:16px 16px 0;display:none;flex-direction:column;gap:10px}
-.draft-banner-top{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:800;color:#c2410c}
-.draft-banner-top span{font-size:22px}
-.draft-banner-sub{font-size:13px;color:#92400e;font-weight:600}
-.draft-banner-btns{display:flex;gap:8px}
-.draft-btn-devam{flex:1;padding:11px;border-radius:10px;border:none;background:#f97316;color:white;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer}
-.draft-btn-sil{flex:0 0 auto;padding:11px 16px;border-radius:10px;border:2px solid #fed7aa;background:white;color:#c2410c;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
-.remember-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:var(--accent-light);border-radius:10px;border:1.5px solid var(--accent)}
-.remember-row input[type="checkbox"]{width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
-.remember-row label{font-size:14px;font-weight:700;color:var(--accent);cursor:pointer;margin:0}
-.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(120px);padding:15px 26px;border-radius:50px;font-size:15px;font-weight:700;font-family:'Nunito',sans-serif;z-index:999;transition:transform .35s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;box-shadow:0 8px 30px rgba(0,0,0,.2)}
-.toast.show{transform:translateX(-50%) translateY(0)}
-.toast.ok{background:var(--success);color:white}
-.toast.err{background:var(--warn);color:white}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal-box{background:white;border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
-.modal-icon{font-size:52px;margin-bottom:10px}
-.modal-title{font-size:19px;font-weight:800;color:#dc2626;margin-bottom:10px}
-.modal-body{font-size:14px;color:var(--text2);font-weight:600;line-height:1.6;margin-bottom:22px}
-.modal-body strong{color:var(--text);font-weight:800}
-.modal-btns{display:flex;gap:10px}
-.modal-btn-cancel{flex:1;padding:14px;border-radius:12px;border:2px solid var(--border);background:white;color:var(--text2);font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;cursor:pointer}
-.modal-btn-confirm{flex:1;padding:14px;border-radius:12px;border:none;background:#dc2626;color:white;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer}
-.modal-btn-confirm:active{opacity:.85}
-.modal-btn-cancel:active{background:var(--bg)}
-.loading{display:none;position:fixed;inset:0;background:rgba(255,255,255,.88);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-size:16px;font-weight:700;color:var(--accent)}
-.loading.show{display:flex}
-.spinner{width:44px;height:44px;border:4px solid var(--accent-light);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.skeleton{height:52px;border-radius:12px;background:linear-gradient(90deg,#e8eef4 25%,#f4f8fc 50%,#e8eef4 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}
-@keyframes shimmer{to{background-position:-200% 0}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#16a34a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Ersan Plastik">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <title>Ersan Plastik</title>
+
+  <!-- Stiller -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
@@ -152,14 +25,19 @@ input.error,select.error{border-color:var(--warn)!important}
   <div id="header-date"></div>
 </header>
 
+<!-- ── Adım göstergesi ── -->
 <div class="steps">
   <div class="step active" id="step-1"><div class="sn">1</div>Giriş</div>
-  <div class="step" id="step-2"><div class="sn">2</div>Ölçüm</div>
-  <div class="step" id="step-3"><div class="sn">3</div>Özet</div>
+  <div class="step"        id="step-2"><div class="sn">2</div>Ölçüm</div>
+  <div class="step"        id="step-3"><div class="sn">3</div>Özet</div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     SAYFA 1 — Kimlik & Vardiya
+══════════════════════════════════════════════════ -->
 <div class="page active" id="page-1">
 
+  <!-- Yarım kalan giriş banneri -->
   <div class="draft-banner" id="draft-banner">
     <div class="draft-banner-top"><span>📋</span> Yarım kalan giriş var</div>
     <div class="draft-banner-sub" id="draft-banner-sub">Yükleniyor...</div>
@@ -173,12 +51,17 @@ input.error,select.error{border-color:var(--warn)!important}
 
   <div class="section">
     <div class="stitle"><span>👤</span> Kimlik Doğrulama</div>
+
     <div class="field">
-      <div id="hosgeldin" class="ibox green" style="display:none;margin-bottom:10px"><span>👋</span><span id="hosgeldin-text"></span></div>
+      <div id="hosgeldin" class="ibox green" style="display:none;margin-bottom:10px">
+        <span>👋</span><span id="hosgeldin-text"></span>
+      </div>
       <label>Kullanıcı ID <span class="req">*</span></label>
-      <input type="text" id="kullanici_id" placeholder="ID numaranızı girin" inputmode="numeric" maxlength="3" oninput="onIdChange()">
+      <input type="text" id="kullanici_id" placeholder="ID numaranızı girin"
+             inputmode="numeric" maxlength="3" oninput="onIdChange()">
       <div class="err-msg" id="err-ad">Geçersiz ID numarası</div>
     </div>
+
     <div class="field" id="sifre-field" style="display:none">
       <label>Şifre <span class="req">*</span></label>
       <input type="password" id="sifre" placeholder="••••" inputmode="numeric" oninput="clearSifreErr()">
@@ -188,23 +71,33 @@ input.error,select.error{border-color:var(--warn)!important}
         <label for="hatirla">Şifremi hatırla</label>
       </div>
     </div>
+
     <div class="field">
       <label>Vardiya <span class="req">*</span></label>
       <div class="vardiya-row">
-        <button class="vbtn" id="v-sabah" onclick="setVardiya('SABAH')"><span class="vi">☀️</span>Sabah<span class="vt">09:00–17:00</span></button>
-        <button class="vbtn" id="v-aksam" onclick="setVardiya('AKSAM')"><span class="vi">🌆</span>Akşam<span class="vt">17:00–01:00</span></button>
-        <button class="vbtn" id="v-gece"  onclick="setVardiya('GECE')"><span class="vi">🌙</span>Gece<span class="vt">01:00–09:00</span></button>
+        <button class="vbtn" id="v-sabah" onclick="setVardiya('SABAH')">
+          <span class="vi">☀️</span>Sabah<span class="vt">09:00–17:00</span>
+        </button>
+        <button class="vbtn" id="v-aksam" onclick="setVardiya('AKSAM')">
+          <span class="vi">🌆</span>Akşam<span class="vt">17:00–01:00</span>
+        </button>
+        <button class="vbtn" id="v-gece"  onclick="setVardiya('GECE')">
+          <span class="vi">🌙</span>Gece<span class="vt">01:00–09:00</span>
+        </button>
       </div>
       <div class="err-msg" id="err-vardiya">Lütfen vardiya seçin</div>
     </div>
+
     <div class="row2">
       <div class="field">
         <label>Tarih</label>
-        <input type="text" id="tarih" readonly style="background:var(--accent-light);border-color:var(--accent);color:var(--accent);pointer-events:none;user-select:none;-webkit-user-select:none">
+        <input type="text" id="tarih" readonly
+               style="background:var(--accent-light);border-color:var(--accent);color:var(--accent);pointer-events:none;user-select:none;-webkit-user-select:none">
       </div>
       <div class="field">
         <label>Ölçüm Saati</label>
-        <input type="time" id="olcum_saat" readonly style="background:var(--accent-light);border-color:var(--accent);color:var(--accent)">
+        <input type="time" id="olcum_saat" readonly
+               style="background:var(--accent-light);border-color:var(--accent);color:var(--accent)">
       </div>
     </div>
   </div>
@@ -214,8 +107,12 @@ input.error,select.error{border-color:var(--warn)!important}
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     SAYFA 2 — Enjeksiyon & Ölçümler
+══════════════════════════════════════════════════ -->
 <div class="page" id="page-2">
 
+  <!-- Enjeksiyon sayısı -->
   <div class="section">
     <div class="stitle"><span>🏭</span> Kaç Enjeksiyon ile Çalışıyorsunuz?</div>
     <div class="toggle-row" id="enj-toggle-row">
@@ -224,6 +121,7 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
   </div>
 
+  <!-- ── Enjeksiyon 1 Bilgileri ── -->
   <div class="section">
     <div class="stitle"><span>1️⃣</span> <span id="enj1-title">Enjeksiyon Bilgileri</span></div>
 
@@ -263,59 +161,83 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
   </div>
 
+  <!-- ── Enjeksiyon 1 Ölçümler ── -->
   <div class="section">
-    <div class="stitle"><span>1️⃣</span> <span id="olcum-enj1-title">Enjeksiyon 1 — Ölçümler</span></div>
+    <div class="stitle"><span>1️⃣</span> <span id="olcum-enj1-title">Ölçümler</span></div>
 
     <div class="field">
       <label>Çevrim Süresi <span class="req">*</span></label>
-      <div class="ui"><input type="number" id="cevrim1" placeholder="0" min="0" inputmode="numeric"><span class="ub">sn</span></div>
+      <div class="ui">
+        <input type="number" id="cevrim1" placeholder="0" min="0" inputmode="numeric">
+        <span class="ub">sn</span>
+      </div>
       <div class="err-msg" id="err-cevrim1">Gerekli</div>
     </div>
+
     <div class="field">
       <label>Kasa Ağırlığı <span class="req">*</span></label>
-      <div class="ui"><input type="number" id="agirlik1" placeholder="0.0" min="0" step="0.1" inputmode="decimal" oninput="checkKasaAgirlik(1)"><span class="ub">gr</span></div>
+      <div class="ui">
+        <input type="number" id="agirlik1" placeholder="0.0" min="0" step="0.1"
+               inputmode="decimal" oninput="checkKasaAgirlik(1)">
+        <span class="ub">gr</span>
+      </div>
       <div class="err-msg" id="err-agirlik1">Gerekli</div>
     </div>
+
     <div class="row2">
       <div class="field">
         <label id="lbl-bas1">Sayaç Başlama <span class="req">*</span></label>
-        <input type="number" id="sayac_bas1" placeholder="0" style="font-size:18px;font-weight:800" oninput="calcUretim(1)">
+        <input type="number" id="sayac_bas1" placeholder="0"
+               style="font-size:18px;font-weight:800" oninput="calcUretim(1)">
         <div class="err-msg" id="err-bas1">Gerekli</div>
       </div>
       <div class="field">
         <label>Sayaç Bitiş <span class="req">*</span></label>
-        <input type="number" id="sayac_bit1" placeholder="0" style="font-size:18px;font-weight:800" oninput="calcUretim(1)">
+        <input type="number" id="sayac_bit1" placeholder="0"
+               style="font-size:18px;font-weight:800" oninput="calcUretim(1)">
         <div class="err-msg" id="err-bit1">Gerekli</div>
       </div>
     </div>
+
     <div class="result-box" id="uretim-box1">
       <div class="result-label" id="result-label1">🏭 Üretim Adedi</div>
       <div class="result-val"   id="result-val1">—</div>
     </div>
     <div class="ibox orange" id="limit-warn1" style="display:none">⚠️ Üretim limiti aşıldı!</div>
-    
-    <div class="field" style="margin-top:14px; background:var(--bg); padding:14px; border-radius:12px; border:2px solid var(--border);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <label style="margin:0;">🔥 Anında Fire Ekle</label>
-        <div id="fire-toplam-box1" style="display:none; font-size:12px; font-weight:800; color:var(--warn); background:#fef2f2; padding:4px 8px; border-radius:8px; border:1px solid #fecaca;">
-          Kümülatif Toplam: <span id="fire-toplam1" style="font-size:14px;">0</span>
+
+    <!-- Fire girişi — Enj 1 -->
+    <div class="field" style="margin-top:14px;background:var(--bg);padding:14px;border-radius:12px;border:2px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <label style="margin:0">🔥 Anında Fire Ekle</label>
+        <div id="fire-toplam-box1" style="display:none;font-size:12px;font-weight:800;color:var(--warn);background:#fef2f2;padding:4px 8px;border-radius:8px;border:1px solid #fecaca">
+          Kümülatif Toplam: <span id="fire-toplam1" style="font-size:14px">0</span>
         </div>
       </div>
       <div class="counter" id="fire-counter1">
-        <button class="cbtn" onmousedown="startFireAdj(1,-1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()" ontouchstart="startFireAdj(1,-1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">−</button>
+        <button class="cbtn"
+          onmousedown="startFireAdj(1,-1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()"
+          ontouchstart="startFireAdj(1,-1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">−</button>
         <input class="cval" type="number" id="fire1" value="0" min="0" inputmode="numeric" oninput="clampFire(1)">
-        <button class="cbtn" onmousedown="startFireAdj(1,1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()" ontouchstart="startFireAdj(1,1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">+</button>
+        <button class="cbtn"
+          onmousedown="startFireAdj(1,1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()"
+          ontouchstart="startFireAdj(1,1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">+</button>
       </div>
-      <div class="err-msg" id="err-fire1" style="text-align:center; font-size:13px; margin-top:8px;"></div>
-      <button class="btn btn-submit" id="btn-fire-ekle1" onclick="promptInstantFire(1)" style="width:100%; margin-top:10px; padding:12px; font-size:15px; background:#ea580c; border:none;">➕ Fire Ekle</button>
-      <div class="ibox orange" id="fire-lock-msg1" style="display:none; margin-top:10px; margin-bottom:0;">🔒 Fire <span id="fire-lock-cd1">--:--</span> sonra eklenebilir</div>
-      <div id="fire-history1" style="display:none; margin-top:14px; border-top:1px solid var(--border); padding-top:10px;">
-  <div style="font-size:11px; font-weight:800; color:var(--text2); margin-bottom:6px;">📋 BUGÜNKÜ GİRİŞLER</div>
-  <div id="fire-history-list1"></div>
-</div>
+      <div class="err-msg" id="err-fire1" style="text-align:center;font-size:13px;margin-top:8px"></div>
+      <button class="btn btn-submit" id="btn-fire-ekle1" onclick="promptInstantFire(1)"
+              style="width:100%;margin-top:10px;padding:12px;font-size:15px;background:#ea580c;border:none">
+        ➕ Fire Ekle
+      </button>
+      <div class="ibox orange" id="fire-lock-msg1" style="display:none;margin-top:10px;margin-bottom:0">
+        🔒 Fire <span id="fire-lock-cd1">--:--</span> sonra eklenebilir
+      </div>
+      <div id="fire-history1" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:10px">
+        <div style="font-size:11px;font-weight:800;color:var(--text2);margin-bottom:6px">📋 BUGÜNKÜ GİRİŞLER</div>
+        <div id="fire-history-list1"></div>
+      </div>
     </div>
   </div>
 
+  <!-- ── Enjeksiyon 2 Bilgileri ── -->
   <div class="section" id="enj2-section" style="display:none">
     <div class="stitle"><span>2️⃣</span> 2. Enjeksiyon Bilgileri</div>
 
@@ -354,56 +276,79 @@ input.error,select.error{border-color:var(--warn)!important}
     </div>
   </div>
 
+  <!-- ── Enjeksiyon 2 Ölçümler ── -->
   <div class="section" id="olcum-enj2-section" style="display:none">
     <div class="stitle"><span>2️⃣</span> <span id="olcum-enj2-title">Enjeksiyon 2 — Ölçümler</span></div>
 
     <div class="field">
       <label>Çevrim Süresi <span class="req">*</span></label>
-      <div class="ui"><input type="number" id="cevrim2" placeholder="0" min="0" inputmode="numeric"><span class="ub">sn</span></div>
+      <div class="ui">
+        <input type="number" id="cevrim2" placeholder="0" min="0" inputmode="numeric">
+        <span class="ub">sn</span>
+      </div>
       <div class="err-msg" id="err-cevrim2">Gerekli</div>
     </div>
+
     <div class="field">
       <label>Kasa Ağırlığı <span class="req">*</span></label>
-      <div class="ui"><input type="number" id="agirlik2" placeholder="0.0" min="0" step="0.1" inputmode="decimal" oninput="checkKasaAgirlik(2)"><span class="ub">gr</span></div>
+      <div class="ui">
+        <input type="number" id="agirlik2" placeholder="0.0" min="0" step="0.1"
+               inputmode="decimal" oninput="checkKasaAgirlik(2)">
+        <span class="ub">gr</span>
+      </div>
       <div class="err-msg" id="err-agirlik2">Gerekli</div>
     </div>
+
     <div class="row2">
       <div class="field">
         <label id="lbl-bas2">Sayaç Başlama <span class="req">*</span></label>
-        <input type="number" id="sayac_bas2" placeholder="0" style="font-size:18px;font-weight:800" oninput="calcUretim(2)">
+        <input type="number" id="sayac_bas2" placeholder="0"
+               style="font-size:18px;font-weight:800" oninput="calcUretim(2)">
         <div class="err-msg" id="err-bas2">Gerekli</div>
       </div>
       <div class="field">
         <label>Sayaç Bitiş <span class="req">*</span></label>
-        <input type="number" id="sayac_bit2" placeholder="0" style="font-size:18px;font-weight:800" oninput="calcUretim(2)">
+        <input type="number" id="sayac_bit2" placeholder="0"
+               style="font-size:18px;font-weight:800" oninput="calcUretim(2)">
         <div class="err-msg" id="err-bit2">Gerekli</div>
       </div>
     </div>
+
     <div class="result-box" id="uretim-box2">
       <div class="result-label" id="result-label2">🏭 Üretim Adedi</div>
       <div class="result-val"   id="result-val2">—</div>
     </div>
     <div class="ibox orange" id="limit-warn2" style="display:none">⚠️ Üretim limiti aşıldı!</div>
-    
-    <div class="field" style="margin-top:14px; background:var(--bg); padding:14px; border-radius:12px; border:2px solid var(--border);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <label style="margin:0;">🔥 Anında Fire Ekle</label>
-        <div id="fire-toplam-box2" style="display:none; font-size:12px; font-weight:800; color:var(--warn); background:#fef2f2; padding:4px 8px; border-radius:8px; border:1px solid #fecaca;">
-          Kümülatif Toplam: <span id="fire-toplam2" style="font-size:14px;">0</span>
+
+    <!-- Fire girişi — Enj 2 -->
+    <div class="field" style="margin-top:14px;background:var(--bg);padding:14px;border-radius:12px;border:2px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <label style="margin:0">🔥 Anında Fire Ekle</label>
+        <div id="fire-toplam-box2" style="display:none;font-size:12px;font-weight:800;color:var(--warn);background:#fef2f2;padding:4px 8px;border-radius:8px;border:1px solid #fecaca">
+          Kümülatif Toplam: <span id="fire-toplam2" style="font-size:14px">0</span>
         </div>
       </div>
       <div class="counter" id="fire-counter2">
-        <button class="cbtn" onmousedown="startFireAdj(2,-1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()" ontouchstart="startFireAdj(2,-1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">−</button>
+        <button class="cbtn"
+          onmousedown="startFireAdj(2,-1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()"
+          ontouchstart="startFireAdj(2,-1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">−</button>
         <input class="cval" type="number" id="fire2" value="0" min="0" inputmode="numeric" oninput="clampFire(2)">
-        <button class="cbtn" onmousedown="startFireAdj(2,1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()" ontouchstart="startFireAdj(2,1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">+</button>
+        <button class="cbtn"
+          onmousedown="startFireAdj(2,1)" onmouseup="stopFireAdj()" onmouseleave="stopFireAdj()"
+          ontouchstart="startFireAdj(2,1);event.preventDefault()" ontouchend="stopFireAdj()" ontouchcancel="stopFireAdj()">+</button>
       </div>
-      <div class="err-msg" id="err-fire2" style="text-align:center; font-size:13px; margin-top:8px;"></div>
-      <button class="btn btn-submit" id="btn-fire-ekle2" onclick="promptInstantFire(2)" style="width:100%; margin-top:10px; padding:12px; font-size:15px; background:#ea580c; border:none;">➕ Fire Ekle</button>
-      <div class="ibox orange" id="fire-lock-msg2" style="display:none; margin-top:10px; margin-bottom:0;">🔒 Fire <span id="fire-lock-cd2">--:--</span> sonra eklenebilir</div>
-      <div id="fire-history2" style="display:none; margin-top:14px; border-top:1px solid var(--border); padding-top:10px;">
-  <div style="font-size:11px; font-weight:800; color:var(--text2); margin-bottom:6px;">📋 BUGÜNKÜ GİRİŞLER</div>
-  <div id="fire-history-list2"></div>
-</div>
+      <div class="err-msg" id="err-fire2" style="text-align:center;font-size:13px;margin-top:8px"></div>
+      <button class="btn btn-submit" id="btn-fire-ekle2" onclick="promptInstantFire(2)"
+              style="width:100%;margin-top:10px;padding:12px;font-size:15px;background:#ea580c;border:none">
+        ➕ Fire Ekle
+      </button>
+      <div class="ibox orange" id="fire-lock-msg2" style="display:none;margin-top:10px;margin-bottom:0">
+        🔒 Fire <span id="fire-lock-cd2">--:--</span> sonra eklenebilir
+      </div>
+      <div id="fire-history2" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:10px">
+        <div style="font-size:11px;font-weight:800;color:var(--text2);margin-bottom:6px">📋 BUGÜNKÜ GİRİŞLER</div>
+        <div id="fire-history-list2"></div>
+      </div>
     </div>
   </div>
 
@@ -413,19 +358,24 @@ input.error,select.error{border-color:var(--warn)!important}
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     SAYFA 3 — Özet & Gönder
+══════════════════════════════════════════════════ -->
 <div class="page" id="page-3">
 
+  <!-- Normal özet (1. ve 2. ölçüm) -->
   <div id="normal-ozet">
     <div class="section">
       <div class="stitle"><span>✅</span> Özet — Kontrol Et</div>
       <div id="summary-body"></div>
     </div>
     <div class="nav-row">
-      <button class="btn btn-back" onclick="goStep(2)">←</button>
+      <button class="btn btn-back"   onclick="goStep(2)">←</button>
       <button class="btn btn-submit" id="submit-btn" onclick="onGonderClick(false)">📤 Gönder</button>
     </div>
   </div>
 
+  <!-- Onay özeti (3. ölçüm — vardiya sonu) -->
   <div id="onay-ozet" style="display:none">
     <div class="onay-card">
       <div class="onay-icon">🏁</div>
@@ -442,1269 +392,58 @@ input.error,select.error{border-color:var(--warn)!important}
       <button class="btn" style="background:var(--border);color:var(--text2);padding:14px" onclick="goStep(2)">← Düzelt</button>
     </div>
   </div>
-
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     MODALLER
+══════════════════════════════════════════════════ -->
+
+<!-- Üretim limit aşımı onayı -->
 <div class="modal-overlay" id="limit-modal" style="display:none">
   <div class="modal-box">
     <div class="modal-icon">⚠️</div>
     <div class="modal-title">Üretim Limiti Aşıldı!</div>
     <div class="modal-body" id="limit-modal-body"></div>
     <div class="modal-btns">
-      <button class="modal-btn-cancel" onclick="closeLimitModal()">İptal</button>
+      <button class="modal-btn-cancel"  onclick="closeLimitModal()">İptal</button>
       <button class="modal-btn-confirm" onclick="confirmLimitAndSubmit()">Evet, Gönder</button>
     </div>
   </div>
 </div>
 
+<!-- Fire onayı -->
 <div class="modal-overlay" id="fire-modal" style="display:none">
   <div class="modal-box">
-    <div class="modal-icon" style="font-size:52px; margin-bottom:10px;">🔥</div>
-    <div class="modal-title" style="color:#ea580c;">Anında Fire Kaydı</div>
+    <div class="modal-icon" style="font-size:52px;margin-bottom:10px">🔥</div>
+    <div class="modal-title" style="color:#ea580c">Anında Fire Kaydı</div>
     <div class="modal-body" id="fire-modal-body"></div>
     <div class="modal-btns">
-      <button class="modal-btn-cancel" onclick="closeFireModal()">İptal</button>
-      <button class="modal-btn-confirm" style="background:#ea580c; border:none;" onclick="confirmInstantFire()">Evet, Kaydet</button>
+      <button class="modal-btn-cancel"  onclick="closeFireModal()">İptal</button>
+      <button class="modal-btn-confirm" style="background:#ea580c;border:none" onclick="confirmInstantFire()">Evet, Kaydet</button>
     </div>
   </div>
 </div>
 
-<div class="loading" id="loading"><div class="spinner"></div><span id="load-text">Kaydediliyor...</span></div>
+<!-- Yükleniyor ekranı -->
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <span id="load-text">Kaydediliyor...</span>
+</div>
+
+<!-- Toast bildirimi -->
 <div class="toast" id="toast"></div>
 
-<script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_XncWVGH4JG5okF0CP71PJWWtyw6MSUcxriwH9qtcYMreKj12OpKdWON6HHoBEwVFYQ/exec';
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT — yükleme sırası önemli
+══════════════════════════════════════════════════ -->
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/vardiya.js"></script>
+<script src="js/fire.js"></script>
+<script src="js/draft.js"></script>
+<script src="js/api.js"></script>
+<script src="js/form.js"></script>
+<script src="js/app.js"></script>
 
-var vardiya = null, currentStep = 1, olcumNo = 1, enjSayisi = 1;
-var enj1Kilitli = false, enj2Kilitli = false;
-var kullanicilar = {}, uretimLimiti = 0, kasaLimitlari = {}, _adSoyad = '';
-var maxFireLimit = 50; // Google Sheets'ten güncellenecek varsayılan değer
-var _timeOffset = 0, _t0 = 0;
-var _fireAdjTimer = null, _fireAdjInterval = null;
-var _pendingFire = null; // Anlık fire kaydı için geçici nesne
-
-window.onload = async function() {
-  const now = new Date();
-  document.getElementById('header-date').textContent =
-    now.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  document.getElementById('tarih').value = now.toISOString().split('T')[0];
-  tickClock(); setInterval(tickClock, 10000);
-  setInterval(saveDraft, 5000); 
-  setInterval(updateVardiyaButtons, 30000); 
-  setInterval(updateFireLockDisplay, 1000); 
-  await loadLists();
-  const synced = new Date(Date.now() + _timeOffset);
-  document.getElementById('tarih').value = synced.toISOString().split('T')[0];
-  tickClock();
-  updateVardiyaButtons(); 
-  checkAndShowDraft();
-  garbageCollector(); // Sayfa yüklenmesinde çalıştır
-  setInterval(garbageCollector, 5 * 60 * 1000); // 5 dakikada bir
-};
-
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') saveDraft(); });
-window.addEventListener('pagehide', saveDraft);
-
-function garbageCollector() {
-  const now = new Date(Date.now() + _timeOffset);
-  const currentDate = now.toISOString().split('T')[0];
-  const currentVardiya = vardiya;
-  const keysToRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key.startsWith('fireLog_') || key.startsWith('fpUnlock_')) {
-      const parts = key.split('_');
-      if (parts.length >= 3) {
-        const keyDate = parts[1];
-        const keyVardiya = parts[2];
-        if (keyDate !== currentDate || keyVardiya !== currentVardiya) {
-          keysToRemove.push(key);
-        }
-      }
-    }
-  }
-  keysToRemove.forEach(key => localStorage.removeItem(key));
-}
-
-function saveDraft() {
-  if(!document.getElementById('kullanici_id').value) return;
-  const d = {
-    ts: Date.now(),
-    kullanici_id: document.getElementById('kullanici_id').value,
-    adSoyad:    _adSoyad,
-    vardiya:    vardiya,
-    tarih:      document.getElementById('tarih').value,
-    enjSayisi:  enjSayisi,
-    step:       currentStep,
-    enj1_no:    document.getElementById('enj1_no').value,
-    kasa1:      document.getElementById('kasa1').value,
-    enj2_no:    document.getElementById('enj2_no').value,
-    kasa2:      document.getElementById('kasa2').value,
-    cevrim1:    document.getElementById('cevrim1').value,
-    agirlik1:   document.getElementById('agirlik1').value,
-    sayac_bas1: document.getElementById('sayac_bas1').value,
-    sayac_bit1: document.getElementById('sayac_bit1').value,
-    cevrim2:    document.getElementById('cevrim2').value,
-    agirlik2:   document.getElementById('agirlik2').value,
-    sayac_bas2: document.getElementById('sayac_bas2').value,
-    sayac_bit2: document.getElementById('sayac_bit2').value,
-  };
-  try { localStorage.setItem('enj_draft', JSON.stringify(d)); } catch(e) {}
-}
-
-function checkAndShowDraft() {
-  try {
-    const raw = localStorage.getItem('enj_draft');
-    if(!raw) return;
-    const d = JSON.parse(raw);
-    if(!d.kullanici_id && !d.adsoyad) return;
-
-    // Vardiya bitiş saatini hesapla; + 15 dk geçmişse draft'ı sil
-    const expiry = _draftExpiry(d.ts, d.vardiya);
-    if(expiry && (Date.now() + _timeOffset) > expiry + 15 * 60 * 1000) {
-      localStorage.removeItem('enj_draft');
-      return;
-    }
-
-    const displayName = d.adSoyad || d.kullanici_id || d.adsoyad;
-    const mins = Math.round((Date.now() - d.ts) / 60000);
-    const zaman = mins < 1 ? 'az önce' : mins < 60 ? mins+' dakika önce' : Math.round(mins/60)+' saat önce';
-    const adim = d.step===2 ? '(Ölçüm sayfasında)' : d.step===3 ? '(Özet sayfasında)' : '';
-    document.getElementById('draft-banner-sub').textContent =
-      displayName + ' — ' + (d.vardiya||'') + ' vardiyası — ' + zaman + ' ' + adim;
-    document.getElementById('draft-banner').style.display = 'flex';
-  } catch(e) { localStorage.removeItem('enj_draft'); }
-}
-
-// Draft'ın ait olduğu vardiya bitiş anını (ms) döndürür
-function _draftExpiry(ts, vardiya) {
-  if(!ts || !vardiya) return null;
-  const d  = new Date(ts);
-  const yr = d.getFullYear(), mo = d.getMonth(), dy = d.getDate(), hr = d.getHours();
-  if(vardiya === 'SABAH') return new Date(yr, mo, dy, 17, 0, 0).getTime();
-  if(vardiya === 'AKSAM') return new Date(yr, mo, dy + (hr >= 17 ? 1 : 0), 1, 0, 0).getTime();
-  // GECE: 01:00-09:00
-  if(vardiya === 'GECE')  return new Date(yr, mo, dy, 9, 0, 0).getTime();
-  return null;
-}
-
-function restoreDraft() {
-  try {
-    const d = JSON.parse(localStorage.getItem('enj_draft'));
-    if(!d) return;
-    document.getElementById('draft-banner').style.display = 'none';
-    const idEl = document.getElementById('kullanici_id');
-    idEl.value = d.kullanici_id || d.adsoyad || '';
-    if(d.adSoyad) _adSoyad = d.adSoyad;
-    onIdChange(); 
-    if(d.vardiya) setVardiya(d.vardiya);
-    if(d.tarih) document.getElementById('tarih').value = d.tarih;
-    setEnjSayisi(d.enjSayisi || 1);
-    ['enj1_no','kasa1','enj2_no','kasa2',
-     'cevrim1','agirlik1','sayac_bas1','sayac_bit1',
-     'cevrim2','agirlik2','sayac_bas2','sayac_bit2'
-    ].forEach(id=>{ const el=document.getElementById(id); if(el&&d[id]!==undefined) el.value=d[id]; });
-    [1,2].forEach(n=>{
-      const val=d['enj'+n+'_no'];
-      if(val) {
-        document.getElementById('enj'+n+'-grid')?.querySelectorAll('.enj-gbtn').forEach(b=>{
-          if(b.getAttribute('onclick').includes("'"+val+"'")) b.classList.add('sel');
-        });
-        loadAccumulatedFire(n, val);
-      }
-    });
-    calcUretim(1); calcUretim(2);
-    syncEnjDisabled();
-    if(d.step && d.step > 1) goStep(d.step);
-    checkStatus();
-    showToast('Kaldığın yerden devam ediyorsun', 'ok');
-  } catch(e) { clearDraft(); }
-}
-
-function clearDraft() {
-  localStorage.removeItem('enj_draft');
-  document.getElementById('draft-banner').style.display = 'none';
-}
-
-function tickClock() {
-  const n = new Date(Date.now() + _timeOffset);
-  document.getElementById('olcum_saat').value =
-    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
-}
-
-async function loadLists() {
-  return new Promise(resolve => {
-    _t0 = Date.now();
-    const cb = 'cb_'+Date.now();
-    window[cb] = function(json) {
-      delete window[cb]; document.getElementById('jsonp-s')?.remove();
-      if(json.serverTime) {
-        const latency = (Date.now() - _t0) / 2;
-        _timeOffset = json.serverTime - (_t0 + latency);
-      }
-      kullanicilar  = json.kullanicilar  || {};
-      uretimLimiti  = parseInt(json.uretimLimiti) || 0;
-      kasaLimitlari = json.kasaLimitlari || {};
-      maxFireLimit  = parseInt(json.maxFireLimit) || 50;
-
-      const idEl = document.getElementById('kullanici_id');
-      if(idEl) idEl.dataset.ready = '1';
-      const ebatlar = json.kasaEbatlari||[];
-      fillSelect('kasa1','skel-kasa1', ebatlar);
-      document.getElementById('kasa1').addEventListener('change', () => calcUretim(1));
-      const sel2 = document.getElementById('kasa2');
-      ebatlar.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;sel2.appendChild(o);});
-      sel2.addEventListener('change', () => calcUretim(2));
-      resolve();
-    };
-    const s = document.createElement('script');
-    s.id = 'jsonp-s';
-    s.src = SCRIPT_URL+'?action=getLists&callback='+cb;
-    s.onerror = ()=>{resolve(); showToast('Bağlantı hatası','err');};
-    document.head.appendChild(s);
-  });
-}
-
-function fillSelect(selId, skelId, items) {
-  const sel = document.getElementById(selId);
-  items.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;sel.appendChild(o);});
-  if(skelId){const sk=document.getElementById(skelId);if(sk)sk.style.display='none';}
-  sel.style.display='block';
-}
-
-function setEnjSayisi(n) {
-  enjSayisi = n;
-  document.getElementById('t-1').classList.toggle('active', n===1);
-  document.getElementById('t-2').classList.toggle('active', n===2);
-  document.getElementById('enj2-section').style.display = n===2 ? 'block' : 'none';
-  document.getElementById('olcum-enj2-section').style.display = n===2 ? 'block' : 'none';
-  document.getElementById('enj1-title').textContent = n===2 ? '1. Enjeksiyon Bilgileri' : 'Enjeksiyon Bilgileri';
-  document.getElementById('olcum-enj1-title').textContent = n===2 ? 'Enjeksiyon 1 — Ölçümler' : 'Ölçümler';
-  document.getElementById('enj-toggle-row').style.opacity = (enj1Kilitli) ? '0.5' : '1';
-  document.getElementById('enj-toggle-row').style.pointerEvents = (enj1Kilitli) ? 'none' : 'auto';
-  syncEnjDisabled();
-}
-
-function onIdChange() {
-  const idEl = document.getElementById('kullanici_id');
-  const id = idEl.value.trim();
-  const kullanici = kullanicilar[id];
-  const sf = document.getElementById('sifre-field');
-  const si = document.getElementById('sifre');
-  const hatirla = document.getElementById('hatirla');
-  const hosgeldin = document.getElementById('hosgeldin');
-
-  if(kullanici) {
-    _adSoyad = kullanici.name;
-    sf.style.display = 'block';
-    hosgeldin.style.display = 'flex';
-    document.getElementById('hosgeldin-text').textContent = 'Hoş Geldin, ' + kullanici.name + '!';
-    const kayitliSifre = localStorage.getItem('sifre_'+id);
-    if(kayitliSifre) { si.value = kayitliSifre; hatirla.checked = true; }
-    else             { si.value = ''; hatirla.checked = false; }
-    document.getElementById('err-sifre').classList.remove('show');
-    si.classList.remove('error');
-    idEl.classList.remove('error');
-    document.getElementById('err-ad').classList.remove('show');
-  } else {
-    _adSoyad = '';
-    sf.style.display = 'none';
-    hosgeldin.style.display = 'none';
-    if(id.length === 3) {
-      idEl.classList.add('error');
-      document.getElementById('err-ad').classList.add('show');
-    } else {
-      idEl.classList.remove('error');
-      document.getElementById('err-ad').classList.remove('show');
-    }
-  }
-  if(vardiya && kullanici) checkStatus();
-}
-
-function selectEnj(n, val, btn) {
-  document.getElementById('enj'+n+'-grid').querySelectorAll('.enj-gbtn').forEach(b=>b.classList.remove('sel'));
-  btn.classList.add('sel');
-  document.getElementById('enj'+n+'_no').value = val;
-  document.getElementById('enj'+n+'-grid').classList.remove('error');
-  document.getElementById('err-enj'+n).classList.remove('show');
-  document.getElementById('olcum-enj'+n+'-title').textContent = val + ' — Ölçümler';
-  syncEnjDisabled();
-  fetchLastCounter(n, val);
-  loadAccumulatedFire(n, val); // Yeni Cihaz/Makine bazlı yükleme
-}
-
-function syncEnjDisabled() {
-  if(enjSayisi !== 2) {
-    document.getElementById('enj1-grid').querySelectorAll('.enj-gbtn').forEach(b=>b.disabled=false);
-    document.getElementById('enj2-grid').querySelectorAll('.enj-gbtn').forEach(b=>b.disabled=false);
-    return;
-  }
-  const val1 = document.getElementById('enj1_no').value;
-  const val2 = document.getElementById('enj2_no').value;
-  document.getElementById('enj1-grid').querySelectorAll('.enj-gbtn').forEach(b=>{
-    b.disabled = val2 ? b.getAttribute('onclick').includes("'"+val2+"'") : false;
-  });
-  document.getElementById('enj2-grid').querySelectorAll('.enj-gbtn').forEach(b=>{
-    b.disabled = val1 ? b.getAttribute('onclick').includes("'"+val1+"'") : false;
-  });
-}
-
-function fetchLastCounter(n, enjNo) {
-  const bas = document.getElementById('sayac_bas'+n);
-  bas.value = ''; setBasEditable(n); calcUretim(n);
-  const cb = 'cbLC'+n+'_'+Date.now();
-  window[cb] = function(json) {
-    delete window[cb]; document.getElementById('lcs'+n)?.remove();
-    if(json.sayacBit !== null && json.sayacBit !== undefined) {
-      bas.value = json.sayacBit;
-      setBasReadonly(n);
-      calcUretim(n);
-    }
-  };
-  const s = document.createElement('script');
-  s.id = 'lcs'+n;
-  s.src = SCRIPT_URL+'?action=getLastCounter&enj_no='+encodeURIComponent(enjNo)+'&callback='+cb;
-  s.onerror = ()=>{ delete window[cb]; };
-  document.head.appendChild(s);
-}
-
-function setBasReadonly(n) {
-  const el = document.getElementById('sayac_bas'+n);
-  el.setAttribute('readonly','');
-  el.style.cssText='font-size:18px;font-weight:800;background:var(--accent-light);border-color:var(--accent);color:var(--accent)';
-  document.getElementById('lbl-bas'+n).innerHTML='Sayaç Başlama <small style="color:var(--accent);font-size:12px;font-weight:700">(önceki kayıt)</small>';
-}
-
-function setBasEditable(n) {
-  const el = document.getElementById('sayac_bas'+n);
-  el.removeAttribute('readonly');
-  el.style.cssText='font-size:18px;font-weight:800';
-  document.getElementById('lbl-bas'+n).innerHTML='Sayaç Başlama <span class="req">*</span>';
-}
-
-function clearSifreErr() {
-  document.getElementById('err-sifre').classList.remove('show');
-  document.getElementById('sifre').classList.remove('error');
-}
-
-const _VR = {
-  SABAH: { s: 9*60,    e: 17*60    },
-  AKSAM: { s: 17*60,   e: 1*60     },
-  GECE:  { s: 1*60,    e: 9*60     },
-};
-
-function isVardiyaActive(v) {
-  if(window.__testMode) return true; 
-  const now = new Date(Date.now() + _timeOffset);
-  const m = now.getHours() * 60 + now.getMinutes();
-  const r = _VR[v];
-  return r.e < r.s ? (m >= r.s || m <= r.e) : (m >= r.s && m <= r.e);
-}
-
-function updateVardiyaButtons() {
-  ['SABAH','AKSAM','GECE'].forEach(v => {
-    document.getElementById('v-'+v.toLowerCase()).disabled = !isVardiyaActive(v);
-  });
-  if(vardiya && !isVardiyaActive(vardiya)) {
-    vardiya = null;
-    ['sabah','aksam','gece'].forEach(x=>document.getElementById('v-'+x).className='vbtn');
-  }
-  if(!vardiya) {
-    const aktif = ['SABAH','AKSAM','GECE'].filter(v => isVardiyaActive(v));
-    if(aktif.length === 1) setVardiya(aktif[0]);
-  }
-}
-
-function setVardiya(v) {
-  if(!isVardiyaActive(v)) return; 
-  vardiya = v;
-  ['sabah','aksam','gece'].forEach(x=>document.getElementById('v-'+x).className='vbtn');
-  document.getElementById('v-'+v.toLowerCase()).classList.add('sel-'+v.toLowerCase());
-  document.getElementById('err-vardiya').classList.remove('show');
-  const _id = document.getElementById('kullanici_id').value;
-  if(_id && kullanicilar[_id]) checkStatus();
-}
-
-function checkStatus() {
-  const ad    = _adSoyad;
-  const tarih = document.getElementById('tarih').value;
-  const saat  = document.getElementById('olcum_saat').value;
-  if(!ad||!vardiya||!tarih) return;
-  const cb = 'cbS_'+Date.now();
-  window[cb] = function(json) {
-    delete window[cb]; document.getElementById('st-s')?.remove();
-    olcumNo     = json.olcumNo || 1;
-    enj1Kilitli = olcumNo > 1 && !!json.enj1;
-    enj2Kilitli = olcumNo > 1 && !!json.enj2 && json.enj2 !== '00';
-    if(enj1Kilitli) {
-      enjSayisi = json.enjSayisi || 1;
-      setEnjSayisi(enjSayisi);
-    }
-    showStatusBox(json);
-    showEnjSection(json);
-    if(enj1Kilitli && json.sayacBit1 != null) {
-      document.getElementById('sayac_bas1').value = json.sayacBit1;
-      setBasReadonly(1); calcUretim(1);
-    }
-    if(enj2Kilitli && json.sayacBit2 != null) {
-      document.getElementById('sayac_bas2').value = json.sayacBit2;
-      setBasReadonly(2); calcUretim(2);
-    }
-  };
-  const s = document.createElement('script');
-  s.id = 'st-s';
-  s.src = SCRIPT_URL+'?action=getStatus'
-    +'&adsoyad='+encodeURIComponent(ad)
-    +'&tarih='+encodeURIComponent(tarih)
-    +'&vardiya='+encodeURIComponent(vardiya)
-    +'&saat='+encodeURIComponent(saat)
-    +'&callback='+cb;
-  s.onerror=()=>{};
-  document.head.appendChild(s);
-}
-
-function showStatusBox(json) {
-  const box = document.getElementById('status-box');
-  if(json.olcumNo<=1){box.style.display='none';return;}
-  const cfg = {2:{cls:'orange',icon:'🕛',msg:'2. ölçüm zamanı'},3:{cls:'green',icon:'🏁',msg:'3. ölçüm — Vardiya sonu'}};
-  const c = cfg[json.olcumNo]||{cls:'blue',icon:'📊',msg:json.olcumNo+'. ölçüm'};
-  box.className='ibox '+c.cls;
-  box.innerHTML='<span style="font-size:18px">'+c.icon+'</span><span><strong>'+c.msg+'</strong></span>';
-  box.style.display='flex'; box.style.marginBottom='14px';
-}
-
-function showEnjSection(json) {
-  document.getElementById('enj1-sec').style.display  = enj1Kilitli ? 'none'  : 'block';
-  document.getElementById('enj1-ro').style.display   = enj1Kilitli ? 'block' : 'none';
-  document.getElementById('kasa1-sec').style.display = enj1Kilitli ? 'none'  : 'block';
-  document.getElementById('kasa1-ro').style.display  = enj1Kilitli ? 'block' : 'none';
-  if(enj1Kilitli) {
-    document.getElementById('enj1-ro-val').textContent  = json.enj1;
-    document.getElementById('kasa1-ro-val').textContent = json.kasa1;
-    loadAccumulatedFire(1, json.enj1);
-  }
-  document.getElementById('enj2-sec').style.display  = enj2Kilitli ? 'none'  : 'block';
-  document.getElementById('enj2-ro').style.display   = enj2Kilitli ? 'block' : 'none';
-  document.getElementById('kasa2-sec').style.display = enj2Kilitli ? 'none'  : 'block';
-  document.getElementById('kasa2-ro').style.display  = enj2Kilitli ? 'block' : 'none';
-  if(enj2Kilitli) {
-    document.getElementById('enj2-ro-val').textContent  = json.enj2;
-    document.getElementById('kasa2-ro-val').textContent = json.kasa2;
-    loadAccumulatedFire(2, json.enj2);
-  }
-}
-
-const KASA_AGIRLIK = {
-  '30x40x10': { min: 220, max: 342 },  
-  '30x40x14': { min: 248, max: 552 },  
-  '30x40x15': { min: 344, max: 369 },  
-  '30x40x18': { min: 369, max: 429 },  
-  '30x40x22': { min: 457, max: 594 },  
-  '30x50x11': { min: 323, max: 393 },  
-  '30x50x12': { min: 334, max: 411 },  
-  '30x50x14': { min: 407, max: 461 },  
-  '30x50x18': { min: 444, max: 536 },  
-  '30x50x22': { min: 442, max: 617 },  
-  '35x50x16': { min: 539, max: 685 },  
-  '35x50x26': { min: 1023, max: 1172 }, 
-  '35x50x30': { min: 1064, max: 1356 }, 
-  '40x60x18': { min: 528, max: 685 },  
-};
-
-function getKasaBounds(n) {
-  const locked = n === 1 ? enj1Kilitli : enj2Kilitli;
-  const kasa = locked
-    ? document.getElementById('kasa'+n+'-ro-val').textContent
-    : document.getElementById('kasa'+n).value;
-  if(!kasa) return null;
-  const key = kasa.trim().toLowerCase().replace(/\s+/g,'');
-  for(const [k, v] of Object.entries(KASA_AGIRLIK)) {
-    if(k.toLowerCase() === key) return v;
-  }
-  return null;
-}
-
-function checkKasaAgirlik(n) {
-  const agEl  = document.getElementById('agirlik'+n);
-  const errEl = document.getElementById('err-agirlik'+n);
-  const val   = parseFloat(agEl.value);
-  if(!agEl.value || isNaN(val)) return false;
-  const b = getKasaBounds(n);
-  if(!b) return false; 
-  if(val < b.min) {
-    agEl.classList.add('error');
-    errEl.textContent = '⚠️ Çok düşük! Min: ' + b.min + 'g';
-    errEl.classList.add('show');
-    return true;
-  }
-  if(val > b.max) {
-    agEl.classList.add('error');
-    errEl.textContent = '⚠️ Çok yüksek! Maks: ' + b.max + 'g';
-    errEl.classList.add('show');
-    return true;
-  }
-  agEl.classList.remove('error');
-  errEl.textContent = 'Gerekli';
-  errEl.classList.remove('show');
-  return false;
-}
-
-// Seçili kasanın üretim limitini döndürür; kasa-bazlı yoksa global limite düşer
-function getKasaLimit(n) {
-  const kasa = (document.getElementById('kasa'+n) || {}).value || '';
-  return (kasa && kasaLimitlari[kasa]) ? kasaLimitlari[kasa] : uretimLimiti;
-}
-
-function calcUretim(n) {
-  const bas = parseInt(document.getElementById('sayac_bas'+n).value);
-  const bit = parseInt(document.getElementById('sayac_bit'+n).value);
-  const box = document.getElementById('uretim-box'+n);
-  const val = document.getElementById('result-val'+n);
-  const lbl = document.getElementById('result-label'+n);
-  const lw = document.getElementById('limit-warn'+n);
-  if(!isNaN(bas)&&!isNaN(bit)){
-    const f=bit-bas;
-    if(f>4000){
-      val.textContent='⚠️ ' + f.toLocaleString('tr-TR');
-      box.style.cssText='background:#fff7ed;border:2px solid #ea580c;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
-      val.style.color='#ea580c';lbl.style.color='#ea580c';
-      if(lw) lw.style.display='none';
-    }else if(f>=0){
-      val.textContent=f.toLocaleString('tr-TR');
-      box.style.cssText='background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
-      val.style.color='#16a34a';lbl.style.color='#16a34a';
-      const _limit = getKasaLimit(n);
-      if(lw) lw.style.display = (_limit > 0 && f > _limit) ? 'flex' : 'none';
-    }else{
-      val.textContent='⚠️ Hata';
-      box.style.cssText='background:#fef2f2;border:2px solid #dc2626;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
-      val.style.color='#dc2626';lbl.style.color='#dc2626';
-      if(lw) lw.style.display='none';
-    }
-  }else{
-    val.textContent='—';
-    box.style.cssText='background:var(--accent-light);border:2px solid var(--accent);border-radius:12px;padding:14px;text-align:center;margin-top:12px';
-    val.style.color='var(--accent)';lbl.style.color='var(--accent)';
-    if(lw) lw.style.display='none';
-  }
-}
-
-function getUretim(n) {
-  const bas=parseInt(document.getElementById('sayac_bas'+n).value)||0;
-  const bit=parseInt(document.getElementById('sayac_bit'+n).value)||0;
-  return Math.max(0,bit-bas);
-}
-
-// ===============================================
-// YENİ ANLIK FIRE MEKANİZMASI (SAYFA 2 İÇİN)
-// ===============================================
-
-function getFpLogKey(tarih, vard, enjNo) { return 'fireLog_'+tarih+'_'+vard+'_'+enjNo.replace(/\s+/g,''); }
-function getFpUnlockKey(tarih, vard, enjNo) { return 'fpUnlock_'+tarih+'_'+vard+'_'+enjNo.replace(/\s+/g,''); }
-function getFpLog(tarih, vard, enjNo) { try { var r=localStorage.getItem(getFpLogKey(tarih,vard,enjNo)); return r?JSON.parse(r):[]; } catch(e){ return []; } }
-function getFpTotal(tarih, vard, enjNo) { return getFpLog(tarih,vard,enjNo).reduce(function(s,e){return s+(e.amount||0);},0); }
-function getFpTarih() {
-  // Tarih input'u loadLists() sonrası sunucu saatiyle güncellenir ve sabit kalır.
-  // _timeOffset ile hesaplama yerine bu değeri kullan — offset gecikmesinden kaynaklanan
-  // anahtar uyuşmazlığını engeller.
-  var el = document.getElementById('tarih');
-  return el && el.value ? el.value : new Date().toISOString().split('T')[0];
-}
-
-// Fire sıfırlanma dönemini saat bazlı belirle.
-// Reset saatleri: 09:15 (SABAH başlar), 17:15 (AKSAM başlar), 01:15 (GECE başlar).
-// Bu saatler arasında fire birikir; saat geçince yeni dönem başlar ve sıfırlanır.
-function getFirePeriod() {
-  var now = new Date(Date.now() + _timeOffset);
-  var h = now.getHours(), m = now.getMinutes();
-  var hm = h * 60 + m;
-  var yr = now.getFullYear(), mo = now.getMonth(), dy = now.getDate();
-  function ds(y, mn, d) {
-    return y + '-' + String(mn + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-  }
-  var T_SABAH = 9*60 + 15;   // 09:15 → 555
-  var T_AKSAM = 17*60 + 15;  // 17:15 → 1035
-  var T_GECE  = 1*60  + 15;  // 01:15 → 75
-  if (hm >= T_SABAH && hm < T_AKSAM) {
-    return { vardiya: 'SABAH', tarih: ds(yr, mo, dy) };
-  } else if (hm >= T_AKSAM) {
-    // 17:15-23:59 → AKSAM, bugünün tarihi
-    return { vardiya: 'AKSAM', tarih: ds(yr, mo, dy) };
-  } else if (hm < T_GECE) {
-    // 00:00-01:14 → AKSAM, dünün tarihi (AKSAM dün 17:15'te başladı)
-    var prev = new Date(yr, mo, dy - 1);
-    return { vardiya: 'AKSAM', tarih: ds(prev.getFullYear(), prev.getMonth(), prev.getDate()) };
-  } else {
-    // 01:15-09:14 → GECE
-    return { vardiya: 'GECE', tarih: ds(yr, mo, dy) };
-  }
-}
-
-function isFpFireLocked(enjNo) {
-  if(!enjNo) return false;
-  var fp = getFirePeriod();
-  var t = parseInt(localStorage.getItem(getFpUnlockKey(fp.tarih, fp.vardiya, enjNo))||'0');
-  return t > Date.now();
-}
-
-function adjFire(n, d) {
-  var enjNo = document.getElementById('enj'+n+'_no').value;
-  if(!enjNo) return;
-  if(isFpFireLocked(enjNo)) return;
-  
-  var el = document.getElementById('fire'+n);
-  var val = Math.max(0, parseInt(el.value||0) + d);
-  // Ayarlardan gelen limit kadar kısıtla
-  el.value = Math.min(maxFireLimit, val);
-  document.getElementById('err-fire'+n).classList.remove('show');
-}
-
-function startFireAdj(n, d) {
-  var enjNo = document.getElementById('enj'+n+'_no').value;
-  if(isFpFireLocked(enjNo)) return;
-  adjFire(n,d);
-  _fireAdjTimer = setTimeout(function() {
-    _fireAdjInterval = setInterval(function() { adjFire(n,d); }, 80);
-  }, 400);
-}
-
-function stopFireAdj() {
-  clearTimeout(_fireAdjTimer); clearInterval(_fireAdjInterval);
-  _fireAdjTimer = null; _fireAdjInterval = null;
-}
-
-function clampFire(n) {
-  var el = document.getElementById('fire'+n);
-  var v = parseInt(el.value) || 0;
-  if(v > maxFireLimit) el.value = maxFireLimit;
-  if(v < 0) el.value = 0;
-  document.getElementById('err-fire'+n).classList.remove('show');
-}
-
-function promptInstantFire(n) {
-  var enjNo = document.getElementById('enj'+n+'_no').value;
-  if(!enjNo) {
-    document.getElementById('err-fire'+n).textContent = 'Lütfen önce makine seçimi yapın!';
-    document.getElementById('err-fire'+n).classList.add('show');
-    return;
-  }
-
-  var miktar = parseInt(document.getElementById('fire'+n).value) || 0;
-  if(miktar <= 0) {
-    document.getElementById('err-fire'+n).textContent = 'Fire miktarı 0\'dan büyük olmalı!';
-    document.getElementById('err-fire'+n).classList.add('show');
-    return;
-  }
-  if(miktar > maxFireLimit) {
-    document.getElementById('err-fire'+n).textContent = 'Tek seferde en fazla ' + maxFireLimit + ' fire girilebilir!';
-    document.getElementById('err-fire'+n).classList.add('show');
-    return;
-  }
-
-  document.getElementById('err-fire'+n).classList.remove('show');
-  
-  // Modal Göster
-  _pendingFire = { n: n, amount: miktar, enjNo: enjNo };
-  document.getElementById('fire-modal-body').innerHTML = 
-    `⚠️ <strong style="font-size:18px; color:var(--warn)">${miktar} adet</strong> fire ekliyorsunuz. <br><br>Bu işlem <strong style="color:var(--text)">hemen kaydedilecek</strong> ve yönetici tablosuna işlenecektir. Onaylıyor musunuz?`;
-  document.getElementById('fire-modal').style.display = 'flex';
-}
-
-function closeFireModal() {
-  document.getElementById('fire-modal').style.display = 'none';
-  _pendingFire = null;
-}
-
-function confirmInstantFire() {
-  if (!_pendingFire) return;
-
-  const fireData = _pendingFire;
-  closeFireModal();
-  executeInstantFire(fireData.n, fireData.amount, fireData.enjNo);
-}
-
-async function executeInstantFire(n, amount, enjNo) {
-  document.getElementById('load-text').textContent = 'Fire Log\'a İşleniyor...';
-  document.getElementById('loading').classList.add('show');
-
-  var fp    = getFirePeriod();
-  var tarih = fp.tarih;
-  var fpVardiya = fp.vardiya;
-  var saat  = document.getElementById('olcum_saat').value;
-
-  // 1) Önce localStorage'a yaz — UI anında güncellenir, network'e bağımlı değil
-  var log = getFpLog(tarih, fpVardiya, enjNo);
-  log.push({ ts: Date.now(), amount: amount });
-  try { localStorage.setItem(getFpLogKey(tarih, fpVardiya, enjNo), JSON.stringify(log)); } catch(ex){}
-  localStorage.setItem(getFpUnlockKey(tarih, fpVardiya, enjNo), String(Date.now() + 15*60*1000));
-
-  // 2) Input sıfırla, history'yi göster, loading kapat
-  document.getElementById('fire'+n).value = '0';
-  loadAccumulatedFire(n, enjNo);
-  document.getElementById('loading').classList.remove('show');
-  showToast('\u2705 ' + amount + ' Fire kaydedildi!', 'ok');
-
-  // 3) Arka planda Google Sheets'e JSONP (GET) ile gönder
-  // NEDEN GET?: fetch+no-cors+Content-Type:application/json kombinasyonu
-  // "preflighted" isteğe dönüşür; Apps Script OPTIONS'a yanıt vermez,
-  // doPost hiç çalışmaz. JSONP script tag ile bu sorun tamamen ortadan kalkar.
-  var cb = 'cbFire_' + Date.now();
-  window[cb] = function(json) {
-    delete window[cb];
-    var s = document.getElementById('jsonp-fire-'+n);
-    if(s) s.remove();
-    if(json && json.result !== 'ok') {
-      console.warn('Fire log sunucuya kaydedilemedi:', json);
-    }
-  };
-  var params = new URLSearchParams({
-    action:       'logFire',
-    tarih:        tarih,
-    olcum_saat:   saat,
-    kullanici_id: document.getElementById('kullanici_id').value,
-    adsoyad:      _adSoyad || document.getElementById('kullanici_id').value,
-    vardiya:      fpVardiya || '',
-    makine_no:    enjNo,
-    fire_miktari: amount,
-    callback:     cb
-  });
-  var s = document.createElement('script');
-  s.id  = 'jsonp-fire-'+n;
-  s.src = SCRIPT_URL + '?' + params.toString();
-  s.onerror = function() { delete window[cb]; console.warn('Fire log JSONP hatası'); };
-  document.head.appendChild(s);
-}
-
-function loadAccumulatedFire(n, enjNo) {
-  if(!enjNo) return;
-  var fp    = getFirePeriod();
-  var tarih = fp.tarih;
-  var fpVardiya = fp.vardiya;
-
-  // Yerel geçmiş (bu cihazda girilen)
-  var log   = getFpLog(tarih, fpVardiya, enjNo);
-  var local = log.reduce(function(s,e){return s+(e.amount||0);},0);
-
-  var tBox     = document.getElementById('fire-toplam-box'+n);
-  var tVal     = document.getElementById('fire-toplam'+n);
-  var histEl   = document.getElementById('fire-history'+n);
-  var histList = document.getElementById('fire-history-list'+n);
-
-  function _render(serverTotal) {
-    var total = serverTotal !== null ? serverTotal : local;
-    if(total > 0) {
-      if(tVal) tVal.textContent = total;
-      if(tBox) tBox.style.display = 'flex';
-    } else {
-      if(tBox) tBox.style.display = 'none';
-    }
-    // Yerel geçmişi listele
-    if(histEl && histList) {
-      if(log.length > 0) {
-        var running = 0;
-        histList.innerHTML = log.map(function(e) {
-          running += e.amount;
-          var d = new Date(e.ts);
-          var hm = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-          return '<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f1f5f9; font-size:13px;">'
-            + '<span style="color:var(--text2)">' + hm + '</span>'
-            + '<span style="color:var(--warn); font-weight:800;">+' + e.amount + '</span>'
-            + '<span style="font-size:11px; color:var(--text2)">→ ' + running + '</span></div>';
-        }).join('');
-        // Sunucudan gelen ek fire varsa bilgi satırı ekle
-        var diff = (serverTotal || 0) - local;
-        if(diff > 0) {
-          histList.innerHTML = '<div style="font-size:11px;color:#1e40af;background:#eff6ff;padding:5px 8px;border-radius:6px;margin-bottom:6px;">📡 Diğer cihazlardan: +' + diff + ' fire</div>' + histList.innerHTML;
-        }
-        histEl.style.display = 'block';
-      } else if((serverTotal || 0) > 0) {
-        histList.innerHTML = '<div style="font-size:11px;color:#1e40af;background:#eff6ff;padding:5px 8px;border-radius:6px;">📡 Diğer cihazlardan: ' + serverTotal + ' fire kaydedilmiş</div>';
-        histEl.style.display = 'block';
-      } else {
-        histEl.style.display = 'none';
-      }
-    }
-    updateFireLockDisplay();
-  }
-
-  // Önce yerel veriyle anında göster, ardından sunucudan güncelle
-  _render(local || null);
-
-  var cb = 'cbFT' + n + '_' + Date.now();
-  window[cb] = function(json) {
-    delete window[cb];
-    document.getElementById('ft-s'+n)?.remove();
-    _render(typeof json.total === 'number' ? json.total : local);
-  };
-  var s = document.createElement('script');
-  s.id  = 'ft-s' + n;
-  s.src = SCRIPT_URL + '?action=getFireTotal'
-    + '&enj_no='  + encodeURIComponent(enjNo)
-    + '&tarih='   + encodeURIComponent(tarih)
-    + '&vardiya=' + encodeURIComponent(fpVardiya)
-    + '&callback=' + cb;
-  s.onerror = function(){ delete window[cb]; };
-  document.head.appendChild(s);
-}
-
-function updateFireLockDisplay() {
-  var fp = getFirePeriod();
-  var tarih = fp.tarih;
-  [1, 2].forEach(function(n) {
-    var enjNo = document.getElementById('enj'+n+'_no').value;
-    var locked = false;
-    var rem = 0;
-    
-    if (enjNo) {
-      var t = parseInt(localStorage.getItem(getFpUnlockKey(tarih, fp.vardiya, enjNo))||'0');
-      rem = t - Date.now();
-      locked = rem > 0;
-    }
-
-    var msg = document.getElementById('fire-lock-msg'+n);
-    var ctr = document.getElementById('fire-counter'+n);
-    var btn = document.getElementById('btn-fire-ekle'+n);
-    var inp = document.getElementById('fire'+n);
-
-    if(!msg) return;
-
-    if(locked) {
-      var secs = Math.ceil(rem/1000);
-      var m = Math.floor(secs/60), s = secs%60;
-      document.getElementById('fire-lock-cd'+n).textContent = m+':'+String(s).padStart(2,'0');
-      msg.style.display = 'flex';
-      if(ctr) ctr.querySelectorAll('.cbtn').forEach(function(b){ b.disabled=true; });
-      if(btn) btn.disabled = true;
-      if(inp) inp.disabled = true;
-    } else {
-      msg.style.display = 'none';
-      if(ctr) ctr.querySelectorAll('.cbtn').forEach(function(b){ b.disabled=false; });
-      if(btn) btn.disabled = false;
-      if(inp) inp.disabled = false;
-    }
-  });
-}
-
-function clearFireLogs() {
-  var fp = getFirePeriod();
-  var d = getData();
-  [d.enj1_no, enjSayisi>=2 ? d.enj2_no : null].forEach(function(enjNo){
-    if(enjNo && enjNo !== '00'){
-      localStorage.removeItem(getFpLogKey(fp.tarih, fp.vardiya, enjNo));
-      localStorage.removeItem(getFpUnlockKey(fp.tarih, fp.vardiya, enjNo));
-    }
-  });
-}
-
-// ===============================================
-
-function goStep(n) {
-  currentStep=n;
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+n).classList.add('active');
-  for(let i=1;i<=3;i++){
-    const el=document.getElementById('step-'+i);
-    el.className='step'+(i<n?' done':i===n?' active':'');
-  }
-  window.scrollTo(0,0);
-}
-
-function goNext(from) {
-  if(from===1&&!validate1()) return;
-  if(from===1) {
-    const id = document.getElementById('kullanici_id').value;
-    const si = document.getElementById('sifre').value;
-    const hatirla = document.getElementById('hatirla').checked;
-    _adSoyad = kullanicilar[id]?.name || id;
-    if(hatirla && si) localStorage.setItem('sifre_'+id, si);
-    else localStorage.removeItem('sifre_'+id);
-  }
-  if(from===2&&!validate2()) return;
-  if(from===2) buildSummary();
-  goStep(from+1);
-}
-
-function validate1() {
-  let ok=true;
-  const idEl=document.getElementById('kullanici_id');
-  const kullanici = idEl.value ? kullanicilar[idEl.value.trim()] : null;
-  if(!idEl.value||!kullanici){idEl.classList.add('error');document.getElementById('err-ad').classList.add('show');ok=false;}
-  else{idEl.classList.remove('error');document.getElementById('err-ad').classList.remove('show');}
-
-  if(kullanici) {
-    const si = document.getElementById('sifre');
-    const dogruSifre = String(kullanici.sifre || '');
-    if(!si.value || si.value !== dogruSifre) {
-      si.classList.add('error');
-      document.getElementById('err-sifre').classList.add('show');
-      ok = false;
-    } else {
-      si.classList.remove('error');
-      document.getElementById('err-sifre').classList.remove('show');
-    }
-  }
-  if(!vardiya){document.getElementById('err-vardiya').classList.add('show');ok=false;}
-  if(!ok){
-    const first = document.querySelector('#page-1 .error, #page-1 .err-msg.show');
-    if(first) first.scrollIntoView({behavior:'smooth', block:'center'});
-  }
-  return ok;
-}
-
-function validate2() {
-  let ok=true;
-  function chk(id,errId) {
-    const el=document.getElementById(id);
-    if(!el.value){el.classList.add('error');document.getElementById(errId).classList.add('show');ok=false;}
-    else{el.classList.remove('error');document.getElementById(errId).classList.remove('show');}
-  }
-  if(!enj1Kilitli){
-    const e1=document.getElementById('enj1_no');
-    const g1=document.getElementById('enj1-grid');
-    if(!e1.value){g1.classList.add('error');document.getElementById('err-enj1').classList.add('show');ok=false;}
-    else{g1.classList.remove('error');document.getElementById('err-enj1').classList.remove('show');}
-    const k1=document.getElementById('kasa1');
-    if(!k1.value){k1.classList.add('error');document.getElementById('err-kasa1').classList.add('show');ok=false;}
-    else{k1.classList.remove('error');document.getElementById('err-kasa1').classList.remove('show');}
-  }
-  if(enjSayisi===2&&!enj2Kilitli){
-    const e2=document.getElementById('enj2_no');
-    const g2=document.getElementById('enj2-grid');
-    if(!e2.value){g2.classList.add('error');document.getElementById('err-enj2').classList.add('show');ok=false;}
-    else{g2.classList.remove('error');document.getElementById('err-enj2').classList.remove('show');}
-    const k2=document.getElementById('kasa2');
-    if(!k2.value){k2.classList.add('error');document.getElementById('err-kasa2').classList.add('show');ok=false;}
-    else{k2.classList.remove('error');document.getElementById('err-kasa2').classList.remove('show');}
-  }
-  if(!ok) return false; 
-  
-  chk('cevrim1','err-cevrim1'); chk('agirlik1','err-agirlik1');
-  if(document.getElementById('agirlik1').value && checkKasaAgirlik(1)) ok=false;
-  chk('sayac_bas1','err-bas1');
-  
-  const bit1=document.getElementById('sayac_bit1');
-  const bas1=document.getElementById('sayac_bas1');
-  if(!bit1.value){bit1.classList.add('error');document.getElementById('err-bit1').textContent='Gerekli';document.getElementById('err-bit1').classList.add('show');ok=false;}
-  else if(parseInt(bit1.value)<parseInt(bas1.value)){bit1.classList.add('error');document.getElementById('err-bit1').textContent='Bitiş < Başlama!';document.getElementById('err-bit1').classList.add('show');ok=false;}
-  else if(parseInt(bit1.value)-parseInt(bas1.value)>4000){bit1.classList.add('error');document.getElementById('err-bit1').textContent='Üretim 4000\'i geçemez!';document.getElementById('err-bit1').classList.add('show');ok=false;}
-  else{bit1.classList.remove('error');document.getElementById('err-bit1').classList.remove('show');}
-
-  // YENİ: Toplam Üretim >= Kümülatif Fire Kontrolü (1)
-  const prod1 = getUretim(1);
-  const _fp1 = getFirePeriod();
-  const totalFire1 = getFpTotal(_fp1.tarih, _fp1.vardiya, document.getElementById('enj1_no').value);
-  if(totalFire1 > prod1 && prod1 > 0) {
-    document.getElementById('err-fire1').innerHTML = `⚠️ <b>Hata:</b> Kümülatif fire (${totalFire1}), üretim miktarından (${prod1}) fazla olamaz!`;
-    document.getElementById('err-fire1').classList.add('show');
-    ok = false;
-  }
-
-  if(enjSayisi===2){
-    chk('cevrim2','err-cevrim2'); chk('agirlik2','err-agirlik2');
-    if(document.getElementById('agirlik2').value && checkKasaAgirlik(2)) ok=false;
-    chk('sayac_bas2','err-bas2');
-    const bit2=document.getElementById('sayac_bit2');
-    const bas2=document.getElementById('sayac_bas2');
-    if(!bit2.value){bit2.classList.add('error');document.getElementById('err-bit2').textContent='Gerekli';document.getElementById('err-bit2').classList.add('show');ok=false;}
-    else if(parseInt(bit2.value)<parseInt(bas2.value)){bit2.classList.add('error');document.getElementById('err-bit2').textContent='Bitiş < Başlama!';document.getElementById('err-bit2').classList.add('show');ok=false;}
-    else if(parseInt(bit2.value)-parseInt(bas2.value)>4000){bit2.classList.add('error');document.getElementById('err-bit2').textContent='Üretim 4000\'i geçemez!';document.getElementById('err-bit2').classList.add('show');ok=false;}
-    else{bit2.classList.remove('error');document.getElementById('err-bit2').classList.remove('show');}
-    
-    // YENİ: Toplam Üretim >= Kümülatif Fire Kontrolü (2)
-    const prod2 = getUretim(2);
-    const _fp2 = getFirePeriod();
-    const totalFire2 = getFpTotal(_fp2.tarih, _fp2.vardiya, document.getElementById('enj2_no').value);
-    if(totalFire2 > prod2 && prod2 > 0) {
-      document.getElementById('err-fire2').innerHTML = `⚠️ <b>Hata:</b> Kümülatif fire (${totalFire2}), üretim miktarından (${prod2}) fazla olamaz!`;
-      document.getElementById('err-fire2').classList.add('show');
-      ok = false;
-    }
-  }
-
-  if(!ok){
-    const first = document.querySelector('#page-2 .error, #page-2 .err-msg.show');
-    if(first) first.scrollIntoView({behavior:'smooth', block:'center'});
-  }
-  return ok;
-}
-
-function buildSummary() {
-  const d = getData();
-  const vl = vardiya==='SABAH'?'Sabah 09:00–17:00':vardiya==='AKSAM'?'Akşam 17:00–01:00':'Gece 01:00–09:00';
-  const u1 = d.uretim1, u2 = d.uretim2;
-
-  let rows = [];
-  rows.push(['Ad Soyad', d.adsoyad]);
-  rows.push(['Vardiya', vl]);
-  rows.push(['Ölçüm No', olcumNo+'. Ölçüm']);
-  rows.push(['Ölçüm Saati', d.olcum_saat]);
-  rows.push({type:'div', text:'Enjeksiyon 1'});
-  rows.push(['Enjeksiyon', d.enj1_no]);
-  rows.push(['Kasa', d.kasa1]);
-  rows.push(['Çevrim', d.cevrim1+' sn']);
-  rows.push(['Ağırlık', d.agirlik1+' gr']);
-  rows.push(['Sayaç', d.sayac_bas1+' → '+d.sayac_bit1]);
-  const limit1 = getKasaLimit(1);
-  const limit2 = getKasaLimit(2);
-  const u1Asimi = limit1 > 0 && u1 > limit1;
-  const u2Asimi = enjSayisi===2 && limit2 > 0 && u2 > limit2;
-
-  const uretimVal = (u, asimi) =>
-    u.toLocaleString('tr-TR') + ' adet' + (asimi ? ' <span style="color:#dc2626;font-weight:800"> ⚠️</span>' : '');
-
-  rows.push({type:'uretim', key:'Üretim', val: uretimVal(u1, u1Asimi), asimi: u1Asimi});
-  rows.push(['Fire', d.fire1+' adet (Kümülatif)']);
-
-  if(enjSayisi===2){
-    rows.push({type:'div', text:'Enjeksiyon 2'});
-    rows.push(['Enjeksiyon', d.enj2_no]);
-    rows.push(['Kasa', d.kasa2]);
-    rows.push(['Çevrim', d.cevrim2+' sn']);
-    rows.push(['Ağırlık', d.agirlik2+' gr']);
-    rows.push(['Sayaç', d.sayac_bas2+' → '+d.sayac_bit2]);
-    rows.push({type:'uretim', key:'Üretim', val: uretimVal(u2, u2Asimi), asimi: u2Asimi});
-    rows.push(['Fire', d.fire2+' adet (Kümülatif)']);
-  }
-
-  const html = rows.map(r=>{
-    if(r.type==='div') return '<div class="sdivider">'+r.text+'</div>';
-    if(r.type==='uretim') return '<div class="sitem"><span class="skey">'+r.key+'</span><span class="sval">'+r.val+'</span></div>';
-    return '<div class="sitem"><span class="skey">'+r[0]+'</span><span class="sval">'+r[1]+'</span></div>';
-  }).join('');
-
-  window._limitAsimi = u1Asimi || u2Asimi;
-  window._limitAsimiMesaj = (() => {
-    const parts = [];
-    if(u1Asimi) parts.push('Enj 1 üretimi <strong>'+u1.toLocaleString('tr-TR')+'</strong> adet');
-    if(u2Asimi) parts.push('Enj 2 üretimi <strong>'+u2.toLocaleString('tr-TR')+'</strong> adet');
-    const limitMesaj = (u1Asimi && u2Asimi && limit1 !== limit2)
-      ? 'Enj 1 limiti: <strong>'+limit1.toLocaleString('tr-TR')+'</strong> — Enj 2 limiti: <strong>'+limit2.toLocaleString('tr-TR')+'</strong>'
-      : 'Kasa limiti: <strong>'+(u1Asimi ? limit1 : limit2).toLocaleString('tr-TR')+'</strong> adet';
-    return parts.join('<br>') + '<br><br>' + limitMesaj + '<br><br>Değer limiti çok yüksek, onaylıyor musunuz?';
-  })();
-
-  if(olcumNo===3){
-    document.getElementById('normal-ozet').style.display='none';
-    document.getElementById('onay-ozet').style.display='block';
-    document.getElementById('onay-uretim1').textContent=u1.toLocaleString('tr-TR');
-    document.getElementById('onay-uretim2').textContent=enjSayisi===2?u2.toLocaleString('tr-TR'):'—';
-    document.getElementById('onay-summary-body').innerHTML=html;
-  }else{
-    document.getElementById('normal-ozet').style.display='block';
-    document.getElementById('onay-ozet').style.display='none';
-    document.getElementById('summary-body').innerHTML=html;
-  }
-}
-
-function getData() {
-  const enj1 = enj1Kilitli ? document.getElementById('enj1-ro-val').textContent : document.getElementById('enj1_no').value;
-  const k1   = enj1Kilitli ? document.getElementById('kasa1-ro-val').textContent : document.getElementById('kasa1').value;
-  const enj2 = enj2Kilitli ? document.getElementById('enj2-ro-val').textContent : document.getElementById('enj2_no').value;
-  const k2   = enj2Kilitli ? document.getElementById('kasa2-ro-val').textContent : document.getElementById('kasa2').value;
-  const b1=parseInt(document.getElementById('sayac_bas1').value)||0;
-  const e1=parseInt(document.getElementById('sayac_bit1').value)||0;
-  const b2=parseInt(document.getElementById('sayac_bas2').value)||0;
-  const e2=parseInt(document.getElementById('sayac_bit2').value)||0;
-  
-  // Veritabanına kümülatif toplamı (Total Fire) yolluyoruz
-  const _fpData = getFirePeriod();
-  const totalFire1 = getFpTotal(_fpData.tarih, _fpData.vardiya, enj1);
-  const totalFire2 = enjSayisi === 2 ? getFpTotal(_fpData.tarih, _fpData.vardiya, enj2) : 0;
-
-  return {
-    adsoyad: _adSoyad || document.getElementById('kullanici_id').value,
-    vardiya, olcumNo, enjSayisi,
-    tarih:      document.getElementById('tarih').value,
-    olcum_saat: document.getElementById('olcum_saat').value,
-    enj1_no:enj1, kasa1:k1,
-    cevrim1: document.getElementById('cevrim1').value,
-    agirlik1:document.getElementById('agirlik1').value,
-    sayac_bas1:b1, sayac_bit1:e1, uretim1:e1-b1,
-    fire1:   totalFire1,
-    enj2_no:enj2, kasa2:k2,
-    cevrim2: enjSayisi===2 ? document.getElementById('cevrim2').value : '00',
-    agirlik2:enjSayisi===2 ? document.getElementById('agirlik2').value : '00',
-    sayac_bas2:enjSayisi===2?b2:'00', sayac_bit2:enjSayisi===2?e2:'00',
-    uretim2: enjSayisi===2?e2-b2:0,
-    fire2:   enjSayisi===2 ? totalFire2 : '00',
-  };
-}
-
-async function submitForm(onaylandi) {
-  const sb=document.getElementById('submit-btn');
-  const ob=document.getElementById('onay-btn');
-  document.getElementById('load-text').textContent = 'Kaydediliyor...';
-  document.getElementById('loading').classList.add('show');
-  if(sb) sb.disabled=true;
-  if(ob) ob.disabled=true;
-
-  const data = getData();
-  data.onaylandi = onaylandi;
-
-  return new Promise(function(resolve) {
-    var cb = 'cbSubmit_' + Date.now();
-    var timerOut = setTimeout(function() {
-      // 15 saniye timeout — no-cors'tan daha güvenilir ama network kesilirse
-      delete window[cb];
-      document.getElementById('loading').classList.remove('show');
-      if(sb) sb.disabled=false;
-      if(ob) ob.disabled=false;
-      showToast('❌ Bağlantı zaman aşımı, tekrar dene','err');
-      resolve();
-    }, 15000);
-
-    window[cb] = function(json) {
-      clearTimeout(timerOut);
-      delete window[cb];
-      var s = document.getElementById('jsonp-submit');
-      if(s) s.remove();
-
-      if(json && json.result === 'ok') {
-        // Sadece vardiya bitiminde (ölçüm 3 onaylandığında) fire logları temizlenir
-        if (olcumNo === 3 && onaylandi) {
-          clearFireLogs();
-        }
-        clearDraft();
-        document.getElementById('loading').classList.remove('show');
-        const msgs={1:'✅ Ölçümünüz kaydedildi! İyi Günler',2:'✅ 2. ölçüm kaydedildi!',3:'✅ Vardiya tamamlandı!'};
-        showToast(msgs[olcumNo]||'✅ Kaydedildi!','ok');
-        setTimeout(resetForm, 2200);
-      } else {
-        document.getElementById('loading').classList.remove('show');
-        if(sb) sb.disabled=false;
-        if(ob) ob.disabled=false;
-        showToast('❌ Kayıt hatası, tekrar dene','err');
-        console.error('submitForm hatası:', json);
-      }
-      resolve();
-    };
-
-    // JSONP GET parametreleri — tüm alanlar URL parametresi olarak gönderilir
-    var params = new URLSearchParams({
-      action:      'submitForm',
-      callback:    cb,
-      adsoyad:     data.adsoyad     || '',
-      vardiya:     data.vardiya     || '',
-      olcumNo:     data.olcumNo     || 1,
-      enjSayisi:   data.enjSayisi   || 1,
-      tarih:       data.tarih       || '',
-      olcum_saat:  data.olcum_saat  || '',
-      enj1_no:     data.enj1_no     || '',
-      kasa1:       data.kasa1       || '',
-      cevrim1:     data.cevrim1     || '',
-      agirlik1:    data.agirlik1    || '',
-      sayac_bas1:  data.sayac_bas1  || '',
-      sayac_bit1:  data.sayac_bit1  || '',
-      uretim1:     data.uretim1     || 0,
-      fire1:       data.fire1       || 0,
-      enj2_no:     data.enj2_no     || '00',
-      kasa2:       data.kasa2       || '00',
-      cevrim2:     data.cevrim2     || '00',
-      agirlik2:    data.agirlik2    || '00',
-      sayac_bas2:  data.sayac_bas2  || '00',
-      sayac_bit2:  data.sayac_bit2  || '00',
-      uretim2:     data.uretim2     || 0,
-      fire2:       data.fire2       || '00',
-      onaylandi:   onaylandi ? 'true' : 'false'
-    });
-
-    var s = document.createElement('script');
-    s.id  = 'jsonp-submit';
-    s.src = SCRIPT_URL + '?' + params.toString();
-    s.onerror = function() {
-      clearTimeout(timerOut);
-      delete window[cb];
-      document.getElementById('loading').classList.remove('show');
-      if(sb) sb.disabled=false;
-      if(ob) ob.disabled=false;
-      showToast('❌ Bağlantı hatası, tekrar dene','err');
-      resolve();
-    };
-    document.head.appendChild(s);
-  });
-}
-
-function resetForm() {
-  clearDraft();
-  vardiya=null; currentStep=1; olcumNo=1; enjSayisi=1; enj1Kilitli=false; enj2Kilitli=false;
-  const hatirla = document.getElementById('hatirla');
-  const sifreEl = document.getElementById('sifre');
-  const idEl    = document.getElementById('kullanici_id');
-  _adSoyad = '';
-  if(!hatirla.checked) {
-    sifreEl.value=''; idEl.value='';
-    document.getElementById('sifre-field').style.display='none';
-    document.getElementById('hosgeldin').style.display='none';
-  } else {
-    const id = idEl.value;
-    if(id && kullanicilar[id]) _adSoyad = kullanicilar[id].name;
-  }
-  document.getElementById('err-sifre').classList.remove('show');
-  sifreEl.classList.remove('error');
-  ['enj1_no','kasa1','enj2_no','kasa2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  [1,2].forEach(n=>document.getElementById('enj'+n+'-grid')?.querySelectorAll('.enj-gbtn').forEach(b=>b.classList.remove('sel')));
-  [1,2].forEach(n=>{const lw=document.getElementById('limit-warn'+n);if(lw)lw.style.display='none';});
-  ['cevrim1','agirlik1','sayac_bas1','sayac_bit1','cevrim2','agirlik2','sayac_bas2','sayac_bit2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('fire1').value=0;
-  document.getElementById('fire2').value=0;
-  [1,2].forEach(function(n){
-    const fEl=document.getElementById('fire'+n);
-    if(fEl){fEl.readOnly=false;fEl.style.background='';fEl.style.color='';}
-    const ctr=document.getElementById('fire-counter'+n);
-    if(ctr)ctr.querySelectorAll('.cbtn').forEach(function(b){b.disabled=false;});
-    const b=document.getElementById('fire-toplam-box'+n);
-    if(b)b.style.display='none';
-  });
-  [1,2].forEach(n=>{
-    document.getElementById('result-val'+n).textContent='—';
-    document.getElementById('result-box'+n)&&(document.getElementById('uretim-box'+n).style.cssText='background:var(--accent-light);border:2px solid var(--accent);border-radius:12px;padding:14px;text-align:center;margin-top:12px');
-  });
-  const sb=document.getElementById('submit-btn');if(sb)sb.disabled=false;
-  const ob=document.getElementById('onay-btn');if(ob)ob.disabled=false;
-  ['v-sabah','v-aksam','v-gece'].forEach(id=>document.getElementById(id).className='vbtn');
-  updateVardiyaButtons();
-  document.getElementById('status-box').style.display='none';
-  document.getElementById('enj1-sec').style.display='block'; document.getElementById('enj1-ro').style.display='none';
-  document.getElementById('kasa1-sec').style.display='block'; document.getElementById('kasa1-ro').style.display='none';
-  document.getElementById('enj2-sec').style.display='block'; document.getElementById('enj2-ro').style.display='none';
-  document.getElementById('kasa2-sec').style.display='block'; document.getElementById('kasa2-ro').style.display='none';
-  document.getElementById('enj-toggle-row').style.opacity='1';
-  document.getElementById('enj-toggle-row').style.pointerEvents='auto';
-  document.getElementById('normal-ozet').style.display='block';
-  document.getElementById('onay-ozet').style.display='none';
-  setEnjSayisi(1);
-  setBasEditable(1); setBasEditable(2);
-  document.getElementById('tarih').value=new Date(Date.now()+_timeOffset).toISOString().split('T')[0];
-  tickClock();
-  goStep(1);
-}
-
-let _pendingOnaylandi = false;
-
-function onGonderClick(onaylandi) {
-  if(window._limitAsimi) {
-    _pendingOnaylandi = onaylandi;
-    document.getElementById('limit-modal-body').innerHTML = window._limitAsimiMesaj;
-    document.getElementById('limit-modal').style.display = 'flex';
-  } else {
-    submitForm(onaylandi);
-  }
-}
-
-function closeLimitModal() {
-  document.getElementById('limit-modal').style.display = 'none';
-}
-
-function confirmLimitAndSubmit() {
-  closeLimitModal();
-  submitForm(_pendingOnaylandi);
-}
-
-function showToast(msg,type='ok'){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.className='toast '+type+' show';
-  setTimeout(()=>t.classList.remove('show'),3500);
-}
-</script>
 </body>
 </html>

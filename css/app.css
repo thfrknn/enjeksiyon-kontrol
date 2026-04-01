@@ -1,0 +1,124 @@
+/* ── Header ────────────────────────────────────────── */
+header {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: white;
+  padding: 18px 20px 14px;
+  text-align: center;
+}
+header h1     { font-size: 21px; font-weight: 800; }
+header p      { font-size: 13px; opacity: .85; margin-top: 2px; }
+#header-date  { font-size: 12px; opacity: .7; margin-top: 5px; font-weight: 600; }
+
+/* ── Step indicator ────────────────────────────────── */
+.steps { display: flex; background: white; border-bottom: 2px solid var(--border); }
+.step  { flex: 1; padding: 12px 4px 10px; text-align: center; font-size: 10px; font-weight: 700; color: var(--text2); border-bottom: 3px solid transparent; text-transform: uppercase; }
+.step .sn { width: 24px; height: 24px; border-radius: 50%; background: var(--border); color: var(--text2); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin: 0 auto 3px; }
+.step.active      { color: var(--accent);  border-bottom-color: var(--accent); }
+.step.active .sn  { background: var(--accent);  color: white; }
+.step.done        { color: var(--success); }
+.step.done .sn    { background: var(--success); color: white; }
+
+/* ── Pages ─────────────────────────────────────────── */
+.page        { display: none; padding: 16px; }
+.page.active { display: block; }
+
+/* ── Section card ──────────────────────────────────── */
+.section {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.stitle {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--text2);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stitle span { font-size: 16px; }
+
+/* ── Field ─────────────────────────────────────────── */
+.field           { margin-bottom: 16px; }
+.field:last-child { margin-bottom: 0; }
+
+/* ── Grid layout ───────────────────────────────────── */
+.row2         { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.toggle-row   { display: flex; gap: 10px; margin-bottom: 4px; }
+.nav-row      { display: flex; gap: 12px; margin-top: 4px; }
+
+/* ── Vardiya buttons ───────────────────────────────── */
+.vardiya-row { display: flex; gap: 8px; }
+.vbtn {
+  flex: 1;
+  padding: 12px 6px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text2);
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: all .15s;
+}
+.vbtn .vi     { font-size: 20px; }
+.vbtn .vt     { font-size: 10px; opacity: .8; }
+.vbtn:active  { transform: scale(.95); }
+.vbtn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+.vbtn.sel-sabah { border-color: #d97706; background: #fffbeb; color: #d97706; }
+.vbtn.sel-aksam { border-color: #0891b2; background: #ecfeff; color: #0891b2; }
+.vbtn.sel-gece  { border-color: #7c3aed; background: #f5f3ff; color: #7c3aed; }
+
+/* ── Enj machine grid ──────────────────────────────── */
+.enj-block              { border: 2px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; background: var(--bg); }
+.enj-block:last-child   { margin-bottom: 0; }
+.enj-block-title        { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--accent); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+.enj-grid               { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.enj-gbtn               { padding: 12px 4px; border-radius: 10px; border: 2px solid var(--border); background: var(--bg); font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; color: var(--text2); cursor: pointer; text-align: center; transition: all .15s; line-height: 1.2; }
+.enj-gbtn.sel           { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.enj-gbtn:active        { transform: scale(.95); }
+.enj-gbtn:disabled      { opacity: .35; cursor: not-allowed; transform: none; }
+.enj-grid.error         { outline: 2px solid var(--warn); outline-offset: 2px; border-radius: 10px; }
+
+/* ── Draft banner ──────────────────────────────────── */
+.draft-banner       { background: #fff7ed; border: 2px solid #f97316; border-radius: var(--radius); padding: 16px 18px; margin: 16px 16px 0; display: none; flex-direction: column; gap: 10px; }
+.draft-banner-top   { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 800; color: #c2410c; }
+.draft-banner-top span { font-size: 22px; }
+.draft-banner-sub   { font-size: 13px; color: #92400e; font-weight: 600; }
+.draft-banner-btns  { display: flex; gap: 8px; }
+.draft-btn-devam    { flex: 1; padding: 11px; border-radius: 10px; border: none; background: #f97316; color: white; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; }
+.draft-btn-sil      { flex: 0 0 auto; padding: 11px 16px; border-radius: 10px; border: 2px solid #fed7aa; background: white; color: #c2410c; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+/* ── Remember me ───────────────────────────────────── */
+.remember-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 10px 14px; background: var(--accent-light); border-radius: 10px; border: 1.5px solid var(--accent); }
+.remember-row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.remember-row label { font-size: 14px; font-weight: 700; color: var(--accent); cursor: pointer; margin: 0; }
+
+/* ── Summary / Özet ────────────────────────────────── */
+.sitem        { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.sitem:last-child { border-bottom: none; }
+.skey         { color: var(--text2); font-weight: 600; flex-shrink: 0; margin-right: 12px; }
+.sval         { font-weight: 800; color: var(--text); text-align: right; }
+.sdivider     { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: var(--accent); padding: 10px 0 5px; border-bottom: 2px solid var(--accent-light); margin-bottom: 4px; }
+
+/* ── Onay (approval) card ──────────────────────────── */
+.onay-card    { background: var(--white); border-radius: var(--radius); padding: 24px; margin-bottom: 14px; box-shadow: var(--shadow); border: 2px solid var(--success); text-align: center; }
+.onay-icon    { font-size: 48px; margin-bottom: 10px; }
+.onay-title   { font-size: 18px; font-weight: 800; color: var(--success); margin-bottom: 6px; }
+.onay-sub     { font-size: 14px; color: var(--text2); margin-bottom: 18px; }
+.onay-stats   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.ostat        { background: var(--bg); border-radius: 12px; padding: 14px; border: 1.5px solid var(--border); }
+.ostat-val    { font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+.ostat-lbl    { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .4px; }
