@@ -1011,9 +1011,39 @@ function getFpTarih() {
   return el && el.value ? el.value : new Date().toISOString().split('T')[0];
 }
 
+// Fire sıfırlanma dönemini saat bazlı belirle.
+// Reset saatleri: 09:15 (SABAH başlar), 17:15 (AKSAM başlar), 01:15 (GECE başlar).
+// Bu saatler arasında fire birikir; saat geçince yeni dönem başlar ve sıfırlanır.
+function getFirePeriod() {
+  var now = new Date(Date.now() + _timeOffset);
+  var h = now.getHours(), m = now.getMinutes();
+  var hm = h * 60 + m;
+  var yr = now.getFullYear(), mo = now.getMonth(), dy = now.getDate();
+  function ds(y, mn, d) {
+    return y + '-' + String(mn + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+  }
+  var T_SABAH = 9*60 + 15;   // 09:15 → 555
+  var T_AKSAM = 17*60 + 15;  // 17:15 → 1035
+  var T_GECE  = 1*60  + 15;  // 01:15 → 75
+  if (hm >= T_SABAH && hm < T_AKSAM) {
+    return { vardiya: 'SABAH', tarih: ds(yr, mo, dy) };
+  } else if (hm >= T_AKSAM) {
+    // 17:15-23:59 → AKSAM, bugünün tarihi
+    return { vardiya: 'AKSAM', tarih: ds(yr, mo, dy) };
+  } else if (hm < T_GECE) {
+    // 00:00-01:14 → AKSAM, dünün tarihi (AKSAM dün 17:15'te başladı)
+    var prev = new Date(yr, mo, dy - 1);
+    return { vardiya: 'AKSAM', tarih: ds(prev.getFullYear(), prev.getMonth(), prev.getDate()) };
+  } else {
+    // 01:15-09:14 → GECE
+    return { vardiya: 'GECE', tarih: ds(yr, mo, dy) };
+  }
+}
+
 function isFpFireLocked(enjNo) {
-  if(!vardiya || !enjNo) return false;
-  var t = parseInt(localStorage.getItem(getFpUnlockKey(getFpTarih(), vardiya, enjNo))||'0');
+  if(!enjNo) return false;
+  var fp = getFirePeriod();
+  var t = parseInt(localStorage.getItem(getFpUnlockKey(fp.tarih, fp.vardiya, enjNo))||'0');
   return t > Date.now();
 }
 
@@ -1097,14 +1127,16 @@ async function executeInstantFire(n, amount, enjNo) {
   document.getElementById('load-text').textContent = 'Fire Log\'a İşleniyor...';
   document.getElementById('loading').classList.add('show');
 
-  var tarih = getFpTarih();
+  var fp    = getFirePeriod();
+  var tarih = fp.tarih;
+  var fpVardiya = fp.vardiya;
   var saat  = document.getElementById('olcum_saat').value;
 
   // 1) Önce localStorage'a yaz — UI anında güncellenir, network'e bağımlı değil
-  var log = getFpLog(tarih, vardiya, enjNo);
+  var log = getFpLog(tarih, fpVardiya, enjNo);
   log.push({ ts: Date.now(), amount: amount });
-  try { localStorage.setItem(getFpLogKey(tarih, vardiya, enjNo), JSON.stringify(log)); } catch(ex){}
-  localStorage.setItem(getFpUnlockKey(tarih, vardiya, enjNo), String(Date.now() + 15*60*1000));
+  try { localStorage.setItem(getFpLogKey(tarih, fpVardiya, enjNo), JSON.stringify(log)); } catch(ex){}
+  localStorage.setItem(getFpUnlockKey(tarih, fpVardiya, enjNo), String(Date.now() + 15*60*1000));
 
   // 2) Input sıfırla, history'yi göster, loading kapat
   document.getElementById('fire'+n).value = '0';
@@ -1131,7 +1163,7 @@ async function executeInstantFire(n, amount, enjNo) {
     olcum_saat:   saat,
     kullanici_id: document.getElementById('kullanici_id').value,
     adsoyad:      _adSoyad || document.getElementById('kullanici_id').value,
-    vardiya:      vardiya  || '',
+    vardiya:      fpVardiya || '',
     makine_no:    enjNo,
     fire_miktari: amount,
     callback:     cb
@@ -1144,11 +1176,13 @@ async function executeInstantFire(n, amount, enjNo) {
 }
 
 function loadAccumulatedFire(n, enjNo) {
-  var tarih = getFpTarih();
-  if(!vardiya || !enjNo) return;
+  if(!enjNo) return;
+  var fp    = getFirePeriod();
+  var tarih = fp.tarih;
+  var fpVardiya = fp.vardiya;
 
   // Yerel geçmiş (bu cihazda girilen)
-  var log   = getFpLog(tarih, vardiya, enjNo);
+  var log   = getFpLog(tarih, fpVardiya, enjNo);
   var local = log.reduce(function(s,e){return s+(e.amount||0);},0);
 
   var tBox     = document.getElementById('fire-toplam-box'+n);
@@ -1207,21 +1241,22 @@ function loadAccumulatedFire(n, enjNo) {
   s.src = SCRIPT_URL + '?action=getFireTotal'
     + '&enj_no='  + encodeURIComponent(enjNo)
     + '&tarih='   + encodeURIComponent(tarih)
-    + '&vardiya=' + encodeURIComponent(vardiya)
+    + '&vardiya=' + encodeURIComponent(fpVardiya)
     + '&callback=' + cb;
   s.onerror = function(){ delete window[cb]; };
   document.head.appendChild(s);
 }
 
 function updateFireLockDisplay() {
-  var tarih = getFpTarih();
+  var fp = getFirePeriod();
+  var tarih = fp.tarih;
   [1, 2].forEach(function(n) {
     var enjNo = document.getElementById('enj'+n+'_no').value;
     var locked = false;
     var rem = 0;
     
-    if (vardiya && enjNo) {
-      var t = parseInt(localStorage.getItem(getFpUnlockKey(tarih, vardiya, enjNo))||'0');
+    if (enjNo) {
+      var t = parseInt(localStorage.getItem(getFpUnlockKey(tarih, fp.vardiya, enjNo))||'0');
       rem = t - Date.now();
       locked = rem > 0;
     }
@@ -1251,14 +1286,12 @@ function updateFireLockDisplay() {
 }
 
 function clearFireLogs() {
-  var tarih = getFpTarih();
-  var v = vardiya;
-  if(!v) return;
+  var fp = getFirePeriod();
   var d = getData();
   [d.enj1_no, enjSayisi>=2 ? d.enj2_no : null].forEach(function(enjNo){
     if(enjNo && enjNo !== '00'){
-      localStorage.removeItem(getFpLogKey(tarih,v,enjNo));
-      localStorage.removeItem(getFpUnlockKey(tarih,v,enjNo));
+      localStorage.removeItem(getFpLogKey(fp.tarih, fp.vardiya, enjNo));
+      localStorage.removeItem(getFpUnlockKey(fp.tarih, fp.vardiya, enjNo));
     }
   });
 }
@@ -1358,7 +1391,8 @@ function validate2() {
 
   // YENİ: Toplam Üretim >= Kümülatif Fire Kontrolü (1)
   const prod1 = getUretim(1);
-  const totalFire1 = getFpTotal(getFpTarih(), vardiya, document.getElementById('enj1_no').value);
+  const _fp1 = getFirePeriod();
+  const totalFire1 = getFpTotal(_fp1.tarih, _fp1.vardiya, document.getElementById('enj1_no').value);
   if(totalFire1 > prod1 && prod1 > 0) {
     document.getElementById('err-fire1').innerHTML = `⚠️ <b>Hata:</b> Kümülatif fire (${totalFire1}), üretim miktarından (${prod1}) fazla olamaz!`;
     document.getElementById('err-fire1').classList.add('show');
@@ -1378,7 +1412,8 @@ function validate2() {
     
     // YENİ: Toplam Üretim >= Kümülatif Fire Kontrolü (2)
     const prod2 = getUretim(2);
-    const totalFire2 = getFpTotal(getFpTarih(), vardiya, document.getElementById('enj2_no').value);
+    const _fp2 = getFirePeriod();
+    const totalFire2 = getFpTotal(_fp2.tarih, _fp2.vardiya, document.getElementById('enj2_no').value);
     if(totalFire2 > prod2 && prod2 > 0) {
       document.getElementById('err-fire2').innerHTML = `⚠️ <b>Hata:</b> Kümülatif fire (${totalFire2}), üretim miktarından (${prod2}) fazla olamaz!`;
       document.getElementById('err-fire2').classList.add('show');
@@ -1472,8 +1507,9 @@ function getData() {
   const e2=parseInt(document.getElementById('sayac_bit2').value)||0;
   
   // Veritabanına kümülatif toplamı (Total Fire) yolluyoruz
-  const totalFire1 = getFpTotal(getFpTarih(), vardiya, enj1);
-  const totalFire2 = enjSayisi === 2 ? getFpTotal(getFpTarih(), vardiya, enj2) : 0;
+  const _fpData = getFirePeriod();
+  const totalFire1 = getFpTotal(_fpData.tarih, _fpData.vardiya, enj1);
+  const totalFire2 = enjSayisi === 2 ? getFpTotal(_fpData.tarih, _fpData.vardiya, enj2) : 0;
 
   return {
     adsoyad: _adSoyad || document.getElementById('kullanici_id').value,

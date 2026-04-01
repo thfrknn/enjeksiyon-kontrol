@@ -68,14 +68,18 @@ function doGet(e) {
     const normTarih = vardiyaBaslangicTarih(tarih, saat, vardiya);
     const lastRow   = sheet.getLastRow();
     const vals = sheet.getRange(2, 1, lastRow - 1, 24).getValues();
+    const tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
 
     let olcumNo = 1, enj1 = null, kasa1 = null, enj2 = null, kasa2 = null, enjSayisi = 1;
     let sayacBit1 = null, sayacBit2 = null;
     let fireToplam1 = 0, fireToplam2 = 0;
 
     for (let i = 0; i < vals.length; i++) {
+      const rowTarih = vals[i][1] instanceof Date
+        ? Utilities.formatDate(vals[i][1], tz, 'yyyy-MM-dd')
+        : String(vals[i][1]).trim();
       if (String(vals[i][2]).trim() === String(adsoyad).trim() &&
-          String(vals[i][1]).trim() === String(normTarih).trim() &&
+          rowTarih === String(normTarih).trim() &&
           String(vals[i][3]).trim() === String(vardiya).trim()) {
         olcumNo   = parseInt(vals[i][4]) + 1;
         enjSayisi = parseInt(vals[i][5]) || 1;
@@ -132,16 +136,14 @@ function doGet(e) {
     const tarih   = String(e.parameter.tarih   || '').trim();
     const vardiya = String(e.parameter.vardiya || '').trim();
 
+    const tz = ss.getSpreadsheetTimeZone();
     const vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 8).getValues();
     let total = 0;
     for (const row of vals) {
-      // FIX: Tarih formatı uyuşmazlığı — Google Sheets Date nesnesine çevirdiğinde
-      // formatını düzgün hale getir (2026-03-31)
-      const rowTarih = row[1] instanceof Date
-        ? Utilities.formatDate(row[1], Session.getScriptTimeZone(), 'yyyy-MM-dd')
+      const storedTarih = row[1] instanceof Date
+        ? Utilities.formatDate(row[1], tz, 'yyyy-MM-dd')
         : String(row[1]).trim();
-      
-      if (rowTarih === tarih &&
+      if (storedTarih === tarih &&
           String(row[4]).trim() === vardiya &&
           String(row[5]).trim() === enjNo) {
         total += Number(row[6]) || 0;
@@ -289,7 +291,9 @@ function doPost(e) {
 function vardiyaBaslangicTarih(tarih, saat, vardiya) {
   if (vardiya !== 'AKSAM' || !saat) return tarih;
   const hour = parseInt(saat.split(':')[0]);
-  if (hour >= 0 && hour < 1) {
+  // AKSAM: 17:00-01:00. Entries at 00:xx or 01:xx are the next calendar day
+  // but belong to the previous day's AKSAM shift.
+  if (hour >= 0 && hour < 2) {
     const d = new Date(tarih);
     d.setDate(d.getDate() - 1);
     return d.toISOString().split('T')[0];
