@@ -313,6 +313,7 @@ input.error,select.error{border-color:var(--warn)!important}
   <div style="font-size:11px; font-weight:800; color:var(--text2); margin-bottom:6px;">📋 BUGÜNKÜ GİRİŞLER</div>
   <div id="fire-history-list1"></div>
 </div>
+      <button class="btn" id="btn-close-machine1" onclick="promptCloseMachine(1)" style="width:100%; margin-top:10px; padding:12px; font-size:15px; background:#dc2626; color:white; border:none;">🚫 Makineyi Kapat</button>
     </div>
   </div>
 
@@ -404,6 +405,7 @@ input.error,select.error{border-color:var(--warn)!important}
   <div style="font-size:11px; font-weight:800; color:var(--text2); margin-bottom:6px;">📋 BUGÜNKÜ GİRİŞLER</div>
   <div id="fire-history-list2"></div>
 </div>
+      <button class="btn" id="btn-close-machine2" onclick="promptCloseMachine(2)" style="width:100%; margin-top:10px; padding:12px; font-size:15px; background:#dc2626; color:white; border:none;">🚫 Makineyi Kapat</button>
     </div>
   </div>
 
@@ -482,6 +484,7 @@ var maxFireLimit = 50; // Google Sheets'ten güncellenecek varsayılan değer
 var _timeOffset = 0, _t0 = 0;
 var _fireAdjTimer = null, _fireAdjInterval = null;
 var _pendingFire = null; // Anlık fire kaydı için geçici nesne
+var _pendingClose = null; // Makine kapatma için geçici nesne
 
 window.onload = async function() {
   const now = new Date();
@@ -793,25 +796,47 @@ const _VR = {
   GECE:  { s: 1*60,    e: 9*60     },
 };
 
-function isVardiyaActive(v) {
-  if(window.__testMode) return true; 
+const _TRANSITIONS = {
+  'GECE_SABAH': { start: 8*60 + 45, end: 9*60 + 15, vardiyalar: ['GECE', 'SABAH'] }, // 08:45-09:15
+  'SABAH_AKSAM': { start: 16*60 + 45, end: 17*60 + 15, vardiyalar: ['SABAH', 'AKSAM'] }, // 16:45-17:15
+  'AKSAM_GECE': { start: 0*60 + 45, end: 1*60 + 15, vardiyalar: ['AKSAM', 'GECE'] }, // 00:45-01:15
+};
+
+function getActiveVardiyalar() {
+  if(window.__testMode) return ['SABAH','AKSAM','GECE'];
   const now = new Date(Date.now() + _timeOffset);
   const m = now.getHours() * 60 + now.getMinutes();
-  const r = _VR[v];
-  return r.e < r.s ? (m >= r.s || m <= r.e) : (m >= r.s && m <= r.e);
+  for (const key in _TRANSITIONS) {
+    const t = _TRANSITIONS[key];
+    if (m >= t.start && m <= t.end) {
+      return t.vardiyalar;
+    }
+  }
+  // Normal durumda sadece bir tane
+  for (const v in _VR) {
+    const r = _VR[v];
+    if (r.e < r.s ? (m >= r.s || m <= r.e) : (m >= r.s && m <= r.e)) {
+      return [v];
+    }
+  }
+  return [];
+}
+
+function isVardiyaActive(v) {
+  return getActiveVardiyalar().includes(v);
 }
 
 function updateVardiyaButtons() {
+  const active = getActiveVardiyalar();
   ['SABAH','AKSAM','GECE'].forEach(v => {
-    document.getElementById('v-'+v.toLowerCase()).disabled = !isVardiyaActive(v);
+    document.getElementById('v-'+v.toLowerCase()).disabled = !active.includes(v);
   });
-  if(vardiya && !isVardiyaActive(vardiya)) {
+  if(vardiya && !active.includes(vardiya)) {
     vardiya = null;
     ['sabah','aksam','gece'].forEach(x=>document.getElementById('v-'+x).className='vbtn');
   }
-  if(!vardiya) {
-    const aktif = ['SABAH','AKSAM','GECE'].filter(v => isVardiyaActive(v));
-    if(aktif.length === 1) setVardiya(aktif[0]);
+  if(!vardiya && active.length === 1) {
+    setVardiya(active[0]);
   }
 }
 
@@ -850,6 +875,18 @@ function checkStatus() {
       document.getElementById('sayac_bas2').value = json.sayacBit2;
       setBasReadonly(2); calcUretim(2);
     }
+    // Kilitli makineler
+    const locked = json.lockedMachines || [];
+    [1,2].forEach(n => {
+      const enjNo = document.getElementById('enj'+n+'_no').value;
+      if (locked.includes(enjNo)) {
+        if (n === 1) enj1Kilitli = true;
+        if (n === 2) enj2Kilitli = true;
+        document.getElementById('btn-close-machine'+n).disabled = true;
+        document.getElementById('btn-close-machine'+n).textContent = 'Kapalı';
+      }
+    });
+    syncEnjDisabled();
   };
   const s = document.createElement('script');
   s.id = 'st-s';
@@ -1113,6 +1150,7 @@ function promptInstantFire(n) {
 function closeFireModal() {
   document.getElementById('fire-modal').style.display = 'none';
   _pendingFire = null;
+  _pendingClose = null;
 }
 
 function confirmInstantFire() {
@@ -1121,6 +1159,123 @@ function confirmInstantFire() {
   const fireData = _pendingFire;
   closeFireModal();
   executeInstantFire(fireData.n, fireData.amount, fireData.enjNo);
+}
+
+function promptCloseMachine(n) {
+  const enjNo = document.getElementById('enj'+n+'_no').value;
+  if(!enjNo) {
+    showToast('Makine seçilmedi', 'err');
+    return;
+  }
+  document.getElementById('fire-modal-body').innerHTML = 
+    `⚠️ <strong style="font-size:18px; color:#dc2626">Makineyi kapatıyorsunuz!</strong> <br><br>Makine <strong>${enjNo}</strong> için üretim korunacak, makine kilitlenecek ve fire eklenebilir kalacak. Çevrim süresi 0 olarak kaydedilecek. Onaylıyor musunuz?`;
+  document.getElementById('fire-modal').style.display = 'flex';
+  _pendingClose = { n: n, enjNo: enjNo };
+}
+
+function confirmCloseMachine() {
+  if (!_pendingClose) return;
+  const closeData = _pendingClose;
+  closeFireModal();
+  executeCloseMachine(closeData.n, closeData.enjNo);
+}
+
+function executeCloseMachine(n, enjNo) {
+  const bitEl = document.getElementById('sayac_bit'+n);
+  if(!bitEl.value) {
+    document.getElementById('err-bit'+n).textContent = 'Kapatmak için sayaç bitişi gerekli!';
+    document.getElementById('err-bit'+n).classList.add('show');
+    bitEl.classList.add('error');
+    bitEl.focus();
+    return;
+  }
+  const bas = parseInt(document.getElementById('sayac_bas'+n).value) || 0;
+  const bit = parseInt(bitEl.value);
+  if(bit < bas) {
+    document.getElementById('err-bit'+n).textContent = 'Bitiş < Başlama!';
+    document.getElementById('err-bit'+n).classList.add('show');
+    bitEl.classList.add('error');
+    return;
+  }
+  const uretim = bit - bas;
+  document.getElementById('cevrim'+n).value = '0';
+  calcUretim(n);
+
+  const data = getData();
+  data.close = 'true';
+  data.enjNo = n;
+  data.onaylandi = 'false';
+
+  document.getElementById('load-text').textContent = 'Makine Kapatılıyor...';
+  document.getElementById('loading').classList.add('show');
+
+  var cb = 'cbClose_' + Date.now();
+  var timerOut = setTimeout(function() {
+    delete window[cb];
+    document.getElementById('loading').classList.remove('show');
+    showToast('❌ Bağlantı zaman aşımı','err');
+  }, 15000);
+
+  window[cb] = function(json) {
+    clearTimeout(timerOut);
+    delete window[cb];
+    var s = document.getElementById('jsonp-close');
+    if(s) s.remove();
+    document.getElementById('loading').classList.remove('show');
+    if(json && json.result === 'ok') {
+      showToast('🚫 Makine kapatıldı!','ok');
+      // Makineyi kilitli yap
+      if(n === 1) enj1Kilitli = true;
+      if(n === 2) enj2Kilitli = true;
+      showEnjSection({ olcumNo: olcumNo, enj1: enj1Kilitli ? enjNo : null, enj2: enj2Kilitli ? document.getElementById('enj2_no').value : null, kasa1: data.kasa1, kasa2: data.kasa2 });
+      // Butonu disable et
+      document.getElementById('btn-close-machine'+n).disabled = true;
+      document.getElementById('btn-close-machine'+n).textContent = 'Kapalı';
+    } else {
+      showToast('❌ Kapatma hatası','err');
+    }
+  };
+
+  var params = new URLSearchParams({
+    action: 'submitForm',
+    close: 'true',
+    enjNo: n,
+    callback: cb,
+    adsoyad: data.adsoyad,
+    vardiya: data.vardiya,
+    olcumNo: data.olcumNo,
+    enjSayisi: data.enjSayisi,
+    tarih: data.tarih,
+    olcum_saat: data.olcum_saat,
+    enj1_no: data.enj1_no,
+    kasa1: data.kasa1,
+    cevrim1: n===1 ? '0' : data.cevrim1,
+    agirlik1: data.agirlik1,
+    sayac_bas1: data.sayac_bas1,
+    sayac_bit1: data.sayac_bit1,
+    uretim1: data.uretim1,
+    fire1: data.fire1,
+    enj2_no: data.enj2_no,
+    kasa2: data.kasa2,
+    cevrim2: n===2 ? '0' : data.cevrim2,
+    agirlik2: data.agirlik2,
+    sayac_bas2: data.sayac_bas2,
+    sayac_bit2: data.sayac_bit2,
+    uretim2: data.uretim2,
+    fire2: data.fire2,
+    onaylandi: 'false'
+  });
+
+  var s = document.createElement('script');
+  s.id = 'jsonp-close';
+  s.src = SCRIPT_URL + '?' + params.toString();
+  s.onerror = function() {
+    clearTimeout(timerOut);
+    delete window[cb];
+    document.getElementById('loading').classList.remove('show');
+    showToast('❌ Bağlantı hatası','err');
+  };
+  document.head.appendChild(s);
 }
 
 async function executeInstantFire(n, amount, enjNo) {
