@@ -352,7 +352,24 @@ function doGet(e) {
       }
     }
 
-    return jsonp(cb, { statuses, arizaTipleri, machineData, serverTime: new Date().getTime() });
+    // Atanan kasa ebatları ("Makine Kasa" sekmesinden)
+    const atananKasalar = {};
+    const kasaSheet = ss.getSheetByName('Makine Kasa');
+    if (kasaSheet && kasaSheet.getLastRow() > 1) {
+      const kv = kasaSheet.getRange(2, 1, kasaSheet.getLastRow() - 1, 2).getValues();
+      for (const row of kv) {
+        const m = String(row[0]).trim();
+        const k = String(row[1]).trim();
+        if (m && k) atananKasalar[m] = k;
+      }
+    }
+
+    // Kasa ebatları listesi (Ayarlar B sütunu)
+    const kasaEbatlari = ayarlar
+      ? ayarlar.getRange('B2:B50').getValues().flat().map(v => String(v).trim()).filter(v => v)
+      : [];
+
+    return jsonp(cb, { statuses, arizaTipleri, machineData, kasaEbatlari, atananKasalar, serverTime: new Date().getTime() });
   }
 
   // ============================================================
@@ -396,6 +413,40 @@ function doGet(e) {
 
     setMachineDurum(ss, makineNo, yeniDurum, arizaTipi, sorun);
 
+    return jsonp(cb, { result: 'ok' });
+  }
+
+  // ============================================================
+  // setMachineKasa: Makineye kasa ebatı atar ("Makine Kasa" sekmesi)
+  // ============================================================
+  if (e.parameter.action === 'setMachineKasa') {
+    const ss       = SpreadsheetApp.getActiveSpreadsheet();
+    const makineNo = e.parameter.makine_no || '';
+    const kasa     = e.parameter.kasa      || '';
+    const tekniker = e.parameter.tekniker  || '';
+
+    let sheet = ss.getSheetByName('Makine Kasa');
+    if (!sheet) {
+      sheet = ss.insertSheet('Makine Kasa');
+      sheet.appendRow(['Makine No', 'Kasa Ebatı', 'Son Güncelleme', 'Güncelleyen']);
+      const h = sheet.getRange('A1:D1');
+      h.setFontWeight('bold').setBackground('#2563eb').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+      [120, 120, 140, 140].forEach((w, i) => sheet.setColumnWidth(i + 1, w));
+    }
+
+    const now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      const vals = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+      for (let i = 0; i < vals.length; i++) {
+        if (String(vals[i][0]).trim() === makineNo) {
+          sheet.getRange(i + 2, 2, 1, 3).setValues([[kasa, now, tekniker]]);
+          return jsonp(cb, { result: 'ok' });
+        }
+      }
+    }
+    sheet.appendRow([makineNo, kasa, now, tekniker]);
     return jsonp(cb, { result: 'ok' });
   }
 

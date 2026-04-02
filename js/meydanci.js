@@ -5,7 +5,9 @@ const _userName = sessionStorage.getItem('ep_name') || '';
 
 let _statuses     = {};
 let _arizaTipleri = [];
-let _machineData  = {};   // Canlı İzleme'den çekilen son metrikler
+let _machineData  = {};
+let _kasaEbatlari = [];   // Ayarlar B sütunundan gelen kasa listesi
+let _atananKasalar = {};  // Makine → atanan kasa
 let _timeOffset   = 0;
 
 /* ---------- Init ---------- */
@@ -32,9 +34,11 @@ function loadStatuses() {
     delete window[cb];
     document.getElementById('loading').classList.remove('show');
     if (json.serverTime) _timeOffset = json.serverTime - Date.now();
-    _statuses     = json.statuses     || {};
-    _machineData  = json.machineData  || {};
-    _arizaTipleri = (json.arizaTipleri && json.arizaTipleri.length)
+    _statuses      = json.statuses      || {};
+    _machineData   = json.machineData   || {};
+    _kasaEbatlari  = json.kasaEbatlari  || [];
+    _atananKasalar = json.atananKasalar || {};
+    _arizaTipleri  = (json.arizaTipleri && json.arizaTipleri.length)
       ? json.arizaTipleri
       : ['Makine Kaynaklı', 'Kalıp Kaynaklı', 'Diğer'];
     renderMachines();
@@ -107,9 +111,10 @@ function buildCard(n, makineNo, status) {
     infoLine = `<div class="mcard-info-row mcard-info-red">⚠️ ${arizaText}</div>`;
   } else if (md) {
     const chips = [];
-    if (md.kasa)    chips.push(`<span class="mchip">📦 ${md.kasa}</span>`);
-    if (md.cevrim)  chips.push(`<span class="mchip">⏱ ${md.cevrim} sn</span>`);
-    if (md.operatör) chips.push(`<span class="mchip">👤 ${md.operatör.split(' ')[0]}</span>`);
+    const kasaGoster = _atananKasalar[makineNo] || (md && md.kasa) || '';
+    if (kasaGoster) chips.push(`<span class="mchip">📦 ${kasaGoster}</span>`);
+    if (md && md.cevrim)   chips.push(`<span class="mchip">⏱ ${md.cevrim} sn</span>`);
+    if (md && md.operatör) chips.push(`<span class="mchip">👤 ${md.operatör.split(' ')[0]}</span>`);
     if (chips.length) infoLine = `<div class="mcard-info-row">${chips.join('')}</div>`;
   }
 
@@ -175,10 +180,28 @@ function buildCard(n, makineNo, status) {
         </button>
       </div>
 
-      <!-- Kasa ebatı — yakında -->
-      <div class="mcard-section mcard-section-dim">
+      <!-- Kasa ebatı tanımla -->
+      <div class="mcard-section">
         <div class="mcard-sec-title" style="color:var(--accent)">📦 Kasa Ebatı Tanımla</div>
-        <div style="font-size:13px;color:var(--text2);margin-top:4px">Yakında eklenecek...</div>
+        ${_atananKasalar[makineNo]
+          ? `<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px">
+               Mevcut: <strong>${_atananKasalar[makineNo]}</strong>
+             </div>`
+          : `<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Henüz atanmadı</div>`
+        }
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <select id="kasa-sel-${n}"
+                  style="flex:1;padding:12px 14px;font-size:15px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text);background:white;border:2px solid var(--border);border-radius:12px;outline:none;-webkit-appearance:none;appearance:none">
+            <option value="">— Kasa seç —</option>
+            ${_kasaEbatlari.map(k =>
+              `<option value="${k}"${_atananKasalar[makineNo] === k ? ' selected' : ''}>${k}</option>`
+            ).join('')}
+          </select>
+          <button onclick="saveKasa(${n}, '${makineNo}')"
+                  style="flex-shrink:0;padding:12px 16px;background:var(--accent);color:white;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer">
+            Kaydet
+          </button>
+        </div>
       </div>
 
     </div>
@@ -301,6 +324,50 @@ function submitAriza(n, makineNo) {
 
   const s = document.createElement('script');
   s.src = SCRIPT_URL + '?' + params.toString();
+  s.onerror = function() {
+    delete window[cb];
+    document.getElementById('loading').classList.remove('show');
+    showMToast('Bağlantı hatası', 'err');
+  };
+  document.head.appendChild(s);
+}
+
+/* ---------- Kasa kaydet ---------- */
+
+function saveKasa(n, makineNo) {
+  const sel  = document.getElementById('kasa-sel-' + n);
+  const kasa = sel ? sel.value : '';
+  if (!kasa) { showMToast('Lütfen kasa seçin', 'err'); return; }
+
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('load-text').textContent = 'Kaydediliyor...';
+
+  const cb = 'cbKS_' + Date.now();
+  window[cb] = function(json) {
+    delete window[cb];
+    document.getElementById('loading').classList.remove('show');
+    if (json.result === 'ok') {
+      _atananKasalar[makineNo] = kasa;
+      renderMachines();
+      // Kartı tekrar aç
+      const body = document.getElementById('mcard-body-' + n);
+      if (body) {
+        body.style.display = 'block';
+        document.getElementById('mcard-arrow-' + n).textContent = '▲';
+      }
+      showMToast('✅ Kasa atandı: ' + kasa, 'ok');
+    } else {
+      showMToast('Kayıt hatası', 'err');
+    }
+  };
+
+  const s = document.createElement('script');
+  s.src = SCRIPT_URL
+    + '?action=setMachineKasa'
+    + '&makine_no=' + encodeURIComponent(makineNo)
+    + '&kasa='      + encodeURIComponent(kasa)
+    + '&tekniker='  + encodeURIComponent(_userName)
+    + '&callback='  + cb;
   s.onerror = function() {
     delete window[cb];
     document.getElementById('loading').classList.remove('show');
