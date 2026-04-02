@@ -15,31 +15,212 @@
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/app.css">
+
+  <style>
+    /* ── Meydancı kart accordion ──────────────────── */
+    .mcard {
+      background: var(--white);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+    .mcard.mcard-red {
+      border-color: #fca5a5;
+      background: #fff5f5;
+    }
+
+    /* Header (collapse/expand bar) */
+    .mcard-hd {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .mcard-hd:active { background: var(--bg); }
+
+    .mcard-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+    .mcard-no {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .mcard-sub {
+      font-size: 11px;
+      color: #b91c1c;
+      font-weight: 600;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mcard-arrow {
+      font-size: 12px;
+      color: var(--text2);
+      flex-shrink: 0;
+    }
+
+    /* Badge */
+    .mbadge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .mbadge-green { background: #dcfce7; color: #15803d; }
+    .mbadge-red   { background: #fee2e2; color: #dc2626; }
+
+    /* Body */
+    .mcard-bd {
+      padding: 0 14px 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Toggle button */
+    .m-toggle-btn {
+      width: 100%;
+      padding: 15px;
+      margin: 14px 0 0;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .m-toggle-btn:active { opacity: .85; }
+    .mtbtn-red   { background: #dc2626; color: white; }
+    .mtbtn-green { background: #16a34a; color: white; }
+
+    /* Section inside body */
+    .mcard-section {
+      margin-top: 14px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .mcard-section-dim { opacity: .55; }
+    .mcard-sec-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: #b91c1c;
+      margin-bottom: 12px;
+    }
+
+    /* Textarea */
+    .mtextarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 600;
+      color: var(--text);
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      outline: none;
+      resize: vertical;
+      transition: border-color .2s;
+    }
+    .mtextarea:focus { border-color: var(--accent); background: white; }
+
+    /* Radio group */
+    .rad-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .rad-lbl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: white;
+    }
+    .rad-lbl input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--warn);
+      flex-shrink: 0;
+    }
+    .rad-lbl:has(input:checked) {
+      border-color: var(--warn);
+      background: #fff1f1;
+      color: var(--warn);
+    }
+
+    /* Yenile butonu */
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      font-family: 'Nunito', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text2);
+      cursor: pointer;
+    }
+    .refresh-btn:active { background: var(--bg); }
+  </style>
 </head>
 <body>
 
 <header>
   <h1>🏭 Ersan Plastik</h1>
-  <p>Meydancı / Tekniker Paneli</p>
+  <p id="user-header">Meydancı Paneli</p>
   <div id="header-date"></div>
 </header>
 
-<div style="padding:32px 16px;text-align:center;color:var(--text2)">
-  <div style="font-size:48px;margin-bottom:12px">🔧</div>
-  <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px">Meydancı Paneli</div>
-  <div style="font-size:14px">Bu sayfa hazırlanıyor...</div>
-</div>
-
-<div style="padding:0 16px">
-  <a href="index.html" class="btn btn-back"
-     style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;border-radius:14px;background:var(--border);color:var(--text2);text-decoration:none;font-weight:800;font-size:15px">
-    ← Geri Dön
+<!-- Üst bar: çıkış + yenile -->
+<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 4px">
+  <a href="index.html"
+     style="font-size:13px;font-weight:700;color:var(--text2);text-decoration:none;display:flex;align-items:center;gap:4px">
+    ← Çıkış
   </a>
+  <button class="refresh-btn" onclick="loadStatuses()">🔄 Yenile</button>
 </div>
 
-<script>
-  document.getElementById('header-date').textContent =
-    new Date().toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-</script>
+<!-- Makine kartları -->
+<div id="machines-container" style="padding:8px 16px 40px"></div>
+
+<!-- Loading & Toast -->
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <span id="load-text">Yükleniyor...</span>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/meydanci.js"></script>
+
 </body>
 </html>

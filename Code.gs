@@ -280,6 +280,107 @@ function doGet(e) {
     return jsonp(cb, { result: 'ok', olcum: olcumNo });
   }
 
+  // ============================================================
+  // getMachineStatuses: 12 makinenin anlık durumunu ve arıza
+  // tiplerini döndürür. Meydancı sayfası bu action'ı kullanır.
+  // ============================================================
+  if (e.parameter.action === 'getMachineStatuses') {
+    const ss      = SpreadsheetApp.getActiveSpreadsheet();
+    const ayarlar = ss.getSheetByName('Ayarlar');
+
+    // Arıza tipleri: Ayarlar G sütunundan, yoksa varsayılan
+    let arizaTipleri = [];
+    if (ayarlar) {
+      arizaTipleri = ayarlar.getRange('G2:G20').getValues().flat()
+        .map(v => String(v).trim()).filter(v => v);
+    }
+    if (!arizaTipleri.length) {
+      arizaTipleri = ['Makine Kaynaklı', 'Kalıp Kaynaklı', 'Diğer'];
+    }
+
+    // 12 makinenin durumu
+    const statuses = {};
+    for (let i = 1; i <= 12; i++) {
+      statuses['Enjeksiyon ' + i] = { durum: 'Aktif', sonAriza: null };
+    }
+
+    const durSheet = ss.getSheetByName('Makine Durumları');
+    if (durSheet && durSheet.getLastRow() > 1) {
+      const vals = durSheet.getRange(2, 1, durSheet.getLastRow() - 1, 5).getValues();
+      for (const row of vals) {
+        const makine = String(row[0]).trim();
+        const durum  = String(row[1]).trim();
+        const sorun  = String(row[3]).trim();
+        const tip    = String(row[4]).trim();
+        if (statuses[makine]) {
+          statuses[makine].durum = durum;
+          if (durum === 'Arızalı') {
+            statuses[makine].sonAriza = { tip, sorun };
+          }
+        }
+      }
+    }
+
+    return jsonp(cb, { statuses, arizaTipleri, serverTime: new Date().getTime() });
+  }
+
+  // ============================================================
+  // logAriza: Arıza kaydını "Arıza Log" sekmesine yazar ve
+  // makine durumunu günceller.
+  // ============================================================
+  if (e.parameter.action === 'logAriza') {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    let arizaSheet = ss.getSheetByName('Arıza Log');
+    if (!arizaSheet) {
+      arizaSheet = ss.insertSheet('Arıza Log');
+      arizaSheet.appendRow([
+        'Kayıt Zamanı','Tekniker ID','Tekniker Ad','Makine No',
+        'Arıza Tipi','Sorun','Çözüm','Başlangıç Saati','Bitiş Saati','Durum'
+      ]);
+      const h = arizaSheet.getRange('A1:J1');
+      h.setFontWeight('bold').setBackground('#dc2626').setFontColor('#ffffff');
+      arizaSheet.setFrozenRows(1);
+      [1,160,120,130,130,200,200,110,110,90].forEach((w,i) => {
+        if (i > 0) arizaSheet.setColumnWidth(i, w);
+      });
+    }
+
+    const makineNo    = e.parameter.makine_no    || '';
+    const arizaTipi   = e.parameter.ariza_tipi   || '';
+    const sorun       = e.parameter.sorun        || '';
+    const cozum       = e.parameter.cozum        || '';
+    const basSaat     = e.parameter.bas_saat     || '';
+    const bitSaat     = e.parameter.bit_saat     || '';
+    const teknikerId  = e.parameter.tekniker_id  || '';
+    const teknikerAd  = e.parameter.tekniker_ad  || '';
+    const yeniDurum   = bitSaat ? 'Aktif' : 'Arızalı';
+
+    arizaSheet.appendRow([
+      new Date().toLocaleString('tr-TR'),
+      teknikerId, teknikerAd, makineNo,
+      arizaTipi, sorun, cozum, basSaat, bitSaat,
+      yeniDurum === 'Aktif' ? 'Kapalı (Çözüldü)' : 'Açık'
+    ]);
+
+    setMachineDurum(ss, makineNo, yeniDurum, arizaTipi, sorun);
+
+    return jsonp(cb, { result: 'ok' });
+  }
+
+  // ============================================================
+  // toggleMachine: Makineyi manuel olarak Aktif/Arızalı yapar.
+  // ============================================================
+  if (e.parameter.action === 'toggleMachine') {
+    const ss       = SpreadsheetApp.getActiveSpreadsheet();
+    const makineNo = e.parameter.makine_no || '';
+    const durum    = e.parameter.durum     || 'Aktif';
+
+    setMachineDurum(ss, makineNo, durum, '', '');
+
+    return jsonp(cb, { result: 'ok', makine: makineNo, durum });
+  }
+
   return jsonp(cb, { error: 'Geçersiz istek' });
 }
 
@@ -473,19 +574,64 @@ function jsonp(callback, obj) {
 // ============================================================
 
 function getLockedMachines(ss) {
-  let lockSheet = ss.getSheetByName('Machine Locks');
-  if (!lockSheet || lockSheet.getLastRow() < 2) return {};
-
-  const vals = lockSheet.getRange(2, 1, lockSheet.getLastRow() - 1, 5).getValues();
   const locked = {};
-  for (const row of vals) {
-    const machine = String(row[0]).trim();
-    const status = String(row[4]).trim();
-    if (status === 'LOCKED') {
-      locked[machine] = true;
+
+  // Eski "Machine Locks" sekmesi
+  const lockSheet = ss.getSheetByName('Machine Locks');
+  if (lockSheet && lockSheet.getLastRow() > 1) {
+    const vals = lockSheet.getRange(2, 1, lockSheet.getLastRow() - 1, 5).getValues();
+    for (const row of vals) {
+      if (String(row[4]).trim() === 'LOCKED') {
+        locked[String(row[0]).trim()] = true;
+      }
     }
   }
+
+  // Yeni "Makine Durumları" sekmesi — Arızalı makineler de kilitli sayılır
+  const durSheet = ss.getSheetByName('Makine Durumları');
+  if (durSheet && durSheet.getLastRow() > 1) {
+    const vals = durSheet.getRange(2, 1, durSheet.getLastRow() - 1, 2).getValues();
+    for (const row of vals) {
+      if (String(row[1]).trim() === 'Arızalı') {
+        locked[String(row[0]).trim()] = true;
+      }
+    }
+  }
+
   return locked;
+}
+
+// ============================================================
+// setMachineDurum: Makine Durumları sekmesinde ilgili satırı
+// günceller; yoksa yeni satır ekler.
+// ============================================================
+function setMachineDurum(ss, makineNo, durum, tip, sorun) {
+  let sheet = ss.getSheetByName('Makine Durumları');
+  if (!sheet) {
+    sheet = ss.insertSheet('Makine Durumları');
+    sheet.appendRow(['Makine No', 'Durum', 'Son Güncelleme', 'Sorun', 'Arıza Tipi']);
+    const h = sheet.getRange('A1:E1');
+    h.setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+    for (let i = 1; i <= 12; i++) {
+      sheet.appendRow(['Enjeksiyon ' + i, 'Aktif', '', '', '']);
+    }
+  }
+
+  const now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow > 1) {
+    const vals = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (let i = 0; i < vals.length; i++) {
+      if (String(vals[i][0]).trim() === String(makineNo).trim()) {
+        sheet.getRange(i + 2, 2, 1, 4).setValues([[durum, now, sorun || '', tip || '']]);
+        return;
+      }
+    }
+  }
+
+  sheet.appendRow([makineNo, durum, now, sorun || '', tip || '']);
 }
 
 function lockMachine(ss, machineNo, tarih, vardiya, adSoyad) {
