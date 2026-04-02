@@ -68,6 +68,16 @@ function fetchLastCounter(n, enjNo) {
       setBasReadonly(n);
       calcUretim(n);
     }
+    if (json.kasaAtanan) {
+      var kasaSel = document.getElementById('kasa' + n);
+      if (kasaSel) {
+        kasaSel.value = json.kasaAtanan;
+        calcUretim(n);
+      }
+      showKasaAtandiBox(n, json.kasaAtanan);
+    } else {
+      hideKasaAtandiBox(n);
+    }
   };
 
   var s = document.createElement('script');

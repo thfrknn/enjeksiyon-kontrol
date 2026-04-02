@@ -108,6 +108,19 @@ function clearSifreErr() {
   document.getElementById('sifre').classList.remove('error');
 }
 
+// ── Meydancı tarafından atanan kasa bilgi kutusu ────
+function showKasaAtandiBox(n, kasa) {
+  var box = document.getElementById('kasa-atandi-box' + n);
+  if (!box) return;
+  document.getElementById('kasa-atandi-val' + n).textContent = kasa;
+  box.style.display = 'flex';
+}
+
+function hideKasaAtandiBox(n) {
+  var box = document.getElementById('kasa-atandi-box' + n);
+  if (box) box.style.display = 'none';
+}
+
 // ── Durum kutusu ve enjeksiyon kilidi gösterimi ─────
 function showStatusBox(json) {
   var box = document.getElementById('status-box');
@@ -251,25 +264,6 @@ function goNext(from) {
     _adSoyad    = (kullanicilar[id] && kullanicilar[id].name) || id;
     if (hatirla && si) localStorage.setItem('sifre_' + id, si);
     else               localStorage.removeItem('sifre_' + id);
-
-    // Rol bazlı yönlendirme
-    var kullanici = kullanicilar[id];
-    var rol = (kullanici && kullanici.rol)
-      || (id.charAt(0) === '1' ? 'meydanci'
-        : id.charAt(0) === '3' ? 'yonetici'
-        : 'operatör');
-    if (rol === 'meydanci') {
-      sessionStorage.setItem('ep_id',   id);
-      sessionStorage.setItem('ep_name', _adSoyad);
-      window.location.href = 'meydanci.html';
-      return;
-    }
-    if (rol === 'yonetici') {
-      sessionStorage.setItem('ep_id',   id);
-      sessionStorage.setItem('ep_name', _adSoyad);
-      window.location.href = 'monitor.html';
-      return;
-    }
   }
   if (from === 2 && !validate2()) return;
   if (from === 2) buildSummary();

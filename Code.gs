@@ -122,7 +122,20 @@ function doGet(e) {
         if (!isNaN(b)) sayacBit = b;
       }
     }
-    return jsonp(cb, { sayacBit });
+
+    // "Makine Kasa" sekmesinden meydancının atadığı kasayı da döndür
+    let kasaAtanan = null;
+    const kasaSheet = ss.getSheetByName('Makine Kasa');
+    if (kasaSheet && kasaSheet.getLastRow() > 1) {
+      const kv = kasaSheet.getRange(2, 1, kasaSheet.getLastRow() - 1, 2).getValues();
+      for (const row of kv) {
+        if (String(row[0]).trim() === String(enjNo).trim()) {
+          kasaAtanan = String(row[1]).trim() || null;
+          break;
+        }
+      }
+    }
+    return jsonp(cb, { sayacBit, kasaAtanan });
   }
 
   // ============================================================

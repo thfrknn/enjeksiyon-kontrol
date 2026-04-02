@@ -103,7 +103,7 @@
   </div>
 
   <div class="nav-row">
-    <button class="btn btn-next" onclick="goNext(1)" style="width:100%">İleri →</button>
+    <button class="btn btn-next" onclick="goNext(1)" style="width:100%">Devam Et →</button>
   </div>
 </div>
 
@@ -114,49 +114,53 @@
 
   <!-- Enjeksiyon sayısı -->
   <div class="section">
-    <div class="stitle"><span>🏭</span> Kaç Enjeksiyon ile Çalışıyorsunuz?</div>
+    <div class="stitle"><span>🏭</span> Bu Vardiyada Kaç Makineyle Çalışıyorsunuz?</div>
     <div class="toggle-row" id="enj-toggle-row">
-      <button class="tbtn active" id="t-1" onclick="setEnjSayisi(1)">Tek Enjeksiyon</button>
-      <button class="tbtn"        id="t-2" onclick="setEnjSayisi(2)">Çift Enjeksiyon</button>
+      <button class="tbtn active" id="t-1" onclick="setEnjSayisi(1)">1 Makine</button>
+      <button class="tbtn"        id="t-2" onclick="setEnjSayisi(2)">2 Makine</button>
     </div>
   </div>
 
   <!-- ── Enjeksiyon 1 Bilgileri ── -->
   <div class="section">
-    <div class="stitle"><span>1️⃣</span> <span id="enj1-title">Enjeksiyon Bilgileri</span></div>
+    <div class="stitle"><span>1️⃣</span> <span id="enj1-title">Makine Bilgileri</span></div>
 
     <div id="enj1-sec" class="field">
-      <label>Enjeksiyon No <span class="req">*</span></label>
+      <label>Hangi Makinede Çalışıyorsunuz? <span class="req">*</span></label>
       <input type="hidden" id="enj1_no" value="">
       <div class="enj-grid" id="enj1-grid">
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 1',this)">Enj 1</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 2',this)">Enj 2</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 3',this)">Enj 3</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 4',this)">Enj 4</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 5',this)">Enj 5</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 6',this)">Enj 6</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 7',this)">Enj 7</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 8',this)">Enj 8</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 9',this)">Enj 9</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 10',this)">Enj 10</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 11',this)">Enj 11</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 12',this)">Enj 12</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 1',this)">Makine 1</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 2',this)">Makine 2</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 3',this)">Makine 3</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 4',this)">Makine 4</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 5',this)">Makine 5</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 6',this)">Makine 6</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 7',this)">Makine 7</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 8',this)">Makine 8</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 9',this)">Makine 9</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 10',this)">Makine 10</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 11',this)">Makine 11</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 12',this)">Makine 12</button>
       </div>
-      <div class="err-msg" id="err-enj1">Lütfen enjeksiyon seçin</div>
+      <div class="err-msg" id="err-enj1">Lütfen makine seçin</div>
     </div>
     <div id="enj1-ro" style="display:none" class="field">
-      <span class="ro-label">Enjeksiyon No</span>
+      <span class="ro-label">Makine</span>
       <div class="ro-field">🏭 <span id="enj1-ro-val"></span></div>
     </div>
 
     <div id="kasa1-sec" class="field">
-      <label>Kasa Ebatı <span class="req">*</span></label>
+      <label>Kasa Boyutu <span class="req">*</span></label>
+      <div id="kasa1-atandi-box" class="ibox green" style="display:none;margin-bottom:10px;font-size:15px;font-weight:700">
+        <span>📦</span>
+        <span>Meydancı atadı: <strong id="kasa1-atandi-val"></strong></span>
+      </div>
       <div id="skel-kasa1" class="skeleton"></div>
-      <select id="kasa1" style="display:none"><option value="">— Seçiniz —</option></select>
-      <div class="err-msg" id="err-kasa1">Lütfen kasa ebatı seçin</div>
+      <select id="kasa1" style="display:none"><option value="">— Kasa boyutunu seçin —</option></select>
+      <div class="err-msg" id="err-kasa1">Lütfen kasa boyutu seçin</div>
     </div>
     <div id="kasa1-ro" style="display:none" class="field">
-      <span class="ro-label">Kasa Ebatı</span>
+      <span class="ro-label">Kasa Boyutu</span>
       <div class="ro-field">📦 <span id="kasa1-ro-val"></span></div>
     </div>
   </div>
@@ -168,7 +172,7 @@
     <div class="field">
       <label>Çevrim Süresi <span class="req">*</span></label>
       <div class="ui">
-        <input type="number" id="cevrim1" placeholder="0" min="0" inputmode="numeric">
+        <input type="number" id="cevrim1" placeholder="Kaç saniye?" min="0" inputmode="numeric">
         <span class="ub">sn</span>
       </div>
       <div class="err-msg" id="err-cevrim1">Gerekli</div>
@@ -177,7 +181,7 @@
     <div class="field">
       <label>Kasa Ağırlığı <span class="req">*</span></label>
       <div class="ui">
-        <input type="number" id="agirlik1" placeholder="0.0" min="0" step="0.1"
+        <input type="number" id="agirlik1" placeholder="Kaç gram?" min="0" step="0.1"
                inputmode="decimal" oninput="checkKasaAgirlik(1)">
         <span class="ub">gr</span>
       </div>
@@ -186,21 +190,21 @@
 
     <div class="row2">
       <div class="field">
-        <label id="lbl-bas1">Sayaç Başlama <span class="req">*</span></label>
+        <label id="lbl-bas1">Sayaç — Başlangıç <span class="req">*</span></label>
         <input type="number" id="sayac_bas1" placeholder="0"
-               style="font-size:18px;font-weight:800" oninput="calcUretim(1)">
+               style="font-size:20px;font-weight:800" oninput="calcUretim(1)">
         <div class="err-msg" id="err-bas1">Gerekli</div>
       </div>
       <div class="field">
-        <label>Sayaç Bitiş <span class="req">*</span></label>
+        <label>Sayaç — Bitiş <span class="req">*</span></label>
         <input type="number" id="sayac_bit1" placeholder="0"
-               style="font-size:18px;font-weight:800" oninput="calcUretim(1)">
+               style="font-size:20px;font-weight:800" oninput="calcUretim(1)">
         <div class="err-msg" id="err-bit1">Gerekli</div>
       </div>
     </div>
 
     <div class="result-box" id="uretim-box1">
-      <div class="result-label" id="result-label1">🏭 Üretim Adedi</div>
+      <div class="result-label" id="result-label1">🏭 Toplam Üretim</div>
       <div class="result-val"   id="result-val1">—</div>
     </div>
     <div class="ibox orange" id="limit-warn1" style="display:none">⚠️ Üretim limiti aşıldı!</div>
@@ -208,9 +212,9 @@
     <!-- Fire girişi — Enj 1 -->
     <div class="field" style="margin-top:14px;background:var(--bg);padding:14px;border-radius:12px;border:2px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <label style="margin:0">🔥 Anında Fire Ekle</label>
+        <label style="margin:0">🔥 Bozuk / Fire Ürün Ekle</label>
         <div id="fire-toplam-box1" style="display:none;font-size:12px;font-weight:800;color:var(--warn);background:#fef2f2;padding:4px 8px;border-radius:8px;border:1px solid #fecaca">
-          Kümülatif Toplam: <span id="fire-toplam1" style="font-size:14px">0</span>
+          Bugünkü Toplam: <span id="fire-toplam1" style="font-size:14px">0</span>
         </div>
       </div>
       <div class="counter" id="fire-counter1">
@@ -224,7 +228,7 @@
       </div>
       <div class="err-msg" id="err-fire1" style="text-align:center;font-size:13px;margin-top:8px"></div>
       <button class="btn btn-submit" id="btn-fire-ekle1" onclick="promptInstantFire(1)"
-              style="width:100%;margin-top:10px;padding:12px;font-size:15px;background:#ea580c;border:none">
+              style="width:100%;margin-top:10px;padding:16px;font-size:17px;background:#ea580c;border:none">
         ➕ Fire Ekle
       </button>
       <div class="ibox orange" id="fire-lock-msg1" style="display:none;margin-top:10px;margin-bottom:0">
@@ -239,39 +243,43 @@
 
   <!-- ── Enjeksiyon 2 Bilgileri ── -->
   <div class="section" id="enj2-section" style="display:none">
-    <div class="stitle"><span>2️⃣</span> 2. Enjeksiyon Bilgileri</div>
+    <div class="stitle"><span>2️⃣</span> 2. Makine Bilgileri</div>
 
     <div id="enj2-sec" class="field">
-      <label>Enjeksiyon No <span class="req">*</span></label>
+      <label>2. Makineniz Hangisi? <span class="req">*</span></label>
       <input type="hidden" id="enj2_no" value="">
       <div class="enj-grid" id="enj2-grid">
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 1',this)">Enj 1</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 2',this)">Enj 2</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 3',this)">Enj 3</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 4',this)">Enj 4</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 5',this)">Enj 5</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 6',this)">Enj 6</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 7',this)">Enj 7</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 8',this)">Enj 8</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 9',this)">Enj 9</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 10',this)">Enj 10</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 11',this)">Enj 11</button>
-        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 12',this)">Enj 12</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 1',this)">Makine 1</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 2',this)">Makine 2</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 3',this)">Makine 3</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 4',this)">Makine 4</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 5',this)">Makine 5</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 6',this)">Makine 6</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 7',this)">Makine 7</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 8',this)">Makine 8</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 9',this)">Makine 9</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 10',this)">Makine 10</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 11',this)">Makine 11</button>
+        <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 12',this)">Makine 12</button>
       </div>
-      <div class="err-msg" id="err-enj2">Lütfen enjeksiyon seçin</div>
+      <div class="err-msg" id="err-enj2">Lütfen makine seçin</div>
     </div>
     <div id="enj2-ro" style="display:none" class="field">
-      <span class="ro-label">Enjeksiyon No</span>
+      <span class="ro-label">Makine</span>
       <div class="ro-field">🏭 <span id="enj2-ro-val"></span></div>
     </div>
 
     <div id="kasa2-sec" class="field">
-      <label>Kasa Ebatı <span class="req">*</span></label>
-      <select id="kasa2"><option value="">— Seçiniz —</option></select>
-      <div class="err-msg" id="err-kasa2">Lütfen kasa ebatı seçin</div>
+      <label>Kasa Boyutu <span class="req">*</span></label>
+      <div id="kasa2-atandi-box" class="ibox green" style="display:none;margin-bottom:10px;font-size:15px;font-weight:700">
+        <span>📦</span>
+        <span>Meydancı atadı: <strong id="kasa2-atandi-val"></strong></span>
+      </div>
+      <select id="kasa2"><option value="">— Kasa boyutunu seçin —</option></select>
+      <div class="err-msg" id="err-kasa2">Lütfen kasa boyutu seçin</div>
     </div>
     <div id="kasa2-ro" style="display:none" class="field">
-      <span class="ro-label">Kasa Ebatı</span>
+      <span class="ro-label">Kasa Boyutu</span>
       <div class="ro-field">📦 <span id="kasa2-ro-val"></span></div>
     </div>
   </div>
@@ -301,21 +309,21 @@
 
     <div class="row2">
       <div class="field">
-        <label id="lbl-bas2">Sayaç Başlama <span class="req">*</span></label>
+        <label id="lbl-bas2">Sayaç — Başlangıç <span class="req">*</span></label>
         <input type="number" id="sayac_bas2" placeholder="0"
-               style="font-size:18px;font-weight:800" oninput="calcUretim(2)">
+               style="font-size:20px;font-weight:800" oninput="calcUretim(2)">
         <div class="err-msg" id="err-bas2">Gerekli</div>
       </div>
       <div class="field">
-        <label>Sayaç Bitiş <span class="req">*</span></label>
+        <label>Sayaç — Bitiş <span class="req">*</span></label>
         <input type="number" id="sayac_bit2" placeholder="0"
-               style="font-size:18px;font-weight:800" oninput="calcUretim(2)">
+               style="font-size:20px;font-weight:800" oninput="calcUretim(2)">
         <div class="err-msg" id="err-bit2">Gerekli</div>
       </div>
     </div>
 
     <div class="result-box" id="uretim-box2">
-      <div class="result-label" id="result-label2">🏭 Üretim Adedi</div>
+      <div class="result-label" id="result-label2">🏭 Toplam Üretim</div>
       <div class="result-val"   id="result-val2">—</div>
     </div>
     <div class="ibox orange" id="limit-warn2" style="display:none">⚠️ Üretim limiti aşıldı!</div>
@@ -323,9 +331,9 @@
     <!-- Fire girişi — Enj 2 -->
     <div class="field" style="margin-top:14px;background:var(--bg);padding:14px;border-radius:12px;border:2px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <label style="margin:0">🔥 Anında Fire Ekle</label>
+        <label style="margin:0">🔥 Bozuk / Fire Ürün Ekle</label>
         <div id="fire-toplam-box2" style="display:none;font-size:12px;font-weight:800;color:var(--warn);background:#fef2f2;padding:4px 8px;border-radius:8px;border:1px solid #fecaca">
-          Kümülatif Toplam: <span id="fire-toplam2" style="font-size:14px">0</span>
+          Bugünkü Toplam: <span id="fire-toplam2" style="font-size:14px">0</span>
         </div>
       </div>
       <div class="counter" id="fire-counter2">
@@ -339,7 +347,7 @@
       </div>
       <div class="err-msg" id="err-fire2" style="text-align:center;font-size:13px;margin-top:8px"></div>
       <button class="btn btn-submit" id="btn-fire-ekle2" onclick="promptInstantFire(2)"
-              style="width:100%;margin-top:10px;padding:12px;font-size:15px;background:#ea580c;border:none">
+              style="width:100%;margin-top:10px;padding:16px;font-size:17px;background:#ea580c;border:none">
         ➕ Fire Ekle
       </button>
       <div class="ibox orange" id="fire-lock-msg2" style="display:none;margin-top:10px;margin-bottom:0">
@@ -353,8 +361,8 @@
   </div>
 
   <div class="nav-row">
-    <button class="btn btn-back" onclick="goStep(1)">←</button>
-    <button class="btn btn-next" onclick="goNext(2)">Özet →</button>
+    <button class="btn btn-back" onclick="goStep(1)">← Geri</button>
+    <button class="btn btn-next" onclick="goNext(2)">Özeti Gör →</button>
   </div>
 </div>
 
@@ -370,8 +378,8 @@
       <div id="summary-body"></div>
     </div>
     <div class="nav-row">
-      <button class="btn btn-back"   onclick="goStep(2)">←</button>
-      <button class="btn btn-submit" id="submit-btn" onclick="onGonderClick(false)">📤 Gönder</button>
+      <button class="btn btn-back"   onclick="goStep(2)">← Geri</button>
+      <button class="btn btn-submit" id="submit-btn" onclick="onGonderClick(false)">✅ Kaydet & Gönder</button>
     </div>
   </div>
 
