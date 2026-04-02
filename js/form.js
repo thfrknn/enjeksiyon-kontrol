@@ -69,6 +69,19 @@ function selectEnj(n, val, btn) {
   document.getElementById('err-enj' + n).classList.remove('show');
   document.getElementById('olcum-enj' + n + '-title').textContent = val + ' — Ölçümler';
   syncEnjDisabled();
+
+  // Meydancının atadığı kasayı hemen doldur (getLists'ten gelen veri)
+  var kasaAtandi = atananKasalar[val];
+  var kasaSel = document.getElementById('kasa' + n);
+  if (kasaAtandi && kasaSel) {
+    kasaSel.value = kasaAtandi;
+    calcUretim(n);
+    showKasaAtandiBox(n, kasaAtandi);
+  } else {
+    if (kasaSel) kasaSel.value = '';
+    hideKasaAtandiBox(n);
+  }
+
   fetchLastCounter(n, val);
   loadAccumulatedFire(n, val);
 }

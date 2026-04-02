@@ -43,12 +43,25 @@ function doGet(e) {
     // Kilitli makineleri al
     const lockedMachines = getLockedMachines(ss);
 
+    // Makine bazlı atanan kasaları da gönder
+    const atananKasalar = {};
+    const kasaSheetL = ss.getSheetByName('Makine Kasa');
+    if (kasaSheetL && kasaSheetL.getLastRow() > 1) {
+      const kv = kasaSheetL.getRange(2, 1, kasaSheetL.getLastRow() - 1, 2).getValues();
+      for (const row of kv) {
+        const m = String(row[0]).trim();
+        const k = String(row[1]).trim();
+        if (m && k) atananKasalar[m] = k;
+      }
+    }
+
     return jsonp(cb, {
       kasaEbatlari: kasaCol,
       kullanicilar,
       uretimLimiti,
       kasaLimitlari,
       maxFireLimit,
+      atananKasalar,
       serverTime: new Date().getTime(),
       lockedMachines
     });
@@ -562,8 +575,9 @@ function doGet(e) {
     const ss       = SpreadsheetApp.getActiveSpreadsheet();
     const makineNo = e.parameter.makine_no || '';
     const durum    = e.parameter.durum     || 'Aktif';
+    const neden    = e.parameter.neden     || '';  // Temizlik, Planlı Bakım, Diğer
 
-    setMachineDurum(ss, makineNo, durum, '', '');
+    setMachineDurum(ss, makineNo, durum, neden, '');
 
     return jsonp(cb, { result: 'ok', makine: makineNo, durum });
   }

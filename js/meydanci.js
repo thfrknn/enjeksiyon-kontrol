@@ -3,12 +3,12 @@
 const _userId   = sessionStorage.getItem('ep_id')   || '';
 const _userName = sessionStorage.getItem('ep_name') || '';
 
-let _statuses     = {};
-let _arizaTipleri = [];
-let _machineData  = {};
-let _kasaEbatlari = [];   // Ayarlar B sütunundan gelen kasa listesi
-let _atananKasalar = {};  // Makine → atanan kasa
-let _timeOffset   = 0;
+let _statuses      = {};
+let _arizaTipleri  = [];
+let _machineData   = {};
+let _kasaEbatlari  = [];
+let _atananKasalar = {};
+let _timeOffset    = 0;
 
 /* ---------- Init ---------- */
 
@@ -17,22 +17,24 @@ window.onload = function() {
 
   document.getElementById('header-date').textContent =
     new Date().toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-  document.getElementById('user-header').textContent = 'Tekniker: ' + _userName;
+  document.getElementById('user-header').textContent = 'Meydancı: ' + _userName;
 
-  loadStatuses();
-  setInterval(loadStatuses, 60000);
+  loadStatuses(false);                                         // İlk açılış — loading göster
+  setInterval(function() { loadStatuses(true); }, 60000);     // Arka plan — sessiz
 };
 
-/* ---------- Sunucudan makine durumları ---------- */
+/* ---------- Veri yükleme ---------- */
 
-function loadStatuses() {
-  document.getElementById('loading').classList.add('show');
-  document.getElementById('load-text').textContent = 'Yükleniyor...';
+function loadStatuses(silent) {
+  if (!silent) {
+    document.getElementById('loading').classList.add('show');
+    document.getElementById('load-text').textContent = 'Yükleniyor...';
+  }
 
   const cb = 'cbMS_' + Date.now();
   window[cb] = function(json) {
     delete window[cb];
-    document.getElementById('loading').classList.remove('show');
+    if (!silent) document.getElementById('loading').classList.remove('show');
     if (json.serverTime) _timeOffset = json.serverTime - Date.now();
     _statuses      = json.statuses      || {};
     _machineData   = json.machineData   || {};
@@ -48,27 +50,27 @@ function loadStatuses() {
   s.src = SCRIPT_URL + '?action=getMachineStatuses&callback=' + cb;
   s.onerror = function() {
     delete window[cb];
-    document.getElementById('loading').classList.remove('show');
+    if (!silent) document.getElementById('loading').classList.remove('show');
     if (!_arizaTipleri.length) _arizaTipleri = ['Makine Kaynaklı', 'Kalıp Kaynaklı', 'Diğer'];
     renderMachines();
-    showMToast('Sunucu bağlantısı kurulamadı', 'err');
+    if (!silent) showMToast('Sunucu bağlantısı kurulamadı', 'err');
   };
   document.head.appendChild(s);
 }
 
-/* ---------- Saat yardımcısı ---------- */
+/* ---------- Saat ---------- */
 
 function nowTime() {
   const n = new Date(Date.now() + _timeOffset);
   return String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
 }
 
-/* ---------- Kart render ---------- */
+/* ---------- Render ---------- */
 
 function renderMachines() {
   const container = document.getElementById('machines-container');
 
-  // Açık kartları kaydet
+  // Açık kartları koru
   const openCards = new Set();
   for (let i = 1; i <= 12; i++) {
     const b = document.getElementById('mcard-body-' + i);
@@ -87,45 +89,138 @@ function renderMachines() {
   }
 }
 
-function buildCard(n, makineNo, status) {
-  const isArizali = status.durum === 'Arızalı';
-  const div       = document.createElement('div');
-  div.className   = 'mcard' + (isArizali ? ' mcard-red' : '');
-  div.id          = 'mcard-' + n;
+/* ---------- Kart oluştur ---------- */
 
-  const radios = _arizaTipleri.map((tip, i) =>
+function buildCard(n, makineNo, status) {
+  const durum     = status.durum || 'Aktif';
+  const isAktif   = durum === 'Aktif';
+  const isArizali = durum === 'Arızalı';
+  const isKapali  = !isAktif;  // Arızalı veya Kapalı
+
+  const div     = document.createElement('div');
+  div.className = 'mcard' + (isKapali ? ' mcard-red' : '');
+  div.id        = 'mcard-' + n;
+
+  // Canlı metrik chip'leri (aktif makinede kapanmış bar)
+  const md = _machineData[makineNo];
+  let infoLine = '';
+  if (isKapali && status.sonAriza) {
+    const t = status.sonAriza.tip || '';
+    const s = status.sonAriza.sorun ? ': ' + status.sonAriza.sorun.substring(0, 40) + (status.sonAriza.sorun.length > 40 ? '…' : '') : '';
+    infoLine = `<div class="mcard-info-row mcard-info-red">⚠️ ${t}${s}</div>`;
+  } else if (md) {
+    const chips = [];
+    const kg = _atananKasalar[makineNo] || (md && md.kasa) || '';
+    if (kg)             chips.push(`<span class="mchip">📦 ${kg}</span>`);
+    if (md.cevrim)      chips.push(`<span class="mchip">⏱ ${md.cevrim} sn</span>`);
+    if (md.operatör)    chips.push(`<span class="mchip">👤 ${md.operatör.split(' ')[0]}</span>`);
+    if (chips.length)   infoLine = `<div class="mcard-info-row">${chips.join('')}</div>`;
+  }
+
+  // Badge renk ve metni
+  let badgeCls = 'mbadge-green', badgeTxt = '✅ Aktif';
+  if (isArizali)              { badgeCls = 'mbadge-red';    badgeTxt = '⚠️ Arızalı'; }
+  else if (durum === 'Kapalı') { badgeCls = 'mbadge-orange'; badgeTxt = '🔒 Kapalı'; }
+
+  // Kasa bölümü (ortak)
+  const kasaOptions = _kasaEbatlari.map(k =>
+    `<option value="${k}"${_atananKasalar[makineNo] === k ? ' selected' : ''}>${k}</option>`
+  ).join('');
+  const kasaMevcut = _atananKasalar[makineNo]
+    ? `<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px">Mevcut: <strong>${_atananKasalar[makineNo]}</strong></div>`
+    : `<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Henüz atanmadı</div>`;
+
+  // Arıza tipi radyoları
+  const arizaTipRadios = _arizaTipleri.map((tip, i) =>
     `<label class="rad-lbl">
        <input type="radio" name="tip-${n}" value="${tip}"${i === 0 ? ' checked' : ''}> ${tip}
      </label>`
   ).join('');
 
-  // Canlı İzleme'den gelen son metrikler
-  const md = _machineData[makineNo];
+  /* ── Aktif makine formu ── */
+  const aktifForm = `
+    <!-- Kapatma nedeni -->
+    <div class="mcard-section">
+      <div class="mcard-sec-title" style="color:#b91c1c">🔴 Makineyi Kapat</div>
 
-  // Kapalı bar — 2. satır içeriği
-  let infoLine = '';
-  if (isArizali && status.sonAriza) {
-    const arizaText = status.sonAriza.tip
-      + (status.sonAriza.sorun ? ': ' + status.sonAriza.sorun.substring(0, 40)
-          + (status.sonAriza.sorun.length > 40 ? '…' : '') : '');
-    infoLine = `<div class="mcard-info-row mcard-info-red">⚠️ ${arizaText}</div>`;
-  } else if (md) {
-    const chips = [];
-    const kasaGoster = _atananKasalar[makineNo] || (md && md.kasa) || '';
-    if (kasaGoster) chips.push(`<span class="mchip">📦 ${kasaGoster}</span>`);
-    if (md && md.cevrim)   chips.push(`<span class="mchip">⏱ ${md.cevrim} sn</span>`);
-    if (md && md.operatör) chips.push(`<span class="mchip">👤 ${md.operatör.split(' ')[0]}</span>`);
-    if (chips.length) infoLine = `<div class="mcard-info-row">${chips.join('')}</div>`;
-  }
+      <div class="field">
+        <label>Kapatma Nedeni</label>
+        <div class="rad-group" id="neden-grp-${n}">
+          <label class="rad-lbl">
+            <input type="radio" name="neden-${n}" value="Arıza" onchange="onNedenChange(${n})" checked> Arıza
+          </label>
+          <label class="rad-lbl">
+            <input type="radio" name="neden-${n}" value="Temizlik" onchange="onNedenChange(${n})"> Temizlik
+          </label>
+          <label class="rad-lbl">
+            <input type="radio" name="neden-${n}" value="Planlı Bakım" onchange="onNedenChange(${n})"> Planlı Bakım
+          </label>
+          <label class="rad-lbl">
+            <input type="radio" name="neden-${n}" value="Diğer" onchange="onNedenChange(${n})"> Diğer
+          </label>
+        </div>
+      </div>
+
+      <!-- Arıza formu — sadece "Arıza" seçilince görünür -->
+      <div id="ariza-form-${n}">
+        <div class="field">
+          <label>Arıza Tipi</label>
+          <div class="rad-group">${arizaTipRadios}</div>
+        </div>
+        <div class="field">
+          <label>Sorun Tanımı <span class="req">*</span></label>
+          <textarea id="sorun-${n}" rows="3" class="mtextarea"
+                    placeholder="Sorunu kısaca açıklayın..."></textarea>
+          <div class="err-msg" id="err-sorun-${n}">Sorun tanımı gerekli</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Başlangıç Saati</label>
+        <input type="time" id="bas-${n}" value="${nowTime()}">
+      </div>
+
+      <button id="kapat-btn-${n}" onclick="closeMachine(${n}, '${makineNo}')"
+              style="width:100%;background:#dc2626;color:white;padding:15px;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:4px">
+        🔴 Kapat
+      </button>
+    </div>
+  `;
+
+  /* ── Kapalı/Arızalı makine formu ── */
+  const kapaliForm = `
+    ${status.sonAriza ? `
+    <div class="mcard-section" style="background:#fff5f5;border-color:#fca5a5">
+      <div class="mcard-sec-title" style="color:#b91c1c">📋 Son Kayıt</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">${status.sonAriza.tip || ''}</div>
+      ${status.sonAriza.sorun ? `<div style="font-size:13px;color:var(--text2)">${status.sonAriza.sorun}</div>` : ''}
+    </div>` : ''}
+
+    <!-- Makineyi aç -->
+    <div class="mcard-section">
+      <div class="mcard-sec-title" style="color:#15803d">🟢 Makineyi Aç</div>
+      <div class="field">
+        <label>Çözüm Tanımı <span style="font-size:12px;font-weight:600;color:var(--text2)">(isteğe bağlı)</span></label>
+        <textarea id="cozum-${n}" rows="2" class="mtextarea"
+                  placeholder="Nasıl çözüldü?..."></textarea>
+      </div>
+      <div class="field">
+        <label>Bitiş Saati</label>
+        <input type="time" id="bit-${n}" value="${nowTime()}">
+      </div>
+      <button id="ac-btn-${n}" onclick="openMachine(${n}, '${makineNo}')"
+              style="width:100%;background:#16a34a;color:white;padding:15px;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:4px">
+        🟢 Makineyi Aç
+      </button>
+    </div>
+  `;
 
   div.innerHTML = `
     <div class="mcard-hd" onclick="toggleCard(${n})">
       <div class="mcard-hd-inner">
         <div class="mcard-top">
           <span class="mcard-no">Enjeksiyon ${n}</span>
-          <span class="mbadge ${isArizali ? 'mbadge-red' : 'mbadge-green'}">
-            ${isArizali ? '⚠️ Arızalı' : '✅ Aktif'}
-          </span>
+          <span class="mbadge ${badgeCls}">${badgeTxt}</span>
         </div>
         ${infoLine}
       </div>
@@ -133,81 +228,37 @@ function buildCard(n, makineNo, status) {
     </div>
 
     <div class="mcard-bd" id="mcard-body-${n}" style="display:none">
+      ${isAktif ? aktifForm : kapaliForm}
 
-      <!-- Makine aç/kapat -->
-      <button class="m-toggle-btn ${isArizali ? 'mtbtn-green' : 'mtbtn-red'}"
-              id="toggle-btn-${n}"
-              onclick="doToggle(${n}, '${makineNo}')">
-        ${isArizali ? '🟢 Makineyi Aç' : '🔴 Makineyi Kapat'}
-      </button>
-
-      <!-- Arıza formu -->
+      <!-- Kasa ebatı -->
       <div class="mcard-section">
-        <div class="mcard-sec-title">⚠️ Arıza Kaydı Oluştur</div>
-
-        <div class="field">
-          <label>Arıza Tipi</label>
-          <div class="rad-group">${radios}</div>
-        </div>
-
-        <div class="field">
-          <label>Sorun Tanımı <span class="req">*</span></label>
-          <textarea id="sorun-${n}" rows="3" class="mtextarea"
-                    placeholder="Sorunu kısaca açıklayın..."></textarea>
-          <div class="err-msg" id="err-sorun-${n}">Sorun tanımı gerekli</div>
-        </div>
-
-        <div class="field">
-          <label>Çözüm Tanımı</label>
-          <textarea id="cozum-${n}" rows="2" class="mtextarea"
-                    placeholder="Çözüm (isteğe bağlı)..."></textarea>
-        </div>
-
-        <div class="row2">
-          <div class="field">
-            <label>Başlangıç Saati</label>
-            <input type="time" id="bas-${n}" value="${nowTime()}">
-          </div>
-          <div class="field">
-            <label>Bitiş Saati</label>
-            <input type="time" id="bit-${n}">
-          </div>
-        </div>
-
-        <button class="btn" onclick="submitAriza(${n}, '${makineNo}')"
-                style="width:100%;background:#dc2626;color:white;padding:15px;border:none;border-radius:14px;font-size:16px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer">
-          💾 Arıza Kaydet
-        </button>
-      </div>
-
-      <!-- Kasa ebatı tanımla -->
-      <div class="mcard-section">
-        <div class="mcard-sec-title" style="color:var(--accent)">📦 Kasa Ebatı Tanımla</div>
-        ${_atananKasalar[makineNo]
-          ? `<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px">
-               Mevcut: <strong>${_atananKasalar[makineNo]}</strong>
-             </div>`
-          : `<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Henüz atanmadı</div>`
-        }
-        <div style="display:flex;gap:8px;align-items:stretch">
+        <div class="mcard-sec-title" style="color:var(--accent)">📦 Kasa Ebatı</div>
+        ${kasaMevcut}
+        <div style="display:flex;gap:8px">
           <select id="kasa-sel-${n}"
                   style="flex:1;padding:12px 14px;font-size:15px;font-family:'Nunito',sans-serif;font-weight:600;color:var(--text);background:white;border:2px solid var(--border);border-radius:12px;outline:none;-webkit-appearance:none;appearance:none">
             <option value="">— Kasa seç —</option>
-            ${_kasaEbatlari.map(k =>
-              `<option value="${k}"${_atananKasalar[makineNo] === k ? ' selected' : ''}>${k}</option>`
-            ).join('')}
+            ${kasaOptions}
           </select>
           <button onclick="saveKasa(${n}, '${makineNo}')"
+                  id="kasa-btn-${n}"
                   style="flex-shrink:0;padding:12px 16px;background:var(--accent);color:white;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer">
             Kaydet
           </button>
         </div>
       </div>
-
     </div>
   `;
 
   return div;
+}
+
+/* ---------- Kapatma nedeni değişince arıza formunu göster/gizle ---------- */
+
+function onNedenChange(n) {
+  const neden = document.querySelector(`input[name="neden-${n}"]:checked`);
+  const form  = document.getElementById('ariza-form-' + n);
+  if (form) form.style.display = (neden && neden.value === 'Arıza') ? 'block' : 'none';
 }
 
 /* ---------- Kart aç/kapat ---------- */
@@ -220,116 +271,175 @@ function toggleCard(n) {
   arrow.textContent  = open ? '▼' : '▲';
 }
 
-/* ---------- Makine durum toggle ---------- */
+/* ---------- Makineyi kapat ---------- */
 
-function doToggle(n, makineNo) {
-  const isArizali = (_statuses[makineNo] || {}).durum === 'Arızalı';
-  const newDurum  = isArizali ? 'Aktif' : 'Arızalı';
+function closeMachine(n, makineNo) {
+  const nedenEl = document.querySelector(`input[name="neden-${n}"]:checked`);
+  const neden   = nedenEl ? nedenEl.value : 'Arıza';
+  const btn     = document.getElementById('kapat-btn-' + n);
 
-  document.getElementById('loading').classList.add('show');
-  document.getElementById('load-text').textContent = 'Güncelleniyor...';
-
-  const cb = 'cbTM_' + Date.now();
-  window[cb] = function(json) {
-    delete window[cb];
-    document.getElementById('loading').classList.remove('show');
-    if (json.result === 'ok') {
-      if (!_statuses[makineNo]) _statuses[makineNo] = {};
-      _statuses[makineNo].durum = newDurum;
-      renderMachines();
-      // Kartı tekrar aç
-      const body = document.getElementById('mcard-body-' + n);
-      if (body) {
-        body.style.display = 'block';
-        document.getElementById('mcard-arrow-' + n).textContent = '▲';
-      }
-      showMToast(newDurum === 'Aktif' ? '✅ Makine açıldı' : '🔴 Makine kapatıldı', 'ok');
-    } else {
-      showMToast('Güncelleme hatası', 'err');
+  if (neden === 'Arıza') {
+    // Arıza kaydı yolu → logAriza action
+    const sorunEl = document.getElementById('sorun-' + n);
+    const errEl   = document.getElementById('err-sorun-' + n);
+    if (!sorunEl.value.trim()) {
+      sorunEl.style.borderColor = 'var(--warn)';
+      errEl.classList.add('show');
+      sorunEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
     }
-  };
+    sorunEl.style.borderColor = '';
+    errEl.classList.remove('show');
 
-  const s = document.createElement('script');
-  s.src = SCRIPT_URL
-    + '?action=toggleMachine'
-    + '&makine_no=' + encodeURIComponent(makineNo)
-    + '&durum='     + encodeURIComponent(newDurum)
-    + '&callback='  + cb;
-  s.onerror = function() {
-    delete window[cb];
-    document.getElementById('loading').classList.remove('show');
-    showMToast('Bağlantı hatası', 'err');
-  };
-  document.head.appendChild(s);
+    const tipEl = document.querySelector(`input[name="tip-${n}"]:checked`);
+    const tip   = tipEl ? tipEl.value : '';
+    const sorun = sorunEl.value.trim();
+    const bas   = document.getElementById('bas-' + n).value || '';
+
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Kaydediliyor...'; }
+
+    const cb = 'cbAR_' + Date.now();
+    window[cb] = function(json) {
+      delete window[cb];
+      if (btn) { btn.disabled = false; btn.textContent = '🔴 Kapat'; }
+      if (json.result === 'ok') {
+        if (!_statuses[makineNo]) _statuses[makineNo] = {};
+        _statuses[makineNo].durum    = 'Arızalı';
+        _statuses[makineNo].sonAriza = { tip, sorun };
+        renderMachines();
+        reopenCard(n);
+        showMToast('✅ Arıza kaydedildi', 'ok');
+      } else {
+        showMToast('Kayıt hatası, tekrar dene', 'err');
+      }
+    };
+
+    const params = new URLSearchParams({
+      action: 'logAriza', makine_no: makineNo,
+      ariza_tipi: tip, sorun, cozum: '',
+      bas_saat: bas, bit_saat: '',
+      tekniker_id: _userId, tekniker_ad: _userName,
+      callback: cb,
+    });
+    const s = document.createElement('script');
+    s.src = SCRIPT_URL + '?' + params.toString();
+    s.onerror = function() {
+      delete window[cb];
+      if (btn) { btn.disabled = false; btn.textContent = '🔴 Kapat'; }
+      showMToast('Bağlantı hatası', 'err');
+    };
+    document.head.appendChild(s);
+
+  } else {
+    // Arıza dışı kapatma → toggleMachine action
+    const bas = document.getElementById('bas-' + n).value || '';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Kaydediliyor...'; }
+
+    const cb = 'cbTM_' + Date.now();
+    window[cb] = function(json) {
+      delete window[cb];
+      if (btn) { btn.disabled = false; btn.textContent = '🔴 Kapat'; }
+      if (json.result === 'ok') {
+        if (!_statuses[makineNo]) _statuses[makineNo] = {};
+        _statuses[makineNo].durum    = 'Kapalı';
+        _statuses[makineNo].sonAriza = { tip: neden, sorun: '' };
+        renderMachines();
+        reopenCard(n);
+        showMToast('🔒 Makine kapatıldı: ' + neden, 'ok');
+      } else {
+        showMToast('Güncelleme hatası', 'err');
+      }
+    };
+
+    const s = document.createElement('script');
+    s.src = SCRIPT_URL
+      + '?action=toggleMachine'
+      + '&makine_no=' + encodeURIComponent(makineNo)
+      + '&durum=Kapalı'
+      + '&neden='     + encodeURIComponent(neden)
+      + '&callback='  + cb;
+    s.onerror = function() {
+      delete window[cb];
+      if (btn) { btn.disabled = false; btn.textContent = '🔴 Kapat'; }
+      showMToast('Bağlantı hatası', 'err');
+    };
+    document.head.appendChild(s);
+  }
 }
 
-/* ---------- Arıza kaydet ---------- */
+/* ---------- Makineyi aç ---------- */
 
-function submitAriza(n, makineNo) {
-  const sorunEl = document.getElementById('sorun-' + n);
-  const errEl   = document.getElementById('err-sorun-' + n);
+function openMachine(n, makineNo) {
+  const btn   = document.getElementById('ac-btn-' + n);
+  const cozum = (document.getElementById('cozum-' + n) || {}).value || '';
+  const bit   = (document.getElementById('bit-' + n) || {}).value || '';
 
-  if (!sorunEl.value.trim()) {
-    sorunEl.style.borderColor = 'var(--warn)';
-    errEl.classList.add('show');
-    sorunEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-  sorunEl.style.borderColor = '';
-  errEl.classList.remove('show');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Açılıyor...'; }
 
-  const tipEl = document.querySelector(`input[name="tip-${n}"]:checked`);
-  const tip   = tipEl ? tipEl.value : '';
-  const sorun = sorunEl.value.trim();
-  const cozum = document.getElementById('cozum-' + n).value.trim();
-  const bas   = document.getElementById('bas-' + n).value || '';
-  const bit   = document.getElementById('bit-' + n).value || '';
+  const prev = _statuses[makineNo] || {};
+  const wasAriza = prev.durum === 'Arızalı';
 
-  document.getElementById('loading').classList.add('show');
-  document.getElementById('load-text').textContent = 'Kaydediliyor...';
-
-  const cb = 'cbAR_' + Date.now();
-  window[cb] = function(json) {
-    delete window[cb];
-    document.getElementById('loading').classList.remove('show');
-    if (json.result === 'ok') {
-      if (!_statuses[makineNo]) _statuses[makineNo] = {};
-      _statuses[makineNo].durum    = bit ? 'Aktif' : 'Arızalı';
-      _statuses[makineNo].sonAriza = { tip, sorun };
-      renderMachines();
-      // Kartı tekrar aç
-      const body = document.getElementById('mcard-body-' + n);
-      if (body) {
-        body.style.display = 'block';
-        document.getElementById('mcard-arrow-' + n).textContent = '▲';
+  if (wasAriza && (cozum || bit)) {
+    // Arızalıysa logAriza ile çözüm yaz
+    const cb = 'cbAR_' + Date.now();
+    window[cb] = function(json) {
+      delete window[cb];
+      if (btn) { btn.disabled = false; btn.textContent = '🟢 Makineyi Aç'; }
+      if (json.result === 'ok') {
+        if (!_statuses[makineNo]) _statuses[makineNo] = {};
+        _statuses[makineNo].durum = 'Aktif';
+        renderMachines();
+        reopenCard(n);
+        showMToast('✅ Makine açıldı', 'ok');
+      } else {
+        showMToast('Hata, tekrar dene', 'err');
       }
-      showMToast('✅ Arıza kaydedildi', 'ok');
-    } else {
-      showMToast('Kayıt hatası, tekrar dene', 'err');
-    }
-  };
-
-  const params = new URLSearchParams({
-    action:      'logAriza',
-    makine_no:   makineNo,
-    ariza_tipi:  tip,
-    sorun,
-    cozum,
-    bas_saat:    bas,
-    bit_saat:    bit,
-    tekniker_id: _userId,
-    tekniker_ad: _userName,
-    callback:    cb,
-  });
-
-  const s = document.createElement('script');
-  s.src = SCRIPT_URL + '?' + params.toString();
-  s.onerror = function() {
-    delete window[cb];
-    document.getElementById('loading').classList.remove('show');
-    showMToast('Bağlantı hatası', 'err');
-  };
-  document.head.appendChild(s);
+    };
+    const params = new URLSearchParams({
+      action: 'logAriza', makine_no: makineNo,
+      ariza_tipi: (prev.sonAriza && prev.sonAriza.tip) || '',
+      sorun: (prev.sonAriza && prev.sonAriza.sorun) || '(sonradan eklendi)',
+      cozum, bas_saat: '', bit_saat: bit,
+      tekniker_id: _userId, tekniker_ad: _userName,
+      callback: cb,
+    });
+    const s = document.createElement('script');
+    s.src = SCRIPT_URL + '?' + params.toString();
+    s.onerror = function() {
+      delete window[cb];
+      if (btn) { btn.disabled = false; btn.textContent = '🟢 Makineyi Aç'; }
+      showMToast('Bağlantı hatası', 'err');
+    };
+    document.head.appendChild(s);
+  } else {
+    // Direkt toggleMachine ile aç
+    const cb = 'cbTM_' + Date.now();
+    window[cb] = function(json) {
+      delete window[cb];
+      if (btn) { btn.disabled = false; btn.textContent = '🟢 Makineyi Aç'; }
+      if (json.result === 'ok') {
+        if (!_statuses[makineNo]) _statuses[makineNo] = {};
+        _statuses[makineNo].durum = 'Aktif';
+        renderMachines();
+        reopenCard(n);
+        showMToast('✅ Makine açıldı', 'ok');
+      } else {
+        showMToast('Güncelleme hatası', 'err');
+      }
+    };
+    const s = document.createElement('script');
+    s.src = SCRIPT_URL
+      + '?action=toggleMachine'
+      + '&makine_no=' + encodeURIComponent(makineNo)
+      + '&durum=Aktif'
+      + '&callback='  + cb;
+    s.onerror = function() {
+      delete window[cb];
+      if (btn) { btn.disabled = false; btn.textContent = '🟢 Makineyi Aç'; }
+      showMToast('Bağlantı hatası', 'err');
+    };
+    document.head.appendChild(s);
+  }
 }
 
 /* ---------- Kasa kaydet ---------- */
@@ -337,24 +447,19 @@ function submitAriza(n, makineNo) {
 function saveKasa(n, makineNo) {
   const sel  = document.getElementById('kasa-sel-' + n);
   const kasa = sel ? sel.value : '';
+  const btn  = document.getElementById('kasa-btn-' + n);
   if (!kasa) { showMToast('Lütfen kasa seçin', 'err'); return; }
 
-  document.getElementById('loading').classList.add('show');
-  document.getElementById('load-text').textContent = 'Kaydediliyor...';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
 
   const cb = 'cbKS_' + Date.now();
   window[cb] = function(json) {
     delete window[cb];
-    document.getElementById('loading').classList.remove('show');
+    if (btn) { btn.disabled = false; btn.textContent = 'Kaydet'; }
     if (json.result === 'ok') {
       _atananKasalar[makineNo] = kasa;
       renderMachines();
-      // Kartı tekrar aç
-      const body = document.getElementById('mcard-body-' + n);
-      if (body) {
-        body.style.display = 'block';
-        document.getElementById('mcard-arrow-' + n).textContent = '▲';
-      }
+      reopenCard(n);
       showMToast('✅ Kasa atandı: ' + kasa, 'ok');
     } else {
       showMToast('Kayıt hatası', 'err');
@@ -370,10 +475,20 @@ function saveKasa(n, makineNo) {
     + '&callback='  + cb;
   s.onerror = function() {
     delete window[cb];
-    document.getElementById('loading').classList.remove('show');
+    if (btn) { btn.disabled = false; btn.textContent = 'Kaydet'; }
     showMToast('Bağlantı hatası', 'err');
   };
   document.head.appendChild(s);
+}
+
+/* ---------- Kart açık tut (render sonrası) ---------- */
+
+function reopenCard(n) {
+  const body = document.getElementById('mcard-body-' + n);
+  if (body) {
+    body.style.display = 'block';
+    document.getElementById('mcard-arrow-' + n).textContent = '▲';
+  }
 }
 
 /* ---------- Toast ---------- */

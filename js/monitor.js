@@ -17,20 +17,22 @@ window.onload = function() {
     new Date().toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
   document.getElementById('user-header').textContent = 'Yönetici: ' + _mUserName;
 
-  loadData();
-  setInterval(loadData, 60000);
+  loadData(false);
+  setInterval(function() { loadData(true); }, 60000);
 };
 
 /* ---------- Veri yükleme ---------- */
 
-function loadData() {
-  document.getElementById('loading').classList.add('show');
-  document.getElementById('load-text').textContent = 'Yükleniyor...';
+function loadData(silent) {
+  if (!silent) {
+    document.getElementById('loading').classList.add('show');
+    document.getElementById('load-text').textContent = 'Yükleniyor...';
+  }
 
   const cb = 'cbMon_' + Date.now();
   window[cb] = function(json) {
     delete window[cb];
-    document.getElementById('loading').classList.remove('show');
+    if (!silent) document.getElementById('loading').classList.remove('show');
     if (json.serverTime) _mTimeOffset = json.serverTime - Date.now();
     _mData = json;
     render();
@@ -40,7 +42,7 @@ function loadData() {
   s.src = SCRIPT_URL + '?action=getMonitorData&callback=' + cb;
   s.onerror = function() {
     delete window[cb];
-    document.getElementById('loading').classList.remove('show');
+    if (!silent) document.getElementById('loading').classList.remove('show');
     showMonToast('Sunucu bağlantısı kurulamadı', 'err');
   };
   document.head.appendChild(s);

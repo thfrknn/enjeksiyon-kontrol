@@ -22,6 +22,7 @@ function loadLists() {
       uretimLimiti  = parseInt(json.uretimLimiti)  || 0;
       kasaLimitlari = json.kasaLimitlari || {};
       maxFireLimit  = parseInt(json.maxFireLimit)  || 50;
+      atananKasalar = json.atananKasalar || {};
 
       var idEl = document.getElementById('kullanici_id');
       if (idEl) idEl.dataset.ready = '1';
