@@ -363,13 +363,14 @@ function doGet(e) {
       }
     }
 
-    // 4) Arıza Log — son 50 kayıt, en yeni önce
+    // 4) Arıza Log — son 100 kayıt, en yeni önce
     const arizaLog = [];
     const arizaSheet = ss.getSheetByName('Arıza Log');
     if (arizaSheet && arizaSheet.getLastRow() > 1) {
       const lastRow  = arizaSheet.getLastRow();
-      const startRow = Math.max(2, lastRow - 49);
+      const startRow = Math.max(2, lastRow - 99);
       const av = arizaSheet.getRange(startRow, 1, lastRow - startRow + 1, 10).getValues();
+      const tz = ss.getSpreadsheetTimeZone();
       for (let i = av.length - 1; i >= 0; i--) {
         const r = av[i];
         arizaLog.push({
@@ -380,19 +381,49 @@ function doGet(e) {
           tip:        String(r[4]).trim(),
           sorun:      String(r[5]).trim(),
           cozum:      String(r[6]).trim(),
-          basSaat:    String(r[7]).trim(),
-          bitSaat:    String(r[8]).trim(),
+          basSaat:    r[7] instanceof Date ? Utilities.formatDate(r[7], tz, 'HH:mm') : String(r[7] || '').trim(),
+          bitSaat:    r[8] instanceof Date ? Utilities.formatDate(r[8], tz, 'HH:mm') : String(r[8] || '').trim(),
           durum:      String(r[9]).trim(),
         });
       }
     }
 
-    // 5) Özet
+    // 5) Üretim geçmişi — Veriler sekmesinden son 200 kayıt
+    const uretimGecmisi = [];
+    const verilerSheet = ss.getSheetByName('Veriler');
+    if (verilerSheet && verilerSheet.getLastRow() > 1) {
+      const lastRow  = verilerSheet.getLastRow();
+      const startRow = Math.max(2, lastRow - 199);
+      const tz = ss.getSpreadsheetTimeZone();
+      const vv = verilerSheet.getRange(startRow, 1, lastRow - startRow + 1, 24).getValues();
+      for (let i = vv.length - 1; i >= 0; i--) {
+        const r = vv[i];
+        const tarih = r[1] instanceof Date
+          ? Utilities.formatDate(r[1], tz, 'yyyy-MM-dd')
+          : String(r[1]).trim();
+        uretimGecmisi.push({
+          tarih,
+          adsoyad:   String(r[2]).trim(),
+          vardiya:   String(r[3]).trim(),
+          olcumNo:   Number(r[4]) || 0,
+          enj1:      String(r[7]).trim(),
+          kasa1:     String(r[8]).trim(),
+          uretim1:   Number(r[13]) || 0,
+          fire1:     Number(r[14]) || 0,
+          enj2:      String(r[15]).trim(),
+          uretim2:   Number(r[21]) || 0,
+          fire2:     Number(r[22]) || 0,
+          saat:      String(r[6]).trim(),
+        });
+      }
+    }
+
+    // 6) Özet
     const aktif   = Object.values(statuses).filter(s => s.durum === 'Aktif').length;
-    const arizali = Object.values(statuses).filter(s => s.durum === 'Arızalı').length;
+    const arizali = Object.values(statuses).filter(s => s.durum !== 'Aktif').length;
 
     return jsonp(cb, {
-      statuses, canliData, kasalar, arizaLog,
+      statuses, canliData, kasalar, arizaLog, uretimGecmisi,
       ozet: { aktif, arizali },
       serverTime: new Date().getTime(),
     });
@@ -516,8 +547,9 @@ function doGet(e) {
     const arizaTipi   = e.parameter.ariza_tipi   || '';
     const sorun       = e.parameter.sorun        || '';
     const cozum       = e.parameter.cozum        || '';
-    const basSaat     = e.parameter.bas_saat     || '';
-    const bitSaat     = e.parameter.bit_saat     || '';
+    const autoNow  = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm');
+    const basSaat  = e.parameter.bas_saat || autoNow;
+    const bitSaat  = e.parameter.bit_saat || '';
     const teknikerId  = e.parameter.tekniker_id  || '';
     const teknikerAd  = e.parameter.tekniker_ad  || '';
     const yeniDurum   = bitSaat ? 'Aktif' : 'Arızalı';
@@ -573,11 +605,28 @@ function doGet(e) {
   // ============================================================
   if (e.parameter.action === 'toggleMachine') {
     const ss       = SpreadsheetApp.getActiveSpreadsheet();
-    const makineNo = e.parameter.makine_no || '';
-    const durum    = e.parameter.durum     || 'Aktif';
-    const neden    = e.parameter.neden     || '';  // Temizlik, Planlı Bakım, Diğer
+    const makineNo = e.parameter.makine_no  || '';
+    const durum    = e.parameter.durum      || 'Aktif';
+    const neden    = e.parameter.neden      || '';
+    const tekId    = e.parameter.tekniker_id || '';
+    const tekAd    = e.parameter.tekniker_ad || '';
 
     setMachineDurum(ss, makineNo, durum, neden, '');
+
+    // Kapama/açma olayını Arıza Log'a kaydet
+    let logSheet = ss.getSheetByName('Arıza Log');
+    if (!logSheet) {
+      logSheet = ss.insertSheet('Arıza Log');
+      logSheet.appendRow(['Kayıt Zamanı','Tekniker ID','Tekniker Ad','Makine No','Arıza Tipi','Sorun','Çözüm','Başlangıç Saati','Bitiş Saati','Durum']);
+      logSheet.getRange('A1:J1').setFontWeight('bold').setBackground('#dc2626').setFontColor('#ffffff');
+      logSheet.setFrozenRows(1);
+    }
+    const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm');
+    if (durum === 'Kapalı') {
+      logSheet.appendRow([new Date().toLocaleString('tr-TR'), tekId, tekAd, makineNo, neden, neden, '', nowStr, '', 'Açık']);
+    } else if (durum === 'Aktif') {
+      logSheet.appendRow([new Date().toLocaleString('tr-TR'), tekId, tekAd, makineNo, 'Makine Açıldı', '', '', '', nowStr, 'Kapalı (Çözüldü)']);
+    }
 
     return jsonp(cb, { result: 'ok', makine: makineNo, durum });
   }

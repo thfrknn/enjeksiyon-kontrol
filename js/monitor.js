@@ -5,7 +5,7 @@ const _mUserName = sessionStorage.getItem('ep_name') || '';
 
 let _mData       = null;
 let _mTimeOffset = 0;
-let _activeTab   = 'canli';    // 'canli' | 'ariza'
+let _activeTab   = 'canli';    // 'canli' | 'ariza' | 'kapama' | 'uretim'
 let _activeVardiya = 'TUMU';   // 'TUMU' | 'SABAH' | 'AKSAM' | 'GECE'
 
 /* ---------- Init ---------- */
@@ -53,8 +53,10 @@ function loadData(silent) {
 function render() {
   if (!_mData) return;
   renderOzet();
-  if (_activeTab === 'canli') renderCanli();
-  else                        renderAriza();
+  if      (_activeTab === 'canli')  renderCanli();
+  else if (_activeTab === 'ariza')  renderAriza();
+  else if (_activeTab === 'kapama') renderKapama();
+  else if (_activeTab === 'uretim') renderUretim();
 }
 
 /* ---------- Özet satırı ---------- */
@@ -199,14 +201,128 @@ function renderAriza() {
   document.getElementById('main-content').innerHTML = `<div style="padding:0 16px 40px">${rows}</div>`;
 }
 
+/* ---------- Kapatma geçmişi ---------- */
+
+function renderKapama() {
+  const log = (_mData.arizaLog || []).filter(r => {
+    const arızaTipleri = ['Makine Kaynaklı', 'Kalıp Kaynaklı', 'Diğer', 'Makine Açıldı'];
+    return !arızaTipleri.includes(r.tip);  // Arıza dışı: Temizlik, Planlı Bakım, Diğer, Makine Açıldı
+  });
+
+  // Arıza log'u türe göre: arıza olmayan kayıtlar (Temizlik/Bakım/Diğer + Makine Açıldı)
+  const kapLog = (_mData.arizaLog || []).filter(r => {
+    const arizaTipleri = ['Makine Kaynaklı', 'Kalıp Kaynaklı'];
+    return !arizaTipleri.includes(r.tip);
+  });
+
+  if (!kapLog.length) {
+    document.getElementById('main-content').innerHTML =
+      '<div style="text-align:center;padding:40px;color:var(--text2);font-weight:700">Kapatma kaydı bulunamadı</div>';
+    return;
+  }
+
+  const rows = kapLog.map(r => {
+    const isAcildi  = r.tip === 'Makine Açıldı';
+    const iconColor = isAcildi ? '#16a34a' : '#c2410c';
+    const icon      = isAcildi ? '🟢' : '🔒';
+    return `
+      <div class="ariza-row">
+        <div class="ariza-row-top">
+          <span class="ariza-makine">${r.makine}</span>
+          <span style="font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;background:${isAcildi ? '#dcfce7' : '#fff7ed'};color:${iconColor}">${icon} ${r.tip}</span>
+          <span class="ariza-zaman">${r.zaman}</span>
+        </div>
+        ${r.sorun && r.sorun !== r.tip ? `<div class="ariza-sorun">${r.sorun}</div>` : ''}
+        <div class="ariza-saat">
+          ${r.basSaat ? `🕐 ${r.basSaat}` : ''}
+          ${r.bitSaat ? ` → ${r.bitSaat}` : ''}
+          ${r.teknikerAd ? ` · ${r.teknikerAd}` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('main-content').innerHTML = `<div style="padding:0 16px 40px">${rows}</div>`;
+}
+
+/* ---------- Üretim geçmişi ---------- */
+
+function renderUretim() {
+  const rows = _mData.uretimGecmisi || [];
+
+  if (!rows.length) {
+    document.getElementById('main-content').innerHTML =
+      '<div style="text-align:center;padding:40px;color:var(--text2);font-weight:700">Üretim kaydı bulunamadı</div>';
+    return;
+  }
+
+  // Yalnızca son ölçümü al (max olcumNo per operatör+gün+vardiya+enj)
+  const keyMap = {};
+  for (const r of rows) {
+    const k = r.tarih + '_' + r.vardiya + '_' + r.adsoyad + '_' + r.enj1;
+    if (!keyMap[k] || r.olcumNo > keyMap[k].olcumNo) keyMap[k] = r;
+  }
+  const son = Object.values(keyMap);
+
+  // Gün+vardiya bazlı grupla
+  const groups = {};
+  for (const r of son) {
+    const gk = r.tarih + '_' + r.vardiya;
+    if (!groups[gk]) groups[gk] = { tarih: r.tarih, vardiya: r.vardiya, operatorler: [], uretim: 0, fire: 0 };
+    const g = groups[gk];
+    g.uretim += r.uretim1 + r.uretim2;
+    g.fire   += r.fire1   + r.fire2;
+    if (!g.operatorler.includes(r.adsoyad)) g.operatorler.push(r.adsoyad);
+  }
+
+  const sorted = Object.values(groups).sort((a, b) => {
+    if (b.tarih !== a.tarih) return b.tarih.localeCompare(a.tarih);
+    const vOrder = { SABAH: 0, AKSAM: 1, GECE: 2 };
+    return (vOrder[a.vardiya] ?? 9) - (vOrder[b.vardiya] ?? 9);
+  });
+
+  const vardiyaIcon = { SABAH: '☀️', AKSAM: '🌆', GECE: '🌙' };
+
+  let lastDate = '';
+  let html = '<div style="padding:0 16px 40px">';
+  for (const g of sorted) {
+    const d = new Date(g.tarih);
+    const displayDate = d.toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long' });
+    if (g.tarih !== lastDate) {
+      html += `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin:16px 0 8px;padding-left:2px">${displayDate}</div>`;
+      lastDate = g.tarih;
+    }
+    html += `
+      <div class="ariza-row" style="margin-bottom:8px">
+        <div class="ariza-row-top">
+          <span style="font-size:15px;font-weight:800">${vardiyaIcon[g.vardiya] || ''} ${g.vardiya}</span>
+          <span style="font-size:11px;font-weight:700;color:var(--text2);margin-left:auto">${g.operatorler.length} operatör</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+          <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:20px;font-weight:800;color:#16a34a">${g.uretim.toLocaleString('tr-TR')}</div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#15803d;margin-top:2px">Üretim</div>
+          </div>
+          <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:20px;font-weight:800;color:#dc2626">${g.fire}</div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#dc2626;margin-top:2px">Fire</div>
+          </div>
+        </div>
+        ${g.operatorler.length ? `<div style="font-size:11px;color:var(--text2);margin-top:8px;font-weight:600">👤 ${g.operatorler.join(' · ')}</div>` : ''}
+      </div>`;
+  }
+  html += '</div>';
+
+  document.getElementById('main-content').innerHTML = html;
+}
+
 /* ---------- Tab geçişi ---------- */
 
 function setTab(tab) {
   _activeTab = tab;
-  document.getElementById('tab-canli').classList.toggle('tab-active', tab === 'canli');
-  document.getElementById('tab-ariza').classList.toggle('tab-active', tab === 'ariza');
-
-  // Vardiya filtresi sadece canlı sekmede görünür
+  ['canli','ariza','kapama','uretim'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('tab-active', t === tab);
+  });
+  // Vardiya filtresi sadece canlı sekmede
   document.getElementById('vardiya-filter').style.display = tab === 'canli' ? 'flex' : 'none';
   render();
 }

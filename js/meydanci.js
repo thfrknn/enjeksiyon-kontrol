@@ -175,11 +175,6 @@ function buildCard(n, makineNo, status) {
         </div>
       </div>
 
-      <div class="field">
-        <label>Başlangıç Saati</label>
-        <input type="time" id="bas-${n}" value="${nowTime()}">
-      </div>
-
       <button id="kapat-btn-${n}" onclick="closeMachine(${n}, '${makineNo}')"
               style="width:100%;background:#dc2626;color:white;padding:15px;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:4px">
         🔴 Kapat
@@ -203,10 +198,6 @@ function buildCard(n, makineNo, status) {
         <label>Çözüm Tanımı <span style="font-size:12px;font-weight:600;color:var(--text2)">(isteğe bağlı)</span></label>
         <textarea id="cozum-${n}" rows="2" class="mtextarea"
                   placeholder="Nasıl çözüldü?..."></textarea>
-      </div>
-      <div class="field">
-        <label>Bitiş Saati</label>
-        <input type="time" id="bit-${n}" value="${nowTime()}">
       </div>
       <button id="ac-btn-${n}" onclick="openMachine(${n}, '${makineNo}')"
               style="width:100%;background:#16a34a;color:white;padding:15px;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:4px">
@@ -294,7 +285,6 @@ function closeMachine(n, makineNo) {
     const tipEl = document.querySelector(`input[name="tip-${n}"]:checked`);
     const tip   = tipEl ? tipEl.value : '';
     const sorun = sorunEl.value.trim();
-    const bas   = document.getElementById('bas-' + n).value || '';
 
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Kaydediliyor...'; }
 
@@ -317,7 +307,7 @@ function closeMachine(n, makineNo) {
     const params = new URLSearchParams({
       action: 'logAriza', makine_no: makineNo,
       ariza_tipi: tip, sorun, cozum: '',
-      bas_saat: bas, bit_saat: '',
+      bas_saat: '', bit_saat: '',   // backend otomatik server saatini kullanır
       tekniker_id: _userId, tekniker_ad: _userName,
       callback: cb,
     });
@@ -332,7 +322,6 @@ function closeMachine(n, makineNo) {
 
   } else {
     // Arıza dışı kapatma → toggleMachine action
-    const bas = document.getElementById('bas-' + n).value || '';
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Kaydediliyor...'; }
 
     const cb = 'cbTM_' + Date.now();
@@ -354,10 +343,12 @@ function closeMachine(n, makineNo) {
     const s = document.createElement('script');
     s.src = SCRIPT_URL
       + '?action=toggleMachine'
-      + '&makine_no=' + encodeURIComponent(makineNo)
+      + '&makine_no='    + encodeURIComponent(makineNo)
       + '&durum=Kapalı'
-      + '&neden='     + encodeURIComponent(neden)
-      + '&callback='  + cb;
+      + '&neden='        + encodeURIComponent(neden)
+      + '&tekniker_id='  + encodeURIComponent(_userId)
+      + '&tekniker_ad='  + encodeURIComponent(_userName)
+      + '&callback='     + cb;
     s.onerror = function() {
       delete window[cb];
       if (btn) { btn.disabled = false; btn.textContent = '🔴 Kapat'; }
@@ -372,14 +363,13 @@ function closeMachine(n, makineNo) {
 function openMachine(n, makineNo) {
   const btn   = document.getElementById('ac-btn-' + n);
   const cozum = (document.getElementById('cozum-' + n) || {}).value || '';
-  const bit   = (document.getElementById('bit-' + n) || {}).value || '';
 
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Açılıyor...'; }
 
   const prev = _statuses[makineNo] || {};
   const wasAriza = prev.durum === 'Arızalı';
 
-  if (wasAriza && (cozum || bit)) {
+  if (wasAriza && cozum) {
     // Arızalıysa logAriza ile çözüm yaz
     const cb = 'cbAR_' + Date.now();
     window[cb] = function(json) {
@@ -399,7 +389,7 @@ function openMachine(n, makineNo) {
       action: 'logAriza', makine_no: makineNo,
       ariza_tipi: (prev.sonAriza && prev.sonAriza.tip) || '',
       sorun: (prev.sonAriza && prev.sonAriza.sorun) || '(sonradan eklendi)',
-      cozum, bas_saat: '', bit_saat: bit,
+      cozum, bas_saat: '', bit_saat: '',  // backend server saatini kullanır
       tekniker_id: _userId, tekniker_ad: _userName,
       callback: cb,
     });
@@ -430,9 +420,11 @@ function openMachine(n, makineNo) {
     const s = document.createElement('script');
     s.src = SCRIPT_URL
       + '?action=toggleMachine'
-      + '&makine_no=' + encodeURIComponent(makineNo)
+      + '&makine_no='   + encodeURIComponent(makineNo)
       + '&durum=Aktif'
-      + '&callback='  + cb;
+      + '&tekniker_id=' + encodeURIComponent(_userId)
+      + '&tekniker_ad=' + encodeURIComponent(_userName)
+      + '&callback='    + cb;
     s.onerror = function() {
       delete window[cb];
       if (btn) { btn.disabled = false; btn.textContent = '🟢 Makineyi Aç'; }

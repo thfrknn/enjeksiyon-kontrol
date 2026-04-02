@@ -273,7 +273,7 @@
 <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 4px">
   <a href="index.html"
      style="font-size:13px;font-weight:700;color:var(--text2);text-decoration:none">← Çıkış</a>
-  <button onclick="loadData()"
+  <button onclick="loadData(false)"
           style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:2px solid var(--border);border-radius:10px;background:white;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer">
     🔄 Yenile
   </button>
@@ -288,9 +288,11 @@
 </div>
 
 <!-- Tab bar -->
-<div class="tab-bar">
-  <button class="tab-btn tab-active" id="tab-canli"  onclick="setTab('canli')">📊 Canlı İzleme</button>
-  <button class="tab-btn"            id="tab-ariza"  onclick="setTab('ariza')">⚠️ Arıza Kayıtları</button>
+<div class="tab-bar" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+  <button class="tab-btn tab-active" id="tab-canli"   onclick="setTab('canli')">📊 Canlı</button>
+  <button class="tab-btn"            id="tab-ariza"   onclick="setTab('ariza')">⚠️ Arıza</button>
+  <button class="tab-btn"            id="tab-kapama"  onclick="setTab('kapama')">🔒 Kapatma</button>
+  <button class="tab-btn"            id="tab-uretim"  onclick="setTab('uretim')">📦 Üretim</button>
 </div>
 
 <!-- Vardiya filtresi (sadece Canlı İzleme'de) -->
