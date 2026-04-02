@@ -264,6 +264,25 @@ function goNext(from) {
     _adSoyad    = (kullanicilar[id] && kullanicilar[id].name) || id;
     if (hatirla && si) localStorage.setItem('sifre_' + id, si);
     else               localStorage.removeItem('sifre_' + id);
+
+    // Rol bazlı yönlendirme
+    var kullanici = kullanicilar[id];
+    var rol = (kullanici && kullanici.rol)
+      || (id.charAt(0) === '1' ? 'meydanci'
+        : id.charAt(0) === '3' ? 'yonetici'
+        : 'operatör');
+    if (rol === 'meydanci') {
+      sessionStorage.setItem('ep_id',   id);
+      sessionStorage.setItem('ep_name', _adSoyad);
+      window.location.href = 'meydanci.html';
+      return;
+    }
+    if (rol === 'yonetici') {
+      sessionStorage.setItem('ep_id',   id);
+      sessionStorage.setItem('ep_name', _adSoyad);
+      window.location.href = 'monitor.html';
+      return;
+    }
   }
   if (from === 2 && !validate2()) return;
   if (from === 2) buildSummary();
