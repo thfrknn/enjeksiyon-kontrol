@@ -108,6 +108,19 @@ function clearSifreErr() {
   document.getElementById('sifre').classList.remove('error');
 }
 
+// ── Meydancı tarafından atanan kasa bilgi kutusu ────
+function showKasaAtandiBox(n, kasa) {
+  var box = document.getElementById('kasa-atandi-box' + n);
+  if (!box) return;
+  document.getElementById('kasa-atandi-val' + n).textContent = kasa;
+  box.style.display = 'flex';
+}
+
+function hideKasaAtandiBox(n) {
+  var box = document.getElementById('kasa-atandi-box' + n);
+  if (box) box.style.display = 'none';
+}
+
 // ── Durum kutusu ve enjeksiyon kilidi gösterimi ─────
 function showStatusBox(json) {
   var box = document.getElementById('status-box');

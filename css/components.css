@@ -1,10 +1,10 @@
 /* ── Form Elements ─────────────────────────────────── */
 label {
   display: block;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 800;
   color: var(--text);
-  margin-bottom: 7px;
+  margin-bottom: 9px;
 }
 label .req { color: var(--warn); }
 
@@ -76,11 +76,11 @@ input.error, select.error { border-color: var(--warn) !important; }
 /* ── Buttons ───────────────────────────────────────── */
 .btn {
   flex: 1;
-  padding: 17px;
-  border-radius: 14px;
+  padding: 20px;
+  border-radius: 16px;
   border: none;
   font-family: 'Nunito', sans-serif;
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 800;
   cursor: pointer;
   transition: all .15s;
@@ -88,6 +88,7 @@ input.error, select.error { border-color: var(--warn) !important; }
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-height: 62px;
 }
 .btn:active      { transform: scale(.97); }
 .btn:disabled    { opacity: .4; cursor: not-allowed; transform: none; }
@@ -97,17 +98,18 @@ input.error, select.error { border-color: var(--warn) !important; }
 
 .tbtn {
   flex: 1;
-  padding: 14px;
-  border-radius: 12px;
+  padding: 20px 14px;
+  border-radius: 14px;
   border: 2px solid var(--border);
   background: var(--bg);
   font-family: 'Nunito', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 800;
   color: var(--text2);
   cursor: pointer;
   text-align: center;
   transition: all .15s;
+  min-height: 64px;
 }
 .tbtn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
 .tbtn:active { transform: scale(.96); }
@@ -122,16 +124,17 @@ input.error, select.error { border-color: var(--warn) !important; }
   background: var(--white);
 }
 .cbtn {
-  width: 60px;
+  width: 72px;
   background: var(--bg);
   border: none;
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 700;
   color: var(--accent);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 64px;
 }
 .cbtn:active { background: var(--accent-light); }
 .cval {
