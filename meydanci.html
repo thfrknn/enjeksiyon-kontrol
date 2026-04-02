@@ -36,39 +36,57 @@
     .mcard-hd {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 14px 16px;
+      gap: 12px;
+      padding: 16px 18px;
       cursor: pointer;
       user-select: none;
       -webkit-user-select: none;
+      min-height: 72px;
     }
     .mcard-hd:active { background: var(--bg); }
 
-    .mcard-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .mcard-hd-inner {
       flex: 1;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .mcard-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     .mcard-no {
-      font-size: 15px;
+      font-size: 17px;
       font-weight: 800;
       color: var(--text);
       white-space: nowrap;
     }
-    .mcard-sub {
-      font-size: 11px;
+    /* Kapalı bar — metrik chip satırı */
+    .mcard-info-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .mcard-info-red {
+      font-size: 12px;
+      font-weight: 700;
       color: #b91c1c;
-      font-weight: 600;
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    }
+    .mchip {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text2);
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 2px 8px;
       white-space: nowrap;
     }
     .mcard-arrow {
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text2);
       flex-shrink: 0;
     }

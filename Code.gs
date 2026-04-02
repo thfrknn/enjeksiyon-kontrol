@@ -321,7 +321,38 @@ function doGet(e) {
       }
     }
 
-    return jsonp(cb, { statuses, arizaTipleri, serverTime: new Date().getTime() });
+    // Canlı İzleme'den son makine verilerini oku (kasa, çevrim, operatör)
+    const canliSheet = ss.getSheetByName('Canlı İzleme');
+    const machineData = {};
+    if (canliSheet) {
+      const BASES = { SABAH: 3, AKSAM: 16, GECE: 29 };
+      for (let i = 1; i <= 12; i++) {
+        const makineNo = 'Enjeksiyon ' + i;
+        let latest = null;
+        for (const v in BASES) {
+          const row  = canliSheet.getRange(BASES[v] + (i - 1), 1, 1, 9).getValues()[0];
+          const tarih = String(row[2] || '').trim();
+          const opAd  = String(row[1] || '').trim();
+          if (tarih && opAd) {
+            if (!latest || tarih > latest.tarih) {
+              latest = {
+                tarih,
+                operatör: opAd,
+                kasa:     String(row[3] || '').trim(),
+                cevrim:   String(row[4] || '').trim(),
+                agirlik:  String(row[5] || '').trim(),
+                uretim:   String(row[6] || '').trim(),
+                fire:     String(row[7] || '').trim(),
+                saat:     String(row[8] || '').trim(),
+              };
+            }
+          }
+        }
+        machineData[makineNo] = latest;
+      }
+    }
+
+    return jsonp(cb, { statuses, arizaTipleri, machineData, serverTime: new Date().getTime() });
   }
 
   // ============================================================

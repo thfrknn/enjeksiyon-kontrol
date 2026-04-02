@@ -5,6 +5,7 @@ const _userName = sessionStorage.getItem('ep_name') || '';
 
 let _statuses     = {};
 let _arizaTipleri = [];
+let _machineData  = {};   // Canlı İzleme'den çekilen son metrikler
 let _timeOffset   = 0;
 
 /* ---------- Init ---------- */
@@ -32,6 +33,7 @@ function loadStatuses() {
     document.getElementById('loading').classList.remove('show');
     if (json.serverTime) _timeOffset = json.serverTime - Date.now();
     _statuses     = json.statuses     || {};
+    _machineData  = json.machineData  || {};
     _arizaTipleri = (json.arizaTipleri && json.arizaTipleri.length)
       ? json.arizaTipleri
       : ['Makine Kaynaklı', 'Kalıp Kaynaklı', 'Diğer'];
@@ -93,25 +95,39 @@ function buildCard(n, makineNo, status) {
      </label>`
   ).join('');
 
-  const sonArizaText = isArizali && status.sonAriza
-    ? (status.sonAriza.tip + (status.sonAriza.sorun
-        ? ': ' + status.sonAriza.sorun.substring(0, 45) + (status.sonAriza.sorun.length > 45 ? '…' : '')
-        : ''))
-    : '';
+  // Canlı İzleme'den gelen son metrikler
+  const md = _machineData[makineNo];
+
+  // Kapalı bar — 2. satır içeriği
+  let infoLine = '';
+  if (isArizali && status.sonAriza) {
+    const arizaText = status.sonAriza.tip
+      + (status.sonAriza.sorun ? ': ' + status.sonAriza.sorun.substring(0, 40)
+          + (status.sonAriza.sorun.length > 40 ? '…' : '') : '');
+    infoLine = `<div class="mcard-info-row mcard-info-red">⚠️ ${arizaText}</div>`;
+  } else if (md) {
+    const chips = [];
+    if (md.kasa)    chips.push(`<span class="mchip">📦 ${md.kasa}</span>`);
+    if (md.cevrim)  chips.push(`<span class="mchip">⏱ ${md.cevrim} sn</span>`);
+    if (md.operatör) chips.push(`<span class="mchip">👤 ${md.operatör.split(' ')[0]}</span>`);
+    if (chips.length) infoLine = `<div class="mcard-info-row">${chips.join('')}</div>`;
+  }
 
   div.innerHTML = `
     <div class="mcard-hd" onclick="toggleCard(${n})">
-      <div class="mcard-left">
-        <span class="mcard-no">Enj ${n}</span>
-        <span class="mbadge ${isArizali ? 'mbadge-red' : 'mbadge-green'}">
-          ${isArizali ? '⚠️ Arızalı' : '✅ Aktif'}
-        </span>
+      <div class="mcard-hd-inner">
+        <div class="mcard-top">
+          <span class="mcard-no">Enjeksiyon ${n}</span>
+          <span class="mbadge ${isArizali ? 'mbadge-red' : 'mbadge-green'}">
+            ${isArizali ? '⚠️ Arızalı' : '✅ Aktif'}
+          </span>
+        </div>
+        ${infoLine}
       </div>
-      ${sonArizaText ? `<div class="mcard-sub">${sonArizaText}</div>` : ''}
       <span class="mcard-arrow" id="mcard-arrow-${n}">▼</span>
     </div>
 
-    <div class="mcard-bd" id="mcard-body-${n}">
+    <div class="mcard-bd" id="mcard-body-${n}" style="display:none">
 
       <!-- Makine aç/kapat -->
       <button class="m-toggle-btn ${isArizali ? 'mtbtn-green' : 'mtbtn-red'}"
