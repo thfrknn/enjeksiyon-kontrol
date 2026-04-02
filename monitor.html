@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#16a34a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Ersan Plastik">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <title>Ersan Plastik — Yönetici İzleme</title>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header>
+  <h1>🏭 Ersan Plastik</h1>
+  <p>Yönetici İzleme Paneli</p>
+  <div id="header-date"></div>
+</header>
+
+<div style="padding:32px 16px;text-align:center;color:var(--text2)">
+  <div style="font-size:48px;margin-bottom:12px">📊</div>
+  <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px">Yönetici Paneli</div>
+  <div style="font-size:14px">Bu sayfa hazırlanıyor...</div>
+</div>
+
+<div style="padding:0 16px">
+  <a href="index.html" class="btn btn-back"
+     style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;border-radius:14px;background:var(--border);color:var(--text2);text-decoration:none;font-weight:800;font-size:15px">
+    ← Geri Dön
+  </a>
+</div>
+
+<script>
+  document.getElementById('header-date').textContent =
+    new Date().toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+</script>
+</body>
+</html>
