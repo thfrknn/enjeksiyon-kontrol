@@ -10,36 +10,309 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-  <title>Ersan Plastik — Yönetici İzleme</title>
+  <title>Ersan Plastik — Yönetici</title>
 
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/app.css">
+
+  <style>
+    /* ── Özet bar ──────────────────────────────────── */
+    .ozet-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 12px 16px;
+    }
+    .ostat-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .ostat-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .ostat-val.green { color: var(--success); }
+    .ostat-val.red   { color: var(--warn); }
+    .ostat-val.warn  { color: #d97706; }
+    .ostat-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      color: var(--text2);
+    }
+
+    /* ── Tab bar ──────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      background: var(--white);
+      border-bottom: 2px solid var(--border);
+      padding: 0 16px;
+      gap: 4px;
+    }
+    .tab-btn {
+      padding: 12px 16px;
+      border: none;
+      background: none;
+      font-family: 'Nunito', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text2);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+    }
+    .tab-active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ── Vardiya filtre ─────────────────────────── */
+    .vardiya-filter {
+      display: flex;
+      gap: 6px;
+      padding: 10px 16px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .vf-btn {
+      flex-shrink: 0;
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: white;
+      font-family: 'Nunito', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text2);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .vf-active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    /* ── Makine kartı grid ──────────────────────── */
+    .mmon-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px 16px 40px;
+    }
+    .mmon-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+    .mmon-red {
+      border-color: #fca5a5;
+      background: #fff5f5;
+    }
+    .mmon-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .mmon-no {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .mmon-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+    .mmon-badge.green { background: #dcfce7; color: #15803d; }
+    .mmon-badge.red   { background: #fee2e2; color: #dc2626; }
+
+    .mmon-row {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      margin-bottom: 4px;
+      display: flex;
+      gap: 5px;
+      align-items: baseline;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mmon-row span { color: var(--text); font-weight: 700; }
+
+    .mmon-ariza-tip {
+      font-size: 11px;
+      font-weight: 800;
+      color: #dc2626;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+    }
+    .mmon-ariza-sorun {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+
+    .mmon-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .mmon-stat {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 6px;
+      text-align: center;
+    }
+    .mmon-stat-val {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .mmon-stat-val.warn { color: #d97706; }
+    .mmon-stat-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+      color: var(--text2);
+      margin-top: 2px;
+    }
+    .mmon-footer {
+      font-size: 10px;
+      color: var(--text2);
+      font-weight: 600;
+      margin-top: 8px;
+      text-align: right;
+    }
+
+    /* ── Arıza log listesi ──────────────────────── */
+    .ariza-row {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+    }
+    .ariza-row-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .ariza-makine {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .ariza-zaman {
+      font-size: 11px;
+      color: var(--text2);
+      font-weight: 600;
+      margin-left: auto;
+    }
+    .ariza-tip {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+      color: #dc2626;
+      margin-bottom: 4px;
+    }
+    .ariza-sorun {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+    .ariza-cozum {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--success);
+      margin-bottom: 4px;
+    }
+    .ariza-saat {
+      font-size: 11px;
+      color: var(--text2);
+      font-weight: 600;
+    }
+  </style>
 </head>
 <body>
 
 <header>
   <h1>🏭 Ersan Plastik</h1>
-  <p>Yönetici İzleme Paneli</p>
+  <p id="user-header">Yönetici İzleme Paneli</p>
   <div id="header-date"></div>
 </header>
 
-<div style="padding:32px 16px;text-align:center;color:var(--text2)">
-  <div style="font-size:48px;margin-bottom:12px">📊</div>
-  <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px">Yönetici Paneli</div>
-  <div style="font-size:14px">Bu sayfa hazırlanıyor...</div>
+<!-- Üst bar: çıkış + yenile -->
+<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 4px">
+  <a href="index.html"
+     style="font-size:13px;font-weight:700;color:var(--text2);text-decoration:none">← Çıkış</a>
+  <button onclick="loadData()"
+          style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:2px solid var(--border);border-radius:10px;background:white;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer">
+    🔄 Yenile
+  </button>
 </div>
 
-<div style="padding:0 16px">
-  <a href="index.html" class="btn btn-back"
-     style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;border-radius:14px;background:var(--border);color:var(--text2);text-decoration:none;font-weight:800;font-size:15px">
-    ← Geri Dön
-  </a>
+<!-- Özet istatistik -->
+<div class="ozet-row" id="ozet-row">
+  <div class="ostat-card"><div class="ostat-val">—</div><div class="ostat-lbl">Aktif</div></div>
+  <div class="ostat-card"><div class="ostat-val">—</div><div class="ostat-lbl">Arızalı</div></div>
+  <div class="ostat-card"><div class="ostat-val">—</div><div class="ostat-lbl">Üretim</div></div>
+  <div class="ostat-card"><div class="ostat-val">—</div><div class="ostat-lbl">Fire</div></div>
 </div>
 
-<script>
-  document.getElementById('header-date').textContent =
-    new Date().toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-</script>
+<!-- Tab bar -->
+<div class="tab-bar">
+  <button class="tab-btn tab-active" id="tab-canli"  onclick="setTab('canli')">📊 Canlı İzleme</button>
+  <button class="tab-btn"            id="tab-ariza"  onclick="setTab('ariza')">⚠️ Arıza Kayıtları</button>
+</div>
+
+<!-- Vardiya filtresi (sadece Canlı İzleme'de) -->
+<div class="vardiya-filter" id="vardiya-filter">
+  <button class="vf-btn vf-active" id="vf-TUMU"  onclick="setVardiyaFilter('TUMU')">Tümü</button>
+  <button class="vf-btn"           id="vf-SABAH" onclick="setVardiyaFilter('SABAH')">☀️ Sabah</button>
+  <button class="vf-btn"           id="vf-AKSAM" onclick="setVardiyaFilter('AKSAM')">🌆 Akşam</button>
+  <button class="vf-btn"           id="vf-GECE"  onclick="setVardiyaFilter('GECE')">🌙 Gece</button>
+</div>
+
+<!-- Ana içerik -->
+<div id="main-content"></div>
+
+<!-- Loading & Toast -->
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <span id="load-text">Yükleniyor...</span>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/monitor.js"></script>
+
 </body>
 </html>

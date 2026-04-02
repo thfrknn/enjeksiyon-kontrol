@@ -281,6 +281,98 @@ function doGet(e) {
   }
 
   // ============================================================
+  // getMonitorData: Yönetici izleme sayfası için kapsamlı veri
+  // ============================================================
+  if (e.parameter.action === 'getMonitorData') {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // 1) Makine durumları
+    const statuses = {};
+    for (let i = 1; i <= 12; i++) statuses['Enjeksiyon ' + i] = { durum: 'Aktif', sonAriza: null };
+    const durSheet = ss.getSheetByName('Makine Durumları');
+    if (durSheet && durSheet.getLastRow() > 1) {
+      const dv = durSheet.getRange(2, 1, durSheet.getLastRow() - 1, 5).getValues();
+      for (const row of dv) {
+        const m = String(row[0]).trim();
+        if (!statuses[m]) continue;
+        statuses[m].durum          = String(row[1]).trim();
+        statuses[m].sonGuncelleme  = String(row[2]).trim();
+        if (statuses[m].durum === 'Arızalı') {
+          statuses[m].sonAriza = { tip: String(row[4]).trim(), sorun: String(row[3]).trim() };
+        }
+      }
+    }
+
+    // 2) Canlı İzleme verisi — tüm vardiyalar
+    const canliData = {};
+    const canliSheet = ss.getSheetByName('Canlı İzleme');
+    const BASES = { SABAH: 3, AKSAM: 16, GECE: 29 };
+    for (let i = 1; i <= 12; i++) {
+      const makineNo = 'Enjeksiyon ' + i;
+      canliData[makineNo] = {};
+      for (const v in BASES) {
+        if (!canliSheet) { canliData[makineNo][v] = {}; continue; }
+        const row = canliSheet.getRange(BASES[v] + (i - 1), 1, 1, 9).getValues()[0];
+        canliData[makineNo][v] = {
+          operatör: String(row[1] || '').trim(),
+          tarih:    String(row[2] || '').trim(),
+          kasa:     String(row[3] || '').trim(),
+          cevrim:   String(row[4] || '').trim(),
+          agirlik:  String(row[5] || '').trim(),
+          uretim:   String(row[6] || '').trim(),
+          fire:     String(row[7] || '').trim(),
+          saat:     String(row[8] || '').trim(),
+        };
+      }
+    }
+
+    // 3) Atanan kasa ebatları
+    const kasalar = {};
+    const kasaSheet = ss.getSheetByName('Makine Kasa');
+    if (kasaSheet && kasaSheet.getLastRow() > 1) {
+      const kv = kasaSheet.getRange(2, 1, kasaSheet.getLastRow() - 1, 2).getValues();
+      for (const row of kv) {
+        const m = String(row[0]).trim(), k = String(row[1]).trim();
+        if (m && k) kasalar[m] = k;
+      }
+    }
+
+    // 4) Arıza Log — son 50 kayıt, en yeni önce
+    const arizaLog = [];
+    const arizaSheet = ss.getSheetByName('Arıza Log');
+    if (arizaSheet && arizaSheet.getLastRow() > 1) {
+      const lastRow  = arizaSheet.getLastRow();
+      const startRow = Math.max(2, lastRow - 49);
+      const av = arizaSheet.getRange(startRow, 1, lastRow - startRow + 1, 10).getValues();
+      for (let i = av.length - 1; i >= 0; i--) {
+        const r = av[i];
+        arizaLog.push({
+          zaman:      String(r[0]).trim(),
+          teknikerId: String(r[1]).trim(),
+          teknikerAd: String(r[2]).trim(),
+          makine:     String(r[3]).trim(),
+          tip:        String(r[4]).trim(),
+          sorun:      String(r[5]).trim(),
+          cozum:      String(r[6]).trim(),
+          basSaat:    String(r[7]).trim(),
+          bitSaat:    String(r[8]).trim(),
+          durum:      String(r[9]).trim(),
+        });
+      }
+    }
+
+    // 5) Özet
+    const aktif   = Object.values(statuses).filter(s => s.durum === 'Aktif').length;
+    const arizali = Object.values(statuses).filter(s => s.durum === 'Arızalı').length;
+
+    return jsonp(cb, {
+      statuses, canliData, kasalar, arizaLog,
+      ozet: { aktif, arizali },
+      serverTime: new Date().getTime(),
+    });
+  }
+
+  // ============================================================
   // getMachineStatuses: 12 makinenin anlık durumunu ve arıza
   // tiplerini döndürür. Meydancı sayfası bu action'ı kullanır.
   // ============================================================
