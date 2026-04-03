@@ -812,6 +812,15 @@ function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, ta
   // Makine adı ve operatör adı sola hizalı + kalın
   sheet.getRange(targetRow, 1).setFontWeight('bold').setHorizontalAlignment('left');
   sheet.getRange(targetRow, 2).setFontWeight('bold').setHorizontalAlignment('left');
+
+  // Bölüm başlığını hangi güne ait olduğunu gösterecek şekilde güncelle
+  // Örnek: "── SABAH  ·  2026-04-03 ──"
+  const labelRow   = base - 1;
+  const bgLabel    = _BOLUM_BG[vardiya];
+  const labelCell  = sheet.getRange(labelRow, 1);
+  labelCell.setValue('── ' + vardiya + '  ·  ' + tarih + ' ──');
+  labelCell.setBackground(bgLabel).setFontColor('#ffffff').setFontWeight('bold')
+           .setHorizontalAlignment('center').setFontSize(11);
 }
 
 function _setupCanlıBaslik(sheet) {
