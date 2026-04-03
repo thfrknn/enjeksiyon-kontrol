@@ -20,10 +20,10 @@ function _inWindow(m, center, win) {
 /**
  * Verilen vardiya seçiminin şu an aktif olup olmadığını kontrol eder.
  *
- * Geçiş pencereleri (±15 dk):
- *   08:45-09:15 → GECE ve SABAH birlikte aktif
- *   16:45-17:15 → SABAH ve AKSAM birlikte aktif
- *   00:45-01:15 → AKSAM ve GECE birlikte aktif
+ * Geçiş pencereleri (±120 dk = 2 saat):
+ *   07:00-11:00 → GECE ve SABAH birlikte aktif
+ *   15:00-19:00 → SABAH ve AKSAM birlikte aktif
+ *   23:00-03:00 → AKSAM ve GECE birlikte aktif
  *
  * Bu pencereler dışında sadece o anın vardiyası aktiftir.
  */
@@ -34,9 +34,9 @@ function isVardiyaActive(v) {
   var m   = now.getHours() * 60 + now.getMinutes();
 
   // Geçiş pencereleri — her iki komşu vardiya da seçilebilir
-  if (_inWindow(m, 9  * 60, 15)) return v === 'GECE'  || v === 'SABAH';
-  if (_inWindow(m, 17 * 60, 15)) return v === 'SABAH' || v === 'AKSAM';
-  if (_inWindow(m, 1  * 60, 15)) return v === 'AKSAM' || v === 'GECE';
+  if (_inWindow(m, 9  * 60, 120)) return v === 'GECE'  || v === 'SABAH';
+  if (_inWindow(m, 17 * 60, 120)) return v === 'SABAH' || v === 'AKSAM';
+  if (_inWindow(m, 1  * 60, 120)) return v === 'AKSAM' || v === 'GECE';
 
   // Normal zaman — sadece aktif vardiya
   var r = _VR[v];
