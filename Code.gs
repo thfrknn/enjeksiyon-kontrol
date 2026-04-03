@@ -821,22 +821,6 @@ function _setupCanlıBaslik(sheet) {
   [120, 140, 130, 100, 80, 80, 90, 70, 70, 130].forEach((w, i) => sheet.setColumnWidth(i + 1, w));
   // Timestamp sütunu (J) gizle — sadece 24s hesabı için
   sheet.hideColumns(10);
-
-  // Artık eski _VARDIYA_BASE ve bölüm başlık satırları yok
-  return;  // Aşağısı eski _setupCanlıBaslik'ten kalma — silinecek
-
-  const COLS = 9;
-
-  // Sütun başlıkları (Satır 1)
-  const headers = ['Makine', 'Ad Soyad', 'Tarih', 'Kasa', 'Çevrim(sn)', 'Ağırlık(gr)', 'Üretim', 'Fire', 'Saat'];
-  const hRange = sheet.getRange(1, 1, 1, COLS);
-  hRange.setValues([headers]);
-  hRange.setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff')
-        .setHorizontalAlignment('center').setFontSize(11);
-  sheet.setFrozenRows(1);
-
-  // 3 vardiya bölümü
-  const vardiyalar = ['SABAH', 'AKSAM', 'GECE'];
 }
 
 // ================================================================
