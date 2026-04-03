@@ -246,6 +246,13 @@ function renderKapama() {
 
 /* ---------- Üretim geçmişi ---------- */
 
+function _saatToSec(s) {
+  if (!s) return -1;
+  const p = String(s).split(':');
+  if (p.length < 2) return -1;
+  return parseInt(p[0]) * 3600 + parseInt(p[1]) * 60;
+}
+
 function renderUretim() {
   const rows = _mData.uretimGecmisi || [];
 
@@ -255,23 +262,50 @@ function renderUretim() {
     return;
   }
 
-  // Yalnızca son ölçümü al (max olcumNo per operatör+gün+vardiya+enj)
-  const keyMap = {};
+  // Tüm satırları tarih+vardiya+makine bazında grupla (tüm ölçümler birlikte)
+  const groups = {};   // key = tarih_vardiya
   for (const r of rows) {
-    const k = r.tarih + '_' + r.vardiya + '_' + r.adsoyad + '_' + r.enj1;
-    if (!keyMap[k] || r.olcumNo > keyMap[k].olcumNo) keyMap[k] = r;
-  }
-  const son = Object.values(keyMap);
-
-  // Gün+vardiya bazlı grupla
-  const groups = {};
-  for (const r of son) {
     const gk = r.tarih + '_' + r.vardiya;
-    if (!groups[gk]) groups[gk] = { tarih: r.tarih, vardiya: r.vardiya, operatorler: [], uretim: 0, fire: 0 };
-    const g = groups[gk];
-    g.uretim += r.uretim1 + r.uretim2;
-    g.fire   += r.fire1   + r.fire2;
-    if (!g.operatorler.includes(r.adsoyad)) g.operatorler.push(r.adsoyad);
+    if (!groups[gk]) groups[gk] = { tarih: r.tarih, vardiya: r.vardiya, makineler: {} };
+
+    function addMakine(enjNo, kasa, cevrim, bas, bit, uretim, fire) {
+      if (!enjNo || enjNo === '00') return;
+      if (!groups[gk].makineler[enjNo]) {
+        groups[gk].makineler[enjNo] = { enjNo, kasa: kasa || '', olcumler: [] };
+      }
+      const m = groups[gk].makineler[enjNo];
+      if (kasa && !m.kasa) m.kasa = kasa;
+      m.olcumler.push({ no: r.olcumNo, saat: r.saat, cevrim: cevrim || 0,
+                        bas: bas || 0, bit: bit || 0, uretim: uretim || 0, fire: fire || 0 });
+    }
+    addMakine(r.enj1, r.kasa1, r.cevrim1, r.sayacBas1, r.sayacBit1, r.uretim1, r.fire1);
+    addMakine(r.enj2, '',      r.cevrim2, r.sayacBas2, r.sayacBit2, r.uretim2, r.fire2);
+  }
+
+  // Her makine için özet hesapla
+  for (const gk in groups) {
+    for (const enjNo in groups[gk].makineler) {
+      const m = groups[gk].makineler[enjNo];
+      m.olcumler.sort((a, b) => a.no - b.no);
+      const last = m.olcumler[m.olcumler.length - 1];
+      const first = m.olcumler[0];
+
+      // Son ölçümün bitiş sayacı - ilk ölçümün başlangıç sayacı = gerçek toplam üretim
+      const sayacRange = (last.bit > 0 && first.bas > 0) ? last.bit - first.bas : 0;
+      m.toplamUretim = sayacRange > 0 ? sayacRange : m.olcumler.reduce((s, o) => s + o.uretim, 0);
+      m.toplamFire   = last.fire;   // kümülatif fire zaten son ölçümde birikmiş
+      m.cevrimGirilen = last.cevrim || 0;
+
+      // Gerçek çevrim: (son_saat - ilk_saat) / sayaç_farkı
+      if (m.olcumler.length >= 2 && sayacRange > 0) {
+        let t1 = _saatToSec(first.saat), t2 = _saatToSec(last.saat);
+        if (t1 >= 0 && t2 >= 0) {
+          if (t2 < t1) t2 += 86400;   // gece yarısı geçişi
+          const saniye = t2 - t1;
+          if (saniye > 0) m.cevrimHesaplanan = Math.round(saniye / sayacRange);
+        }
+      }
+    }
   }
 
   const sorted = Object.values(groups).sort((a, b) => {
@@ -288,26 +322,69 @@ function renderUretim() {
     const d = new Date(g.tarih);
     const displayDate = d.toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long' });
     if (g.tarih !== lastDate) {
-      html += `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin:16px 0 8px;padding-left:2px">${displayDate}</div>`;
+      html += `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin:20px 0 8px;padding-left:2px">${displayDate}</div>`;
       lastDate = g.tarih;
     }
+
+    // Toplam üretim/fire bu vardiyada
+    const makineler = Object.values(g.makineler);
+    const toplamU = makineler.reduce((s, m) => s + m.toplamUretim, 0);
+    const toplamF = makineler.reduce((s, m) => s + m.toplamFire, 0);
+
+    // Makine satırları
+    const makineHtml = makineler
+      .sort((a, b) => {
+        const na = parseInt((a.enjNo.match(/\d+/) || ['0'])[0]);
+        const nb = parseInt((b.enjNo.match(/\d+/) || ['0'])[0]);
+        return na - nb;
+      })
+      .map(m => {
+        let cevrimHtml = '';
+        if (m.cevrimGirilen > 0) {
+          const g = m.cevrimGirilen;
+          const h = m.cevrimHesaplanan;
+          let gercekHtml = '';
+          if (h > 0) {
+            const fark = h - g;
+            const pct  = Math.abs(fark / g) * 100;
+            const renk = pct <= 10 ? '#16a34a' : pct <= 30 ? '#d97706' : '#dc2626';
+            const isaret = fark > 0 ? '+' : '';
+            gercekHtml = `<span style="color:${renk};font-weight:700;font-size:12px"> → Gerçek: ${h}sn (${isaret}${fark}sn)</span>`;
+          }
+          cevrimHtml = `<div style="font-size:12px;color:var(--text2);margin-top:3px">⏱ Girilen: <strong>${g}sn</strong>${gercekHtml}</div>`;
+        }
+        return `
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:800;color:var(--text)">
+                ${m.enjNo}${m.kasa ? `<span style="font-weight:600;color:var(--text2);margin-left:6px">· ${m.kasa}</span>` : ''}
+              </div>
+              ${cevrimHtml}
+            </div>
+            <div style="display:flex;gap:10px;flex-shrink:0;margin-left:10px">
+              <div style="text-align:center">
+                <div style="font-size:15px;font-weight:800;color:#16a34a">${m.toplamUretim.toLocaleString('tr-TR')}</div>
+                <div style="font-size:9px;color:#15803d;font-weight:700;text-transform:uppercase">Üretim</div>
+              </div>
+              ${m.toplamFire > 0 ? `
+              <div style="text-align:center">
+                <div style="font-size:15px;font-weight:800;color:#dc2626">${m.toplamFire}</div>
+                <div style="font-size:9px;color:#dc2626;font-weight:700;text-transform:uppercase">Fire</div>
+              </div>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+
     html += `
-      <div class="ariza-row" style="margin-bottom:8px">
+      <div class="ariza-row" style="margin-bottom:10px">
         <div class="ariza-row-top">
           <span style="font-size:15px;font-weight:800">${vardiyaIcon[g.vardiya] || ''} ${g.vardiya}</span>
-          <span style="font-size:11px;font-weight:700;color:var(--text2);margin-left:auto">${g.operatorler.length} operatör</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
-          <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:20px;font-weight:800;color:#16a34a">${g.uretim.toLocaleString('tr-TR')}</div>
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#15803d;margin-top:2px">Üretim</div>
-          </div>
-          <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:20px;font-weight:800;color:#dc2626">${g.fire}</div>
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#dc2626;margin-top:2px">Fire</div>
+          <div style="display:flex;gap:12px;margin-left:auto">
+            <span style="font-size:13px;font-weight:800;color:#16a34a">${toplamU.toLocaleString('tr-TR')} üretim</span>
+            ${toplamF > 0 ? `<span style="font-size:13px;font-weight:800;color:#dc2626">${toplamF} fire</span>` : ''}
           </div>
         </div>
-        ${g.operatorler.length ? `<div style="font-size:11px;color:var(--text2);margin-top:8px;font-weight:600">👤 ${g.operatorler.join(' · ')}</div>` : ''}
+        <div style="margin-top:6px">${makineHtml}</div>
       </div>`;
   }
   html += '</div>';
