@@ -209,6 +209,55 @@
       cursor: pointer;
     }
     .refresh-btn:active { background: var(--bg); }
+
+    /* ── Header hızlı aksiyon butonu ─────────────────── */
+    .mq-hdr-btn {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity .15s;
+    }
+    .mq-hdr-btn:active { opacity: .65; }
+    .mq-hdr-red   { background: #fee2e2; }
+    .mq-hdr-green { background: #dcfce7; }
+
+    /* ── Bottom sheet ─────────────────────────────────── */
+    .bsheet-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 200;
+    }
+    .bsheet {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 8px 16px 44px;
+      z-index: 201;
+      max-height: 88vh;
+      overflow-y: auto;
+      box-shadow: 0 -4px 24px rgba(0,0,0,.18);
+      animation: bsSlideUp .22s ease;
+    }
+    @keyframes bsSlideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .bsheet-handle {
+      width: 40px; height: 4px;
+      background: #ddd;
+      border-radius: 2px;
+      margin: 8px auto 18px;
+    }
   </style>
 </head>
 <body>
@@ -237,6 +286,13 @@
   <span id="load-text">Yükleniyor...</span>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- Hızlı aksiyon bottom sheet -->
+<div class="bsheet-overlay" id="bsheet-overlay" onclick="closeQuickSheet()" style="display:none"></div>
+<div class="bsheet" id="bsheet" style="display:none">
+  <div class="bsheet-handle"></div>
+  <div id="bsheet-content"></div>
+</div>
 
 <script src="js/config.js"></script>
 <script src="js/meydanci.js"></script>
