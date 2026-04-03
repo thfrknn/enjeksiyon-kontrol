@@ -356,9 +356,23 @@ function renderUretim() {
             const pct  = Math.abs(fark / g) * 100;
             const renk = pct <= 10 ? '#16a34a' : pct <= 30 ? '#d97706' : '#dc2626';
             const isaret = fark > 0 ? '+' : '';
-            gercekHtml = `<span style="color:${renk};font-weight:700;font-size:12px"> → Gerçek: ${h}sn (${isaret}${fark}sn)</span>`;
+            gercekHtml = `<span style="color:${renk};font-weight:700;font-size:12px"> → Ölçüm: ${h}sn (${isaret}${fark}sn)</span>`;
           }
           cevrimHtml = `<div style="font-size:12px;color:var(--text2);margin-top:3px">⏱ Girilen: <strong>${g}sn</strong>${gercekHtml}</div>`;
+        }
+        // Mesai çevrimi: 8 saatlik mesai / toplam üretim
+        if (m.toplamUretim > 0) {
+          const mesai = Math.round(28800 / m.toplamUretim);
+          const g     = m.cevrimGirilen;
+          let farkHtml = '';
+          if (g > 0) {
+            const fark   = mesai - g;
+            const pct    = Math.abs(fark / g) * 100;
+            const renk   = pct <= 10 ? '#16a34a' : pct <= 30 ? '#d97706' : '#dc2626';
+            const isaret = fark > 0 ? '+' : '';
+            farkHtml = `<span style="color:${renk};font-weight:700"> (${isaret}${fark}sn)</span>`;
+          }
+          cevrimHtml += `<div style="font-size:12px;color:#7c3aed;margin-top:2px">📊 Mesai: <strong>${mesai}sn</strong>${farkHtml} <span style="font-weight:600;color:var(--text2);font-size:11px">(28800÷${m.toplamUretim.toLocaleString('tr-TR')})</span></div>`;
         }
         return `
           <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9">

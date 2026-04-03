@@ -327,11 +327,42 @@ function doGet(e) {
       olcumNo === 3 ? (onaylandi ? 'ONAYLANDI' : 'BEKLİYOR') : '' // X
     ]);
 
-    // Canlı İzleme güncelle (sütun-bazlı, max 5 log, vardiya bazlı sıfırlama)
+    // Canlı İzleme güncelle (3-bölüm yapı, sayaç bazlı)
     const adSoyad = e.parameter.adsoyad || '';
-    updateCanliIzleme(e.parameter.enj1_no, e.parameter.kasa1, close ? '0' : e.parameter.cevrim1, e.parameter.agirlik1, e.parameter.sayac_bas1 + '→' + e.parameter.sayac_bit1, e.parameter.uretim1, e.parameter.fire1, vardiyaTarih, vardiya, adSoyad);
+    updateCanliIzleme(
+      e.parameter.enj1_no, e.parameter.kasa1,
+      close ? '0' : e.parameter.cevrim1, e.parameter.agirlik1,
+      e.parameter.sayac_bas1, e.parameter.sayac_bit1,
+      e.parameter.uretim1, e.parameter.fire1,
+      vardiyaTarih, vardiya, adSoyad);
     if (enjSayisi === 2) {
-      updateCanliIzleme(e.parameter.enj2_no, e.parameter.kasa2, cevrim2, e.parameter.agirlik2, e.parameter.sayac_bas2 + '→' + e.parameter.sayac_bit2, e.parameter.uretim2, e.parameter.fire2, vardiyaTarih, vardiya, adSoyad);
+      updateCanliIzleme(
+        e.parameter.enj2_no, e.parameter.kasa2,
+        cevrim2, e.parameter.agirlik2,
+        e.parameter.sayac_bas2, e.parameter.sayac_bit2,
+        e.parameter.uretim2, e.parameter.fire2,
+        vardiyaTarih, vardiya, adSoyad);
+    }
+
+    // Günlük Özet güncelle (kalıcı arşiv — makine+vardiya+tarih başına 1 satır)
+    appendOrUpdateGunlukOzet(ss, {
+      tarih: vardiyaTarih, vardiya, saat,
+      adsoyad: adSoyad,
+      makineNo: e.parameter.enj1_no || '', kasa: e.parameter.kasa1 || '',
+      cevrim: close ? '0' : (e.parameter.cevrim1 || ''),
+      agirlik: e.parameter.agirlik1 || '',
+      sayacBas: e.parameter.sayac_bas1 || '0', sayacBit: e.parameter.sayac_bit1 || '0',
+      fire: e.parameter.fire1 || '0',
+    });
+    if (enjSayisi === 2) {
+      appendOrUpdateGunlukOzet(ss, {
+        tarih: vardiyaTarih, vardiya, saat,
+        adsoyad: adSoyad,
+        makineNo: enj2No, kasa: kasa2,
+        cevrim: cevrim2, agirlik: agirlik2,
+        sayacBas: bas2, sayacBit: bit2,
+        fire: fire2,
+      });
     }
 
     // Makine kapatma işlemi
@@ -389,24 +420,53 @@ function doGet(e) {
       }
     }
 
-    // 2) Canlı İzleme verisi — düz 12 satır (son 24s)
+    // 2) Canlı İzleme verisi — 3-bölüm yapı (SABAH/AKSAM/GECE × 12 makine)
+    // Web monitör için: her makine'nin son 24s içindeki en güncel kaydı
     const canliData = {};
     const canliSheet = ss.getSheetByName('Canlı İzleme');
-    for (let i = 1; i <= 12; i++) {
-      const makineNo = 'Enjeksiyon ' + i;
-      if (!canliSheet || canliSheet.getLastRow() < i + 1) { canliData[makineNo] = {}; continue; }
-      const row = canliSheet.getRange(i + 1, 1, 1, 9).getValues()[0];
-      canliData[makineNo] = {
-        operatör: String(row[1] || '').trim(),
-        tarih:    String(row[2] || '').trim(),
-        kasa:     String(row[3] || '').trim(),
-        cevrim:   String(row[4] || '').trim(),
-        agirlik:  String(row[5] || '').trim(),
-        uretim:   String(row[6] || '').trim(),
-        fire:     String(row[7] || '').trim(),
-        vardiya:  String(row[8] || '').trim(),
-        saat:     String(row[2] || '').trim(),
-      };
+    if (canliSheet && canliSheet.getLastRow() >= 3) {
+      const readRows = Math.min(canliSheet.getLastRow(), 40);
+      const allCanli = canliSheet.getRange(1, 1, readRows, 12).getValues();
+      const _BASES_MON = { SABAH: 2, AKSAM: 15, GECE: 28 };
+      const nowMs = new Date().getTime();
+
+      for (let enjIdx = 1; enjIdx <= 12; enjIdx++) {
+        const makineNo = 'Enjeksiyon ' + enjIdx;
+        canliData[makineNo] = {};
+        let bestEntry = null, bestTs = 0;
+
+        for (const [vard, base] of Object.entries(_BASES_MON)) {
+          const ri = base + enjIdx - 1;   // 0-indexed
+          if (ri >= allCanli.length) continue;
+          const row = allCanli[ri];
+          const rowTarih = String(row[2] || '').trim();
+          const rowSaat  = String(row[10] || '').trim();
+          if (!rowTarih) continue;
+
+          let ts = 0;
+          try {
+            const p = rowTarih.split('-'), hm = (rowSaat || '00:00').split(':');
+            ts = new Date(+p[0], +p[1]-1, +p[2], +hm[0]||0, +hm[1]||0).getTime();
+          } catch(ex) {}
+
+          if (ts > 0 && (nowMs - ts) < 86400000 && ts > bestTs) {
+            bestTs = ts;
+            bestEntry = {
+              operatör:     String(row[1] || '').trim(),
+              tarih:        rowTarih,
+              kasa:         String(row[3] || '').trim(),
+              cevrim:       String(row[4] || '').trim(),
+              agirlik:      String(row[5] || '').trim(),
+              uretim:       String(row[8] || '').trim(),
+              fire:         String(row[9] || '').trim(),
+              vardiya:      vard,
+              saat:         rowSaat,
+              gercekCevrim: String(row[11] || '').trim(),
+            };
+          }
+        }
+        if (bestEntry) canliData[makineNo] = bestEntry;
+      }
     }
 
     // 3) Atanan kasa ebatları
@@ -546,26 +606,49 @@ function doGet(e) {
       }
     }
 
-    // Canlı İzleme'den son makine verilerini oku (kasa, çevrim, operatör)
-    const canliSheet = ss.getSheetByName('Canlı İzleme');
+    // Canlı İzleme'den son makine verilerini oku (3-bölüm yapı)
+    const canliSheetM = ss.getSheetByName('Canlı İzleme');
     const machineData = {};
-    if (canliSheet && canliSheet.getLastRow() >= 2) {
+    if (canliSheetM && canliSheetM.getLastRow() >= 3) {
+      const readRowsM = Math.min(canliSheetM.getLastRow(), 40);
+      const allCanliM = canliSheetM.getRange(1, 1, readRowsM, 12).getValues();
+      const _BASES_M = { SABAH: 2, AKSAM: 15, GECE: 28 };
+      const nowMsM = new Date().getTime();
+
       for (let i = 1; i <= 12; i++) {
         const makineNo = 'Enjeksiyon ' + i;
-        if (canliSheet.getLastRow() < i + 1) continue;
-        const row  = canliSheet.getRange(i + 1, 1, 1, 9).getValues()[0];
-        const opAd = String(row[1] || '').trim();
-        if (!opAd) continue;
-        machineData[makineNo] = {
-          tarih:    String(row[2] || '').trim(),
-          operatör: opAd,
-          kasa:     String(row[3] || '').trim(),
-          cevrim:   String(row[4] || '').trim(),
-          agirlik:  String(row[5] || '').trim(),
-          uretim:   String(row[6] || '').trim(),
-          fire:     String(row[7] || '').trim(),
-          saat:     String(row[2] || '').trim(),
-        };
+        let bestEntry = null, bestTs = 0;
+
+        for (const [vard, base] of Object.entries(_BASES_M)) {
+          const ri = base + i - 1;
+          if (ri >= allCanliM.length) continue;
+          const row = allCanliM[ri];
+          const opAd     = String(row[1] || '').trim();
+          const rowTarih = String(row[2] || '').trim();
+          const rowSaat  = String(row[10] || '').trim();
+          if (!opAd || !rowTarih) continue;
+
+          let ts = 0;
+          try {
+            const p = rowTarih.split('-'), hm = (rowSaat || '00:00').split(':');
+            ts = new Date(+p[0], +p[1]-1, +p[2], +hm[0]||0, +hm[1]||0).getTime();
+          } catch(ex) {}
+
+          if (ts > 0 && (nowMsM - ts) < 86400000 && ts > bestTs) {
+            bestTs = ts;
+            bestEntry = {
+              tarih:    rowTarih,
+              operatör: opAd,
+              kasa:     String(row[3] || '').trim(),
+              cevrim:   String(row[4] || '').trim(),
+              agirlik:  String(row[5] || '').trim(),
+              uretim:   String(row[8] || '').trim(),
+              fire:     String(row[9] || '').trim(),
+              saat:     rowSaat,
+            };
+          }
+        }
+        if (bestEntry) machineData[makineNo] = bestEntry;
       }
     }
 
@@ -957,23 +1040,50 @@ function yazBaslik(sheet) {
 // Gönderim gelince ilgili vardiya+makine satırı üzerine yazılır.
 // ================================================================
 
-// Vardiya → bölüm başlangıç satırı (ilk makine satırı)
-var _VARDIYA_BASE = { 'SABAH': 3, 'AKSAM': 16, 'GECE': 29 };
+// ================================================================
+// CANLI İZLEME — 3 bölüm × 12 makine = 36 satır
+//
+// Satır düzeni (1-indexed):
+//   Satır  1     : Başlık satırı (12 sütun)
+//   Satır  2     : —— SABAH ——  (bölüm başlığı)
+//   Satır  3-14  : SABAH  Enjeksiyon 1-12
+//   Satır 15     : —— AKSAM ——
+//   Satır 16-27  : AKSAM  Enjeksiyon 1-12
+//   Satır 28     : —— GECE ——
+//   Satır 29-40  : GECE   Enjeksiyon 1-12
+//
+// Sütunlar (A-L):
+//   A: Makine   B: Ad Soyad   C: Tarih     D: Kasa
+//   E: Çevrim(sn)  F: Ağırlık(gr)
+//   G: Başlangıç (sayaç - ilk ölçüm)
+//   H: Bitiş    (sayaç - son ölçüm)
+//   I: Üretim   (H - G, otomatik hesap)
+//   J: Fire     K: Saat
+//   L: Gerçek Çevrim(sn) = 28800 / Üretim
+// ================================================================
 
-// Vardiya renkleri
-var _VARDIYA_BG   = { 'SABAH': '#fef9c3', 'AKSAM': '#dbeafe', 'GECE': '#f3e8ff' };
-var _BOLUM_BG     = { 'SABAH': '#f59e0b', 'AKSAM': '#3b82f6', 'GECE': '#7c3aed' };
+// Vardiya → bölüm başlangıç satırı (section header satırı)
+var _VARDIYA_BASE = { 'SABAH': 2, 'AKSAM': 15, 'GECE': 28 };
 
-function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, tarih, vardiya, adSoyad) {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Canlı İzleme');
-  if (!sheet) return;
+// Vardiya renkleri (makine satırı arkaplanı)
+var _VARDIYA_BG = { 'SABAH': '#fef9c3', 'AKSAM': '#dbeafe', 'GECE': '#f3e8ff' };
+// Bölüm başlık renkleri
+var _BOLUM_BG   = { 'SABAH': '#f59e0b', 'AKSAM': '#3b82f6', 'GECE': '#7c3aed' };
 
-  // Yapı: satır 1 = başlık, satırlar 2-13 = Enjeksiyon 1-12 (düz, 10 sütun)
-  // Eski 36-satırlık yapı veya bozuk yapı → yeniden kur
+/**
+ * Canlı İzleme sayfasını günceller.
+ * sayacBas: ilk ölçümün sayaç başlangıcı (gün içinde değişmez)
+ * sayacBit: son ölçümün sayaç bitişi (her ölçümde güncellenir)
+ */
+function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayacBas, sayacBit, uretim, fire, tarih, vardiya, adSoyad) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('Canlı İzleme');
+  if (!sheet) sheet = ss.insertSheet('Canlı İzleme');
+
+  // Yapı kontrolü: yeni 12-sütunlu 3-bölüm yapı
   const h1 = String(sheet.getRange(1, 1).getValue()).trim();
-  const h9 = String(sheet.getRange(1, 9).getValue()).trim();
-  if (h1 !== 'Makine' || h9 !== 'Vardiya') {
+  const h7 = String(sheet.getRange(1, 7).getValue()).trim();
+  if (h1 !== 'Makine' || h7 !== 'Başlangıç') {
     _setupCanlıBaslik(sheet);
   }
 
@@ -982,41 +1092,48 @@ function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayac, uretim, fire, ta
   const enjIdx = parseInt(m[1]);
   if (enjIdx < 1 || enjIdx > 12) return;
 
-  const targetRow = enjIdx + 1;   // Row 2 = Enjeksiyon 1 … Row 13 = Enjeksiyon 12
-  const now = new Date();
-  const tz  = ss.getSpreadsheetTimeZone();
-  const saatStr = Utilities.formatDate(now, tz, 'HH:mm');
+  const base = _VARDIYA_BASE[vardiya];
+  if (!base) return;
+  const targetRow = base + enjIdx;   // SABAH Enj1=3 … GECE Enj12=40
 
-  // 24 saatlik kümülatif: sütun J (index 9) timestamp'a bak
-  const existing   = sheet.getRange(targetRow, 1, 1, 10).getValues()[0];
-  const lastTs     = existing[9] instanceof Date ? existing[9].getTime() : 0;
-  const within24h  = lastTs > 0 && (now.getTime() - lastTs) < 86400000;
+  const tz      = ss.getSpreadsheetTimeZone();
+  const saatStr = Utilities.formatDate(new Date(), tz, 'HH:mm');
 
-  const yeniUretim = (within24h ? (Number(existing[6]) || 0) : 0) + (parseInt(uretim) || 0);
-  const yeniFire   = (within24h ? (Number(existing[7]) || 0) : 0) + (parseInt(fire)   || 0);
+  // Mevcut satırı oku (12 sütun)
+  const existing          = sheet.getRange(targetRow, 1, 1, 12).getValues()[0];
+  const existingTarih     = String(existing[2] || '').trim();
+  const existingBaslangic = Number(existing[6]) || 0;
 
-  const bg = _VARDIYA_BG[vardiya] || '#f8fafc';
-  const range = sheet.getRange(targetRow, 1, 1, 10);
+  // Aynı gün: Başlangıç sayacı koru. Farklı gün: sıfırla.
+  const sameDay   = existingTarih === String(tarih).trim() && existingBaslangic > 0;
+  const baslangic = sameDay ? existingBaslangic : (parseInt(sayacBas) || 0);
+  const bitis     = parseInt(sayacBit) || 0;
+
+  const uretimCalc   = Math.max(0, bitis - baslangic);
+  const gercekCevrim = uretimCalc > 0 ? Math.round(28800 / uretimCalc) : '';
+  const fireVal      = parseInt(fire) || 0;
+
+  const bg    = _VARDIYA_BG[vardiya] || '#f8fafc';
+  const range = sheet.getRange(targetRow, 1, 1, 12);
   range.setValues([[
-    'Enjeksiyon ' + enjIdx,          // A
-    adSoyad   || '',                  // B
-    tarih + ' ' + saatStr,           // C — tarih + saat
-    kasa      || '',                  // D
-    cevrim    || '',                  // E
-    agirlik   || '',                  // F
-    yeniUretim,                       // G
-    yeniFire,                         // H
-    vardiya   || '',                  // I
-    now,                              // J — timestamp (Date obj, 24s kontrolü için)
+    'Enjeksiyon ' + enjIdx,    // A - Makine
+    adSoyad || '',             // B - Ad Soyad
+    tarih   || '',             // C - Tarih
+    kasa    || '',             // D - Kasa
+    Number(cevrim)  || '',     // E - Çevrim(sn)
+    Number(agirlik) || '',     // F - Ağırlık(gr)
+    baslangic,                 // G - Başlangıç sayaç
+    bitis,                     // H - Bitiş sayaç
+    uretimCalc,                // I - Üretim (H-G)
+    fireVal,                   // J - Fire (kümülatif)
+    saatStr,                   // K - Saat
+    gercekCevrim,              // L - Gerçek Çevrim = 28800/Üretim
   ]]);
-  range.setBackground(bg);
-  range.setVerticalAlignment('middle');
-  range.setFontSize(10);
-  range.setHorizontalAlignment('center');
+  range.setBackground(bg).setVerticalAlignment('middle')
+       .setFontSize(10).setHorizontalAlignment('center');
   sheet.getRange(targetRow, 1).setFontWeight('bold').setHorizontalAlignment('left');
   sheet.getRange(targetRow, 2).setFontWeight('bold').setHorizontalAlignment('left');
-  // J sütunu (timestamp) daralt + gizle
-  sheet.getRange(targetRow, 10).setNumberFormat('yyyy-MM-dd HH:mm:ss').setFontSize(8).setFontColor('#cccccc');
+  sheet.getRange(targetRow, 7, 1, 2).setNumberFormat('#,##0');  // G,H büyük sayı
 }
 
 function _setupCanlıBaslik(sheet) {
@@ -1024,21 +1141,43 @@ function _setupCanlıBaslik(sheet) {
   sheet.clearFormats();
   sheet.clearConditionalFormatRules();
 
-  const COLS = 10;
-  const headers = ['Makine', 'Ad Soyad', 'Tarih', 'Kasa', 'Çevrim(sn)', 'Ağırlık(gr)', 'Üretim(24s)', 'Fire(24s)', 'Vardiya', 'TS'];
+  const COLS = 12;
+  const headers = ['Makine', 'Ad Soyad', 'Tarih', 'Kasa', 'Çevrim(sn)', 'Ağırlık(gr)',
+                   'Başlangıç', 'Bitiş', 'Üretim', 'Fire', 'Saat', 'Gerçek Çevrim(sn)'];
   const h = sheet.getRange(1, 1, 1, COLS);
   h.setValues([headers]);
   h.setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff')
    .setHorizontalAlignment('center').setFontSize(11);
   sheet.setFrozenRows(1);
 
-  for (let i = 1; i <= 12; i++) {
-    sheet.getRange(i + 1, 1).setValue('Enjeksiyon ' + i).setFontWeight('bold');
+  const sections = [
+    { name: 'SABAH', base: 2,  bg: '#f59e0b', rowBg: '#fef9c3' },
+    { name: 'AKSAM', base: 15, bg: '#3b82f6', rowBg: '#dbeafe' },
+    { name: 'GECE',  base: 28, bg: '#7c3aed', rowBg: '#f3e8ff' },
+  ];
+
+  for (const sec of sections) {
+    // Bölüm başlık satırı (birleştirilmiş)
+    const hdrRange = sheet.getRange(sec.base, 1, 1, COLS);
+    hdrRange.merge();
+    hdrRange.setValue('—— ' + sec.name + ' ——');
+    hdrRange.setBackground(sec.bg).setFontColor('#ffffff')
+            .setFontWeight('bold').setHorizontalAlignment('center').setFontSize(12);
+
+    // 12 makine satırı
+    for (let i = 1; i <= 12; i++) {
+      const r = sec.base + i;
+      sheet.getRange(r, 1, 1, COLS).setBackground(sec.rowBg);
+      sheet.getRange(r, 1).setValue('Enjeksiyon ' + i)
+           .setFontWeight('bold').setHorizontalAlignment('left');
+    }
   }
 
-  [120, 140, 130, 100, 80, 80, 90, 70, 70, 130].forEach((w, i) => sheet.setColumnWidth(i + 1, w));
-  // Timestamp sütunu (J) gizle — sadece 24s hesabı için
-  sheet.hideColumns(10);
+  // Sütun genişlikleri
+  [120, 140, 100, 100, 75, 75, 90, 90, 70, 60, 55, 115].forEach((w, i) =>
+    sheet.setColumnWidth(i + 1, w));
+  // Sayaç sütunları sayı formatı
+  sheet.getRange('G:I').setNumberFormat('#,##0');
 }
 
 // ================================================================
@@ -1151,6 +1290,85 @@ function setupDailyExport() {
     .create();
 
   Logger.log('Günlük yedek tetikleyici kuruldu: her gün 07:00');
+}
+
+// ================================================================
+// GÜNLÜK ÖZET — Kalıcı arşiv (makine+vardiya+tarih başına 1 satır)
+// Canlı İzleme her yeni gün sıfırlanır; Günlük Özet birikimli kalır.
+//
+// Sütunlar (A-M):
+//   A: Tarih  B: Vardiya  C: Makine  D: Ad Soyad  E: Kasa
+//   F: Çevrim(sn)  G: Ağırlık(gr)
+//   H: Başlangıç  I: Bitiş  J: Üretim  K: Fire  L: Saat
+//   M: Gerçek Çevrim(sn)
+// ================================================================
+
+function appendOrUpdateGunlukOzet(ss, d) {
+  if (!d.makineNo || d.makineNo === '00') return;
+
+  let sheet = ss.getSheetByName('Günlük Özet');
+  if (!sheet) {
+    sheet = ss.insertSheet('Günlük Özet');
+    _setupGunlukOzetBaslik(sheet);
+  } else if (sheet.getLastRow() === 0 || String(sheet.getRange(1,1).getValue()).trim() !== 'Tarih') {
+    _setupGunlukOzetBaslik(sheet);
+  }
+
+  const bitis     = parseInt(d.sayacBit) || 0;
+  const tarihStr  = String(d.tarih    || '').trim();
+  const vardiyaStr = String(d.vardiya || '').trim();
+  const makineStr  = String(d.makineNo || '').trim();
+
+  // Aynı tarih+vardiya+makine satırını bul
+  let foundRow = -1;
+  let existingBaslangic = 0;
+
+  if (sheet.getLastRow() > 1) {
+    const keys = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues();
+    for (let i = 0; i < keys.length; i++) {
+      if (String(keys[i][0]).trim() === tarihStr &&
+          String(keys[i][1]).trim() === vardiyaStr &&
+          String(keys[i][2]).trim() === makineStr) {
+        foundRow = i + 2;
+        existingBaslangic = Number(sheet.getRange(foundRow, 8).getValue()) || 0;
+        break;
+      }
+    }
+  }
+
+  const baslangic    = (foundRow > 0 && existingBaslangic > 0) ? existingBaslangic : (parseInt(d.sayacBas) || 0);
+  const uretimCalc   = Math.max(0, bitis - baslangic);
+  const gercekCevrim = uretimCalc > 0 ? Math.round(28800 / uretimCalc) : '';
+  const fireVal      = parseInt(d.fire) || 0;
+  const tz           = ss.getSpreadsheetTimeZone();
+  const saatStr      = Utilities.formatDate(new Date(), tz, 'HH:mm');
+
+  const rowData = [
+    tarihStr, vardiyaStr, makineStr,
+    d.adsoyad || '', d.kasa || '',
+    Number(d.cevrim) || '', Number(d.agirlik) || '',
+    baslangic, bitis, uretimCalc, fireVal, saatStr, gercekCevrim,
+  ];
+
+  if (foundRow > 0) {
+    sheet.getRange(foundRow, 1, 1, 13).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+}
+
+function _setupGunlukOzetBaslik(sheet) {
+  const headers = ['Tarih', 'Vardiya', 'Makine', 'Ad Soyad', 'Kasa',
+                   'Çevrim(sn)', 'Ağırlık(gr)', 'Başlangıç', 'Bitiş',
+                   'Üretim', 'Fire', 'Saat', 'Gerçek Çevrim(sn)'];
+  const h = sheet.getRange(1, 1, 1, headers.length);
+  h.setValues([headers]);
+  h.setFontWeight('bold').setBackground('#0f766e').setFontColor('#ffffff')
+   .setHorizontalAlignment('center').setFontSize(11);
+  sheet.setFrozenRows(1);
+  [100, 80, 130, 140, 100, 75, 75, 90, 90, 70, 60, 55, 115]
+    .forEach((w, i) => sheet.setColumnWidth(i + 1, w));
+  sheet.getRange('H:J').setNumberFormat('#,##0');
 }
 
 // ============================================================
