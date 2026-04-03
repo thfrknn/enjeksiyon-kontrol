@@ -58,8 +58,8 @@
       </div>
       <label>Kullanıcı ID <span class="req">*</span></label>
       <input type="text" id="kullanici_id" placeholder="ID numaranızı girin"
-             inputmode="numeric" maxlength="3" oninput="onIdChange()">
-      <div class="err-msg" id="err-ad">Geçersiz ID numarası</div>
+             inputmode="numeric" maxlength="3" autocomplete="off" oninput="onIdChange()">
+      <div class="err-msg" id="err-ad">Bu ID sistemde tanımlı değil</div>
     </div>
 
     <div class="field" id="sifre-field" style="display:none">

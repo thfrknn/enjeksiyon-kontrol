@@ -25,7 +25,25 @@ function loadLists() {
       atananKasalar = json.atananKasalar || {};
 
       var idEl = document.getElementById('kullanici_id');
-      if (idEl) idEl.dataset.ready = '1';
+      if (idEl) {
+        idEl.dataset.ready = '1';
+        // API geldikten sonra zaten yazılmış ID'yi yeniden doğrula
+        if (idEl.value.trim().length === 3) onIdChange();
+      }
+
+      // Şifre alanı: doğru şifre girilince "Devam Et" butonuna odaklan
+      var sifreEl = document.getElementById('sifre');
+      if (sifreEl && !sifreEl.dataset.listenerAdded) {
+        sifreEl.dataset.listenerAdded = '1';
+        sifreEl.addEventListener('input', function() {
+          var currentId  = (document.getElementById('kullanici_id') || {}).value;
+          var kullanici  = kullanicilar[currentId ? currentId.trim() : ''];
+          if (kullanici && this.value === String(kullanici.sifre || '')) {
+            var nextBtn = document.querySelector('#page-1 .btn-next');
+            if (nextBtn) nextBtn.focus();
+          }
+        });
+      }
 
       var ebatlar = json.kasaEbatlari || [];
       fillSelect('kasa1', 'skel-kasa1', ebatlar);

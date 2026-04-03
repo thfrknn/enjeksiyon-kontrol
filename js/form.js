@@ -26,36 +26,51 @@ function setEnjSayisi(n) {
 }
 
 function onIdChange() {
-  var idEl     = document.getElementById('kullanici_id');
-  var id       = idEl.value.trim();
+  var idEl      = document.getElementById('kullanici_id');
+  var id        = idEl.value.trim();
   var kullanici = kullanicilar[id];
-  var sf       = document.getElementById('sifre-field');
-  var si       = document.getElementById('sifre');
-  var hatirla  = document.getElementById('hatirla');
+  var sf        = document.getElementById('sifre-field');
+  var si        = document.getElementById('sifre');
+  var hatirla   = document.getElementById('hatirla');
   var hosgeldin = document.getElementById('hosgeldin');
+  var errAd     = document.getElementById('err-ad');
 
   if (kullanici) {
     _adSoyad = kullanici.name;
-    sf.style.display = 'block';
+    sf.style.display    = 'block';
     hosgeldin.style.display = 'flex';
     document.getElementById('hosgeldin-text').textContent = 'Hoş Geldin, ' + kullanici.name + '!';
-    var kayitliSifre = localStorage.getItem('sifre_' + id);
-    if (kayitliSifre) { si.value = kayitliSifre; hatirla.checked = true; }
-    else              { si.value = ''; hatirla.checked = false; }
-    document.getElementById('err-sifre').classList.remove('show');
-    si.classList.remove('error');
     idEl.classList.remove('error');
-    document.getElementById('err-ad').classList.remove('show');
+    errAd.classList.remove('show');
+
+    var kayitliSifre = localStorage.getItem('sifre_' + id);
+    if (kayitliSifre) {
+      si.value       = kayitliSifre;
+      hatirla.checked = true;
+      // Şifre hatırlanıyorsa Devam Et butonunu öne çıkar
+      document.getElementById('err-sifre').classList.remove('show');
+      si.classList.remove('error');
+      var nextBtn = document.querySelector('#page-1 .btn-next');
+      if (nextBtn) nextBtn.focus();
+    } else {
+      si.value        = '';
+      hatirla.checked = false;
+      // Şifre alanına otomatik odaklan
+      setTimeout(function() { si.focus(); }, 80);
+    }
   } else {
     _adSoyad = '';
-    sf.style.display = 'none';
+    sf.style.display    = 'none';
     hosgeldin.style.display = 'none';
     if (id.length === 3) {
-      idEl.classList.add('error');
-      document.getElementById('err-ad').classList.add('show');
+      // API henüz yüklenmediyse hata gösterme
+      if (idEl.dataset.ready === '1') {
+        idEl.classList.add('error');
+        errAd.classList.add('show');
+      }
     } else {
       idEl.classList.remove('error');
-      document.getElementById('err-ad').classList.remove('show');
+      errAd.classList.remove('show');
     }
   }
   if (vardiya && kullanici) checkStatus();
