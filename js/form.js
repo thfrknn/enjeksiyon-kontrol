@@ -225,11 +225,6 @@ function checkKasaAgirlik(n) {
   return false;
 }
 
-function getKasaLimit(n) {
-  var kasa = (document.getElementById('kasa' + n) || {}).value || '';
-  return (kasa && kasaLimitlari[kasa]) ? kasaLimitlari[kasa] : uretimLimiti;
-}
-
 // ── Üretim hesabı ────────────────────────────────────
 function calcUretim(n) {
   var bas = parseInt(document.getElementById('sayac_bas' + n).value);
@@ -237,31 +232,25 @@ function calcUretim(n) {
   var box = document.getElementById('uretim-box' + n);
   var val = document.getElementById('result-val' + n);
   var lbl = document.getElementById('result-label' + n);
-  var lw  = document.getElementById('limit-warn' + n);
   if (!isNaN(bas) && !isNaN(bit)) {
     var f = bit - bas;
     if (f > 4000) {
       val.textContent = '⚠️ ' + f.toLocaleString('tr-TR');
       box.style.cssText = 'background:#fff7ed;border:2px solid #ea580c;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
       val.style.color = '#ea580c'; lbl.style.color = '#ea580c';
-      if (lw) lw.style.display = 'none';
     } else if (f >= 0) {
       val.textContent = f.toLocaleString('tr-TR');
       box.style.cssText = 'background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
       val.style.color = '#16a34a'; lbl.style.color = '#16a34a';
-      var _limit = getKasaLimit(n);
-      if (lw) lw.style.display = (_limit > 0 && f > _limit) ? 'flex' : 'none';
     } else {
       val.textContent = '⚠️ Hata';
       box.style.cssText = 'background:#fef2f2;border:2px solid #dc2626;border-radius:12px;padding:14px;text-align:center;margin-top:12px';
       val.style.color = '#dc2626'; lbl.style.color = '#dc2626';
-      if (lw) lw.style.display = 'none';
     }
   } else {
     val.textContent = '—';
     box.style.cssText = 'background:var(--accent-light);border:2px solid var(--accent);border-radius:12px;padding:14px;text-align:center;margin-top:12px';
     val.style.color = 'var(--accent)'; lbl.style.color = 'var(--accent)';
-    if (lw) lw.style.display = 'none';
   }
 }
 
@@ -313,8 +302,33 @@ function goNext(from) {
     }
   }
   if (from === 2 && !validate2()) return;
-  if (from === 2) buildSummary();
+  if (from === 2) {
+    autoSubmitPendingFires(function() {
+      buildSummary();
+      goStep(3);
+    });
+    return;
+  }
   goStep(from + 1);
+}
+
+// Girilen ama "Fire Ekle" basılmadan kalan fire'ları otomatik kaydeder
+function autoSubmitPendingFires(callback) {
+  var pending = [];
+  [1, 2].forEach(function(n) {
+    if (n === 2 && enjSayisi < 2) return;
+    var enjNo  = document.getElementById('enj' + n + '_no').value;
+    var amount = parseInt(document.getElementById('fire' + n).value) || 0;
+    if (enjNo && amount > 0 && !isFpFireLocked(enjNo)) {
+      pending.push({ n: n, amount: amount, enjNo: enjNo });
+    }
+  });
+  if (pending.length === 0) { callback(); return; }
+  pending.forEach(function(fd) {
+    executeInstantFire(fd.n, fd.amount, fd.enjNo);
+  });
+  // Kısa bekleme — executeInstantFire localStorage + UI'ı anında günceller
+  setTimeout(callback, 300);
 }
 
 // ── Doğrulama ────────────────────────────────────────
@@ -451,14 +465,6 @@ function buildSummary() {
   var d  = getData();
   var vl = vardiya === 'SABAH' ? 'Sabah 09:00–17:00' : vardiya === 'AKSAM' ? 'Akşam 17:00–01:00' : 'Gece 01:00–09:00';
   var u1 = d.uretim1, u2 = d.uretim2;
-  var limit1 = getKasaLimit(1);
-  var limit2 = getKasaLimit(2);
-  var u1Asimi = limit1 > 0 && u1 > limit1;
-  var u2Asimi = enjSayisi === 2 && limit2 > 0 && u2 > limit2;
-
-  function uretimVal(u, asimi) {
-    return u.toLocaleString('tr-TR') + ' adet' + (asimi ? ' <span style="color:#dc2626;font-weight:800"> ⚠️</span>' : '');
-  }
 
   var rows = [
     ['Ad Soyad', d.adsoyad],
@@ -471,7 +477,7 @@ function buildSummary() {
     ['Çevrim', d.cevrim1 + ' sn'],
     ['Ağırlık', d.agirlik1 + ' gr'],
     ['Sayaç', d.sayac_bas1 + ' → ' + d.sayac_bit1],
-    { type: 'uretim', key: 'Üretim', val: uretimVal(u1, u1Asimi) },
+    ['Üretim', u1.toLocaleString('tr-TR') + ' adet'],
     ['Fire', d.fire1 + ' adet (Kümülatif)'],
   ];
 
@@ -483,25 +489,15 @@ function buildSummary() {
       ['Çevrim', d.cevrim2 + ' sn'],
       ['Ağırlık', d.agirlik2 + ' gr'],
       ['Sayaç', d.sayac_bas2 + ' → ' + d.sayac_bit2],
-      { type: 'uretim', key: 'Üretim', val: uretimVal(u2, u2Asimi) },
+      ['Üretim', u2.toLocaleString('tr-TR') + ' adet'],
       ['Fire', d.fire2 + ' adet (Kümülatif)'],
     ]);
   }
 
   var html = rows.map(function(r) {
-    if (r.type === 'div')    return '<div class="sdivider">' + r.text + '</div>';
-    if (r.type === 'uretim') return '<div class="sitem"><span class="skey">' + r.key + '</span><span class="sval">' + r.val + '</span></div>';
+    if (r.type === 'div') return '<div class="sdivider">' + r.text + '</div>';
     return '<div class="sitem"><span class="skey">' + r[0] + '</span><span class="sval">' + r[1] + '</span></div>';
   }).join('');
-
-  window._limitAsimi = u1Asimi || u2Asimi;
-  var parts = [];
-  if (u1Asimi) parts.push('Enj 1 üretimi <strong>' + u1.toLocaleString('tr-TR') + '</strong> adet');
-  if (u2Asimi) parts.push('Enj 2 üretimi <strong>' + u2.toLocaleString('tr-TR') + '</strong> adet');
-  var limitMesaj = (u1Asimi && u2Asimi && limit1 !== limit2)
-    ? 'Enj 1 limiti: <strong>' + limit1.toLocaleString('tr-TR') + '</strong> — Enj 2 limiti: <strong>' + limit2.toLocaleString('tr-TR') + '</strong>'
-    : 'Kasa limiti: <strong>' + (u1Asimi ? limit1 : limit2).toLocaleString('tr-TR') + '</strong> adet';
-  window._limitAsimiMesaj = parts.join('<br>') + '<br><br>' + limitMesaj + '<br><br>Değer limiti çok yüksek, onaylıyor musunuz?';
 
   if (olcumNo === 3) {
     document.getElementById('normal-ozet').style.display = 'none';
@@ -582,10 +578,6 @@ function resetForm() {
   [1, 2].forEach(function(n) {
     document.getElementById('enj' + n + '-grid')?.querySelectorAll('.enj-gbtn').forEach(function(b) { b.classList.remove('sel'); });
   });
-  [1, 2].forEach(function(n) {
-    var lw = document.getElementById('limit-warn' + n); if (lw) lw.style.display = 'none';
-  });
-
   ['cevrim1','agirlik1','sayac_bas1','sayac_bit1','cevrim2','agirlik2','sayac_bas2','sayac_bit2'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.value = '';
   });
@@ -630,24 +622,9 @@ function resetForm() {
   goStep(1);
 }
 
-// ── Gönder & limit modal ─────────────────────────────
+// ── Gönder ───────────────────────────────────────────
 function onGonderClick(onaylandi) {
-  if (window._limitAsimi) {
-    _pendingOnayladi = onaylandi;
-    document.getElementById('limit-modal-body').innerHTML = window._limitAsimiMesaj;
-    document.getElementById('limit-modal').style.display = 'flex';
-  } else {
-    submitForm(onaylandi);
-  }
-}
-
-function closeLimitModal() {
-  document.getElementById('limit-modal').style.display = 'none';
-}
-
-function confirmLimitAndSubmit() {
-  closeLimitModal();
-  submitForm(_pendingOnayladi);
+  submitForm(onaylandi);
 }
 
 // ── Toast bildirimi ──────────────────────────────────

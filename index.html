@@ -207,8 +207,6 @@
       <div class="result-label" id="result-label1">🏭 Toplam Üretim</div>
       <div class="result-val"   id="result-val1">—</div>
     </div>
-    <div class="ibox orange" id="limit-warn1" style="display:none">⚠️ Üretim limiti aşıldı!</div>
-
     <!-- Fire girişi — Enj 1 -->
     <div class="field" style="margin-top:14px;background:var(--bg);padding:14px;border-radius:12px;border:2px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -326,8 +324,6 @@
       <div class="result-label" id="result-label2">🏭 Toplam Üretim</div>
       <div class="result-val"   id="result-val2">—</div>
     </div>
-    <div class="ibox orange" id="limit-warn2" style="display:none">⚠️ Üretim limiti aşıldı!</div>
-
     <!-- Fire girişi — Enj 2 -->
     <div class="field" style="margin-top:14px;background:var(--bg);padding:14px;border-radius:12px;border:2px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -405,19 +401,6 @@
 <!-- ══════════════════════════════════════════════════
      MODALLER
 ══════════════════════════════════════════════════ -->
-
-<!-- Üretim limit aşımı onayı -->
-<div class="modal-overlay" id="limit-modal" style="display:none">
-  <div class="modal-box">
-    <div class="modal-icon">⚠️</div>
-    <div class="modal-title">Üretim Limiti Aşıldı!</div>
-    <div class="modal-body" id="limit-modal-body"></div>
-    <div class="modal-btns">
-      <button class="modal-btn-cancel"  onclick="closeLimitModal()">İptal</button>
-      <button class="modal-btn-confirm" onclick="confirmLimitAndSubmit()">Evet, Gönder</button>
-    </div>
-  </div>
-</div>
 
 <!-- Fire onayı -->
 <div class="modal-overlay" id="fire-modal" style="display:none">

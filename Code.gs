@@ -16,29 +16,31 @@ function doGet(e) {
     const ayarlar = ss.getSheetByName('Ayarlar');
     if (!ayarlar) return jsonp(cb, { error: 'Ayarlar sekmesi bulunamadı' });
 
-    const opCol    = ayarlar.getRange('A2:A50').getValues().flat().filter(v => v !== '');
-    const kasaCol  = ayarlar.getRange('B2:B50').getValues().flat().filter(v => v !== '');
-    const sifreCol = ayarlar.getRange('C2:C50').getDisplayValues().flat();
-    const idCol    = ayarlar.getRange('E2:E50').getDisplayValues().flat();
+    // Tek aralık ile oku — satır silinince indeks kayması olmaz
+    const vals    = ayarlar.getRange('A2:F50').getValues();
+    const display = ayarlar.getRange('A2:F50').getDisplayValues();
 
-    const kullanicilar = {};
-    opCol.forEach((ad, i) => {
-      const sifre = sifreCol[i];
-      const id    = String(idCol[i] || '').trim();
-      if (ad && id) kullanicilar[id] = { name: String(ad), sifre: String(sifre || '') };
-    });
-
-    const maxFireLimit = Number(ayarlar.getRange('F2').getValue()) || 50;
-
-    // Kasa bazlı üretim limitleri (B sütunu ↔ D sütunu eşleşmesi)
-    const limitCol = ayarlar.getRange('D2:D50').getValues().flat();
+    const kullanicilar  = {};
+    const kasaEbatlariS = [];
     const kasaLimitlari = {};
-    kasaCol.forEach((kasa, i) => {
-      const lim = Number(limitCol[i]);
-      if (kasa && lim > 0) kasaLimitlari[String(kasa).trim()] = lim;
+    let   uretimLimiti  = 0;
+    const maxFireLimit  = Number(vals[0][5]) || 200;  // F2
+
+    vals.forEach((row, i) => {
+      const ad    = String(row[0] || '').trim();
+      const kasa  = String(row[1] || '').trim();
+      const sifre = String(display[i][2] || '').trim();
+      const limit = Number(row[3]);
+      const id    = String(display[i][4] || '').trim();
+      if (ad && id) kullanicilar[id] = { name: ad, sifre };
+      if (kasa) {
+        kasaEbatlariS.push(kasa);
+        if (limit > 0) {
+          kasaLimitlari[kasa] = limit;
+          if (!uretimLimiti) uretimLimiti = limit;
+        }
+      }
     });
-    // Geriye dönük uyumluluk: global limit olarak D sütununun ilk geçerli değeri
-    const uretimLimiti = Number(limitCol.find(v => Number(v) > 0)) || 0;
 
     // Kilitli makineleri al
     const lockedMachines = getLockedMachines(ss);
@@ -56,7 +58,7 @@ function doGet(e) {
     }
 
     return jsonp(cb, {
-      kasaEbatlari: kasaCol,
+      kasaEbatlari: kasaEbatlariS,
       kullanicilar,
       uretimLimiti,
       kasaLimitlari,
