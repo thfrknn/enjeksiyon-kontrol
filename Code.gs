@@ -429,14 +429,20 @@ function doGet(e) {
           adsoyad:   String(r[2]).trim(),
           vardiya:   String(r[3]).trim(),
           olcumNo:   Number(r[4]) || 0,
+          saat:      String(r[6]).trim(),
           enj1:      String(r[7]).trim(),
           kasa1:     String(r[8]).trim(),
+          cevrim1:   Number(r[9])  || 0,
+          sayacBas1: Number(r[11]) || 0,
+          sayacBit1: Number(r[12]) || 0,
           uretim1:   Number(r[13]) || 0,
           fire1:     Number(r[14]) || 0,
           enj2:      String(r[15]).trim(),
+          cevrim2:   Number(r[17]) || 0,
+          sayacBas2: Number(r[19]) || 0,
+          sayacBit2: Number(r[20]) || 0,
           uretim2:   Number(r[21]) || 0,
           fire2:     Number(r[22]) || 0,
-          saat:      String(r[6]).trim(),
         });
       }
     }
