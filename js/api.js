@@ -83,7 +83,16 @@ function fetchLastCounter(n, enjNo) {
   calcUretim(n);
 
   var cb = 'cbLC' + n + '_' + Date.now();
+
+  // Zaman aşımı: 6 saniye içinde cevap gelmezse alan düzenlenebilir kalır
+  var _t = setTimeout(function() {
+    delete window[cb];
+    document.getElementById('lcs' + n)?.remove();
+    setBasEditable(n);
+  }, 6000);
+
   window[cb] = function(json) {
+    clearTimeout(_t);
     delete window[cb];
     document.getElementById('lcs' + n)?.remove();
     if (json.sayacBit !== null && json.sayacBit !== undefined) {
@@ -106,8 +115,13 @@ function fetchLastCounter(n, enjNo) {
   var s = document.createElement('script');
   s.id  = 'lcs' + n;
   s.src = SCRIPT_URL + '?action=getLastCounter&enj_no=' + encodeURIComponent(enjNo) + '&callback=' + cb;
-  s.onerror = function() { delete window[cb]; };
-  document.head.appendChild(s);
+  s.onerror = function() {
+    clearTimeout(_t);
+    delete window[cb];
+    setBasEditable(n);  // hata durumunda alanı serbest bırak
+  };
+  // iOS PWA uyumluluğu: script body'e append edilmeli, setTimeout ile dokunuş olayından sonra yükle
+  setTimeout(function() { document.body.appendChild(s); }, 10);
 }
 
 /**

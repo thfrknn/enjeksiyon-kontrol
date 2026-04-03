@@ -172,7 +172,7 @@
     <div class="field">
       <label>Çevrim Süresi <span class="req">*</span></label>
       <div class="ui">
-        <input type="number" id="cevrim1" placeholder="Kaç saniye?" min="0" inputmode="numeric">
+        <input type="number" id="cevrim1" placeholder="Kaç saniye?" min="0" inputmode="decimal" onblur="formatCevrim(this)">
         <span class="ub">sn</span>
       </div>
       <div class="err-msg" id="err-cevrim1">Gerekli</div>
@@ -289,7 +289,7 @@
     <div class="field">
       <label>Çevrim Süresi <span class="req">*</span></label>
       <div class="ui">
-        <input type="number" id="cevrim2" placeholder="0" min="0" inputmode="numeric">
+        <input type="number" id="cevrim2" placeholder="0" min="0" inputmode="decimal" onblur="formatCevrim(this)">
         <span class="ub">sn</span>
       </div>
       <div class="err-msg" id="err-cevrim2">Gerekli</div>
