@@ -57,6 +57,7 @@ function render() {
   else if (_activeTab === 'ariza')  renderAriza();
   else if (_activeTab === 'kapama') renderKapama();
   else if (_activeTab === 'uretim') renderUretim();
+  else if (_activeTab === 'indir')  renderIndir();
 }
 
 /* ---------- Özet satırı ---------- */
@@ -396,7 +397,7 @@ function renderUretim() {
 
 function setTab(tab) {
   _activeTab = tab;
-  ['canli','ariza','kapama','uretim'].forEach(t => {
+  ['canli','ariza','kapama','uretim','indir'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('tab-active', t === tab);
   });
   // Vardiya filtresi sadece canlı sekmede
@@ -410,6 +411,87 @@ function setVardiyaFilter(v) {
     document.getElementById('vf-' + x).classList.toggle('vf-active', x === v);
   });
   render();
+}
+
+/* ---------- İndir / Yedekle ---------- */
+
+function renderIndir() {
+  const ssId     = _mData.ssId      || '';
+  const gids     = _mData.sheetGids || {};
+  const sonYedek = _mData.sonYedek  || '';
+
+  function excelUrl(gid) {
+    if (!ssId) return '#';
+    const base = 'https://docs.google.com/spreadsheets/d/' + ssId + '/export?format=xlsx';
+    return gid != null ? base + '&gid=' + gid : base;
+  }
+
+  const sheets = [
+    { label: '📋 Veriler (Ham)',       gid: gids.veriler },
+    { label: '📦 Üretim Kaydı',        gid: gids.uretimKaydi },
+    { label: '⚠️ Arıza Log',           gid: gids.arizaLog },
+    { label: '📊 Tüm Spreadsheet',     gid: null },
+  ];
+
+  const btnStyle = 'display:block;width:100%;padding:14px 16px;margin-bottom:10px;border:2px solid var(--border);border-radius:14px;background:white;font-family:\'Nunito\',sans-serif;font-size:14px;font-weight:700;color:var(--text);text-align:left;text-decoration:none;cursor:pointer;';
+
+  const downloadHtml = sheets.map(s => {
+    const url = excelUrl(s.gid);
+    return `<a href="${url}" target="_blank" style="${btnStyle}">${s.label} <span style="float:right;color:var(--text2);font-size:12px">Excel ↗</span></a>`;
+  }).join('');
+
+  document.getElementById('main-content').innerHTML = `
+    <div style="padding:16px 16px 40px">
+
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--text2);margin-bottom:12px">Excel İndir</div>
+      ${ssId ? downloadHtml : '<div style="color:var(--text2);font-size:13px;padding:10px">Spreadsheet bağlantısı yükleniyor...</div>'}
+
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--text2);margin:20px 0 12px">Google Drive Yedekleme</div>
+
+      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:14px;padding:14px;margin-bottom:12px;font-size:13px;font-weight:600;color:#15803d">
+        📁 Yedekler <strong>"Ersan Plastik Yedekleri"</strong> klasörüne kaydedilir.<br>
+        ${sonYedek ? '<span style="color:var(--text2)">Son yedek: <strong>' + sonYedek + '</strong></span>' : '<span style="color:var(--text2)">Henüz yedek alınmadı.</span>'}
+      </div>
+
+      <button id="yedekle-btn" onclick="exportNow()"
+              style="width:100%;padding:15px;background:#2563eb;color:white;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px">
+        🗂 Şimdi Drive'a Yedekle
+      </button>
+
+      <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:12px;font-size:12px;font-weight:600;color:#92400e">
+        ⏰ <strong>Günlük otomatik yedek</strong> için Google Apps Script editöründe<br>
+        <code style="background:#fef3c7;padding:2px 6px;border-radius:4px;font-size:11px">setupDailyExport()</code> fonksiyonunu bir kez çalıştırın.
+      </div>
+    </div>`;
+}
+
+function exportNow() {
+  const btn = document.getElementById('yedekle-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Yedekleniyor...'; }
+
+  const cb = 'cbExport_' + Date.now();
+  window[cb] = function(json) {
+    delete window[cb];
+    document.getElementById('jsonp-export')?.remove();
+    if (btn) { btn.disabled = false; btn.textContent = '🗂 Şimdi Drive\'a Yedekle'; }
+    if (json && json.result === 'ok') {
+      showMonToast('✅ Yedek Drive\'a kaydedildi!', 'ok');
+      // Son yedek tarihini güncelle
+      if (_mData) _mData.sonYedek = new Date().toISOString().split('T')[0];
+      renderIndir();
+    } else {
+      showMonToast('Yedekleme hatası: ' + (json && json.message ? json.message : 'bilinmiyor'), 'err');
+    }
+  };
+  const s = document.createElement('script');
+  s.id  = 'jsonp-export';
+  s.src = SCRIPT_URL + '?action=exportNow&callback=' + cb;
+  s.onerror = function() {
+    delete window[cb];
+    if (btn) { btn.disabled = false; btn.textContent = '🗂 Şimdi Drive\'a Yedekle'; }
+    showMonToast('Bağlantı hatası', 'err');
+  };
+  document.head.appendChild(s);
 }
 
 /* ---------- Toast ---------- */

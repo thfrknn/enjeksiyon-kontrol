@@ -230,6 +230,18 @@ function doGet(e) {
   }
 
   // ============================================================
+  // exportNow: Anlık Google Drive yedeği al
+  // ============================================================
+  if (e.parameter.action === 'exportNow') {
+    try {
+      dailyExport();
+      return jsonp(cb, { result: 'ok' });
+    } catch (ex) {
+      return jsonp(cb, { result: 'error', message: String(ex) });
+    }
+  }
+
+  // ============================================================
   // submitForm: Ana ölçüm formunu JSONP (GET) üzerinden kaydet
   // ============================================================
   if (e.parameter.action === 'submitForm') {
@@ -451,9 +463,22 @@ function doGet(e) {
     const aktif   = Object.values(statuses).filter(s => s.durum === 'Aktif').length;
     const arizali = Object.values(statuses).filter(s => s.durum !== 'Aktif').length;
 
+    // 7) İndirme / yedekleme bilgisi
+    const ssId = ss.getId();
+    const _gid = name => { const sh = ss.getSheetByName(name); return sh ? sh.getSheetId() : null; };
+    const sheetGids = {
+      veriler:     _gid('Veriler'),
+      uretimKaydi: _gid('Üretim Kaydı'),
+      arizaLog:    _gid('Arıza Log'),
+    };
+
+    // Son Drive yedek tarihi (Properties'te tutulur)
+    const sonYedek = PropertiesService.getScriptProperties().getProperty('lastExport') || '';
+
     return jsonp(cb, {
       statuses, canliData, kasalar, arizaLog, uretimGecmisi,
       ozet: { aktif, arizali },
+      ssId, sheetGids, sonYedek,
       serverTime: new Date().getTime(),
     });
   }
@@ -893,6 +918,65 @@ function _setupUretimKaydi(sheet) {
   });
   // Sayısal sütunları sayı formatla
   sheet.getRange('I:N').setNumberFormat('#,##0');
+}
+
+// ================================================================
+// DRIVE YEDEKLEME
+// ================================================================
+
+/**
+ * Tüm spreadsheet'i Drive'a xlsx olarak yedekler.
+ * Manuel olarak çağrılabilir veya zaman tabanlı tetikleyici ile otomatik.
+ */
+function dailyExport() {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const tz    = ss.getSpreadsheetTimeZone();
+  const tarih = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const ad    = 'Ersan Plastik — ' + tarih + '.xlsx';
+
+  const url   = 'https://docs.google.com/spreadsheets/d/' + ss.getId() + '/export?format=xlsx';
+  const token = ScriptApp.getOAuthToken();
+  const resp  = UrlFetchApp.fetch(url, {
+    headers: { Authorization: 'Bearer ' + token },
+    muteHttpExceptions: true,
+  });
+
+  if (resp.getResponseCode() !== 200) {
+    throw new Error('Export HTTP ' + resp.getResponseCode());
+  }
+
+  const blob = resp.getBlob().setName(ad);
+
+  // "Ersan Plastik Yedekleri" klasörünü bul veya oluştur
+  const folderName = 'Ersan Plastik Yedekleri';
+  let folder;
+  const it = DriveApp.getFoldersByName(folderName);
+  folder = it.hasNext() ? it.next() : DriveApp.createFolder(folderName);
+
+  // Aynı güne ait eski yedeği sil (diske yer açmak için)
+  const existingIt = folder.getFilesByName(ad);
+  while (existingIt.hasNext()) existingIt.next().setTrashed(true);
+
+  folder.createFile(blob);
+  PropertiesService.getScriptProperties().setProperty('lastExport', tarih);
+}
+
+/**
+ * Günlük otomatik yedek tetikleyici kurar (saat 07:00).
+ * Google Apps Script editöründen bir kez çalıştırın.
+ */
+function setupDailyExport() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === 'dailyExport')
+    .forEach(t => ScriptApp.deleteTrigger(t));
+
+  ScriptApp.newTrigger('dailyExport')
+    .timeBased()
+    .everyDays(1)
+    .atHour(7)
+    .create();
+
+  Logger.log('Günlük yedek tetikleyici kuruldu: her gün 07:00');
 }
 
 function jsonp(callback, obj) {
