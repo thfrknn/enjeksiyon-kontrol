@@ -114,19 +114,19 @@
 
   <!-- Enjeksiyon sayısı -->
   <div class="section">
-    <div class="stitle"><span>🏭</span> Bu Vardiyada Kaç Makineyle Çalışıyorsunuz?</div>
+    <div class="stitle"><span>🏭</span> Bu Vardiyada Kaç Enjeksiyonla Çalışıyorsunuz?</div>
     <div class="toggle-row" id="enj-toggle-row">
-      <button class="tbtn active" id="t-1" onclick="setEnjSayisi(1)">1 Makine</button>
-      <button class="tbtn"        id="t-2" onclick="setEnjSayisi(2)">2 Makine</button>
+      <button class="tbtn active" id="t-1" onclick="setEnjSayisi(1)">1 Enjeksiyon</button>
+      <button class="tbtn"        id="t-2" onclick="setEnjSayisi(2)">2 Enjeksiyon</button>
     </div>
   </div>
 
   <!-- ── Enjeksiyon 1 Bilgileri ── -->
   <div class="section">
-    <div class="stitle"><span>1️⃣</span> <span id="enj1-title">Makine Bilgileri</span></div>
+    <div class="stitle"><span>1️⃣</span> <span id="enj1-title">Enjeksiyon Bilgileri</span></div>
 
     <div id="enj1-sec" class="field">
-      <label>Hangi Makinede Çalışıyorsunuz? <span class="req">*</span></label>
+      <label>Hangi Enjeksiyonda Çalışıyorsunuz? <span class="req">*</span></label>
       <input type="hidden" id="enj1_no" value="">
       <div class="enj-grid" id="enj1-grid">
         <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 1',this)">Enj 1</button>
@@ -142,7 +142,7 @@
         <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 11',this)">Enj 11</button>
         <button class="enj-gbtn" type="button" onclick="selectEnj(1,'Enjeksiyon 12',this)">Enj 12</button>
       </div>
-      <div class="err-msg" id="err-enj1">Lütfen makine seçin</div>
+      <div class="err-msg" id="err-enj1">Lütfen Enjeksiyon seçin</div>
     </div>
     <div id="enj1-ro" style="display:none" class="field">
       <span class="ro-label">Makine</span>
@@ -241,10 +241,10 @@
 
   <!-- ── Enjeksiyon 2 Bilgileri ── -->
   <div class="section" id="enj2-section" style="display:none">
-    <div class="stitle"><span>2️⃣</span> 2. Makine Bilgileri</div>
+    <div class="stitle"><span>2️⃣</span> 2. Enjeksiyon Bilgileri</div>
 
     <div id="enj2-sec" class="field">
-      <label>2. Makineniz Hangisi? <span class="req">*</span></label>
+      <label>2. Enjeksiyonunuz Hangisi? <span class="req">*</span></label>
       <input type="hidden" id="enj2_no" value="">
       <div class="enj-grid" id="enj2-grid">
         <button class="enj-gbtn" type="button" onclick="selectEnj(2,'Enjeksiyon 1',this)">Enj 1</button>
