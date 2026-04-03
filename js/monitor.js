@@ -67,16 +67,15 @@ function renderOzet() {
   const aktif   = oz.aktif   ?? 0;
   const arizali = oz.arizali ?? 0;
 
-  // Tüm vardiyaların toplamını canliData'dan hesapla
+  // Canlı İzleme'den toplam — flat yapı (son 24s)
   let toplamUretim = 0, toplamFire = 0;
   const cd = _mData.canliData || {};
-  const vardiyalar = _activeVardiya === 'TUMU' ? ['SABAH','AKSAM','GECE'] : [_activeVardiya];
   for (const makine in cd) {
-    for (const v of vardiyalar) {
-      const d = cd[makine][v];
-      if (d && d.uretim) toplamUretim += parseInt(d.uretim) || 0;
-      if (d && d.fire)   toplamFire   += parseInt(d.fire)   || 0;
-    }
+    const d = cd[makine];
+    if (!d || !d.uretim) continue;
+    if (_activeVardiya !== 'TUMU' && d.vardiya && d.vardiya !== _activeVardiya) continue;
+    toplamUretim += parseInt(d.uretim) || 0;
+    toplamFire   += parseInt(d.fire)   || 0;
   }
 
   document.getElementById('ozet-row').innerHTML = `
@@ -102,34 +101,34 @@ function renderOzet() {
 /* ---------- Canlı izleme grid ---------- */
 
 function renderCanli() {
-  const statuses  = _mData.statuses   || {};
-  const canliData = _mData.canliData  || {};
-  const kasalar   = _mData.kasalar    || {};
-  const vardiyalar = _activeVardiya === 'TUMU' ? ['SABAH','AKSAM','GECE'] : [_activeVardiya];
+  const statuses  = _mData.statuses  || {};
+  const canliData = _mData.canliData || {};
+  const kasalar   = _mData.kasalar   || {};
 
   let html = '';
   for (let i = 1; i <= 12; i++) {
-    const makineNo  = 'Enjeksiyon ' + i;
-    const status    = statuses[makineNo]  || { durum: 'Aktif' };
-    const isArizali = status.durum === 'Arızalı';
+    const makineNo   = 'Enjeksiyon ' + i;
+    const status     = statuses[makineNo] || { durum: 'Aktif' };
+    const isArizali  = status.durum === 'Arızalı';
     const kasaAtanan = kasalar[makineNo] || '';
 
-    // Seçili vardiyaların verilerini birleştir
-    let operatör = '', kasa = kasaAtanan, cevrim = '', uretim = 0, fire = 0, saat = '';
-    for (const v of vardiyalar) {
-      const d = (canliData[makineNo] || {})[v] || {};
-      if (d.operatör) operatör = d.operatör;
-      if (!kasa && d.kasa) kasa = d.kasa;
-      if (d.cevrim) cevrim = d.cevrim;
-      uretim += parseInt(d.uretim) || 0;
-      fire   += parseInt(d.fire)   || 0;
-      if (d.saat) saat = d.saat;
-    }
+    // Flat canlı veri (son 24s)
+    const d        = canliData[makineNo] || {};
+    const operatör = d.operatör || '';
+    const kasa     = kasaAtanan || d.kasa || '';
+    const cevrim   = d.cevrim   || '';
+    const uretim   = parseInt(d.uretim) || 0;
+    const fire     = parseInt(d.fire)   || 0;
+    const saat     = d.saat     || '';
+
+    // Vardiya filtresi — eşleşmeyen kartları soluk göster
+    const matchesFilter = _activeVardiya === 'TUMU' || !d.vardiya || d.vardiya === _activeVardiya;
+    const cardOpacity   = matchesFilter ? '1' : '0.4';
 
     if (isArizali) {
       const ariza = status.sonAriza || {};
       html += `
-        <div class="mmon-card mmon-red">
+        <div class="mmon-card mmon-red" style="opacity:${cardOpacity}">
           <div class="mmon-header">
             <span class="mmon-no">Enj ${i}</span>
             <span class="mmon-badge red">⚠️ Arızalı</span>
@@ -140,7 +139,7 @@ function renderCanli() {
         </div>`;
     } else {
       html += `
-        <div class="mmon-card">
+        <div class="mmon-card" style="opacity:${cardOpacity}">
           <div class="mmon-header">
             <span class="mmon-no">Enj ${i}</span>
             <span class="mmon-badge green">✅ Aktif</span>
@@ -151,11 +150,11 @@ function renderCanli() {
           <div class="mmon-stats">
             <div class="mmon-stat">
               <div class="mmon-stat-val">${uretim > 0 ? uretim.toLocaleString('tr-TR') : '—'}</div>
-              <div class="mmon-stat-lbl">Üretim</div>
+              <div class="mmon-stat-lbl">Üretim (24s)</div>
             </div>
             <div class="mmon-stat">
               <div class="mmon-stat-val warn">${fire > 0 ? fire : '—'}</div>
-              <div class="mmon-stat-lbl">Fire</div>
+              <div class="mmon-stat-lbl">Fire (24s)</div>
             </div>
           </div>
           ${saat ? `<div class="mmon-footer">🕐 ${saat}</div>` : ''}
