@@ -13,7 +13,7 @@ var uretimLimiti  = 0;
 var kasaLimitlari = {};
 var atananKasalar = {};  // Makine No → kasa ebatı (meydancı tarafından)
 var _adSoyad      = '';
-var maxFireLimit  = 50;   // Sheets'ten güncellenir
+var maxFireLimit  = 200;  // Sheets'ten güncellenir
 
 var _timeOffset   = 0;    // Sunucu-istemci saat farkı (ms)
 var _t0           = 0;    // loadLists isteğinin başlama zamanı
@@ -21,4 +21,3 @@ var _t0           = 0;    // loadLists isteğinin başlama zamanı
 var _fireAdjTimer    = null;
 var _fireAdjInterval = null;
 var _pendingFire     = null;   // Bekleyen anlık fire kaydı
-var _pendingOnayladi = false;  // Limit aşımı onay modalı için

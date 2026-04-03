@@ -305,6 +305,27 @@ function doGet(e) {
       }
     }
 
+    // Üretim Kaydı: normalize edilmiş, makine başına bir satır
+    appendUretimKaydi(ss, {
+      tarih: vardiyaTarih, vardiya, saat,
+      adsoyad: e.parameter.adsoyad || '', olcumNo,
+      makineNo: e.parameter.enj1_no || '', kasa: e.parameter.kasa1 || '',
+      cevrim: close ? '0' : (e.parameter.cevrim1 || ''),
+      agirlik: e.parameter.agirlik1 || '',
+      sayacBas: e.parameter.sayac_bas1 || '', sayacBit: e.parameter.sayac_bit1 || '',
+      uretim: e.parameter.uretim1 || '', fire: e.parameter.fire1 || '0',
+    });
+    if (enjSayisi === 2) {
+      appendUretimKaydi(ss, {
+        tarih: vardiyaTarih, vardiya, saat,
+        adsoyad: e.parameter.adsoyad || '', olcumNo,
+        makineNo: enj2No, kasa: kasa2,
+        cevrim: cevrim2, agirlik: agirlik2,
+        sayacBas: bas2, sayacBit: bit2,
+        uretim: uretim2, fire: fire2,
+      });
+    }
+
     return jsonp(cb, { result: 'ok', olcum: olcumNo });
   }
 
@@ -813,6 +834,59 @@ function _setupCanlıBaslik(sheet) {
   sheet.setColumnWidth(7, 80);   // Üretim
   sheet.setColumnWidth(8, 70);   // Fire
   sheet.setColumnWidth(9, 70);   // Saat
+}
+
+// ================================================================
+// ÜRETİM KAYDI — normalize edilmiş, makine başına bir satır
+// Sütunlar: Kayıt Zamanı | Vardiya Tarihi | Vardiya | Ölçüm Saati |
+//           Ad Soyad | Ölçüm No | Makine No | Kasa |
+//           Çevrim(sn) | Ağırlık(gr) | Sayaç Baş | Sayaç Bit | Üretim | Fire
+// ================================================================
+
+function appendUretimKaydi(ss, d) {
+  if (!d.makineNo || d.makineNo === '00') return;
+  let sheet = ss.getSheetByName('Üretim Kaydı');
+  if (!sheet) {
+    sheet = ss.insertSheet('Üretim Kaydı');
+    _setupUretimKaydi(sheet);
+  } else if (sheet.getLastRow() === 0 || String(sheet.getRange(1,1).getValue()).trim() !== 'Kayıt Zamanı') {
+    _setupUretimKaydi(sheet);
+  }
+
+  sheet.appendRow([
+    new Date().toLocaleString('tr-TR'),  // A - Kayıt Zamanı
+    d.tarih    || '',                    // B - Vardiya Tarihi
+    d.vardiya  || '',                    // C - Vardiya
+    d.saat     || '',                    // D - Ölçüm Saati
+    d.adsoyad  || '',                    // E - Ad Soyad
+    d.olcumNo  || '',                    // F - Ölçüm No
+    d.makineNo || '',                    // G - Makine No
+    d.kasa     || '',                    // H - Kasa
+    d.cevrim   !== undefined ? (Number(d.cevrim) || 0) : '', // I - Çevrim(sn)
+    d.agirlik  !== undefined ? (Number(d.agirlik) || 0) : '', // J - Ağırlık(gr)
+    d.sayacBas !== undefined ? (Number(d.sayacBas) || 0) : '', // K - Sayaç Baş
+    d.sayacBit !== undefined ? (Number(d.sayacBit) || 0) : '', // L - Sayaç Bit
+    d.uretim   !== undefined ? (Number(d.uretim)  || 0) : '', // M - Üretim
+    d.fire     !== undefined ? (Number(d.fire)    || 0) : '', // N - Fire
+  ]);
+}
+
+function _setupUretimKaydi(sheet) {
+  const headers = [
+    'Kayıt Zamanı', 'Vardiya Tarihi', 'Vardiya', 'Ölçüm Saati',
+    'Ad Soyad', 'Ölçüm No', 'Makine No', 'Kasa',
+    'Çevrim(sn)', 'Ağırlık(gr)', 'Sayaç Baş', 'Sayaç Bit', 'Üretim', 'Fire',
+  ];
+  const h = sheet.getRange(1, 1, 1, headers.length);
+  h.setValues([headers]);
+  h.setFontWeight('bold').setBackground('#0f766e').setFontColor('#ffffff')
+   .setHorizontalAlignment('center').setFontSize(11);
+  sheet.setFrozenRows(1);
+  [140, 110, 80, 90, 140, 70, 130, 100, 90, 90, 90, 90, 80, 70].forEach(function(w, i) {
+    sheet.setColumnWidth(i + 1, w);
+  });
+  // Sayısal sütunları sayı formatla
+  sheet.getRange('I:N').setNumberFormat('#,##0');
 }
 
 function jsonp(callback, obj) {
