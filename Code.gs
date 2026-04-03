@@ -24,15 +24,17 @@ function doGet(e) {
     const kasaEbatlariS = [];
     const kasaLimitlari = {};
     let   uretimLimiti  = 0;
-    const maxFireLimit  = Number(vals[0][5]) || 200;  // F2
 
+    // ScriptProperties önce, fallback Ayarlar F2
+    const _propsL = PropertiesService.getScriptProperties();
+    const maxFireLimit    = Number(_propsL.getProperty('maxFireLimit'))    || Number(vals[0][5]) || 200;
+    const vardiyaTolerans = Number(_propsL.getProperty('vardiyaTolerans')) || 120;
+    const otoVardiya      = _propsL.getProperty('otoVardiya') !== 'false';
+
+    // Kasa ebatları ve limitler — her zaman Ayarlar'dan
     vals.forEach((row, i) => {
-      const ad    = String(row[0] || '').trim();
       const kasa  = String(row[1] || '').trim();
-      const sifre = String(display[i][2] || '').trim();
       const limit = Number(row[3]);
-      const id    = String(display[i][4] || '').trim();
-      if (ad && id) kullanicilar[id] = { name: ad, sifre };
       if (kasa) {
         kasaEbatlariS.push(kasa);
         if (limit > 0) {
@@ -41,6 +43,27 @@ function doGet(e) {
         }
       }
     });
+
+    // Kullanıcılar: Personel sekmesinden (varsa), yoksa Ayarlar'dan (geriye uyumluluk)
+    const _personelSheetL = ss.getSheetByName('Personel');
+    if (_personelSheetL && _personelSheetL.getLastRow() > 1) {
+      const pv = _personelSheetL.getRange(2, 1, _personelSheetL.getLastRow() - 1, 5).getValues();
+      const pd = _personelSheetL.getRange(2, 1, _personelSheetL.getLastRow() - 1, 5).getDisplayValues();
+      for (let i = 0; i < pv.length; i++) {
+        const id    = String(pd[i][0] || '').trim();
+        const ad    = String(pv[i][1] || '').trim();
+        const sifre = String(pd[i][2] || '').trim();
+        const durum = String(pv[i][4] || '').trim();
+        if (id && ad && durum !== 'Pasif') kullanicilar[id] = { name: ad, sifre };
+      }
+    } else {
+      vals.forEach((row, i) => {
+        const ad    = String(row[0] || '').trim();
+        const sifre = String(display[i][2] || '').trim();
+        const id    = String(display[i][4] || '').trim();
+        if (ad && id) kullanicilar[id] = { name: ad, sifre };
+      });
+    }
 
     // Kilitli makineleri al
     const lockedMachines = getLockedMachines(ss);
@@ -64,6 +87,8 @@ function doGet(e) {
       kasaLimitlari,
       maxFireLimit,
       atananKasalar,
+      vardiyaTolerans,
+      otoVardiya,
       serverTime: new Date().getTime(),
       lockedMachines
     });
@@ -674,6 +699,199 @@ function doGet(e) {
     return jsonp(cb, { result: 'ok', makine: makineNo, durum });
   }
 
+  // ============================================================
+  // getSettings: Sistem ayarlarını döndürür
+  // ============================================================
+  if (e.parameter.action === 'getSettings') {
+    const ss      = SpreadsheetApp.getActiveSpreadsheet();
+    const props   = PropertiesService.getScriptProperties();
+    const ayarlar = ss.getSheetByName('Ayarlar');
+
+    const vardiyaTolerans = Number(props.getProperty('vardiyaTolerans')) || 120;
+    const otoVardiya      = props.getProperty('otoVardiya') !== 'false';
+    const yedeklemeSaat   = Number(props.getProperty('yedeklemeSaat')) || 9;
+
+    let maxFireLimit = Number(props.getProperty('maxFireLimit')) || 0;
+    if (!maxFireLimit && ayarlar) {
+      maxFireLimit = Number(ayarlar.getRange('F2').getValue()) || 200;
+    }
+
+    let arizaTipleri = [];
+    if (ayarlar) {
+      arizaTipleri = ayarlar.getRange('G2:G20').getValues().flat()
+        .map(v => String(v).trim()).filter(v => v);
+    }
+    if (!arizaTipleri.length) {
+      arizaTipleri = ['Makine Kaynaklı', 'Kalıp Kaynaklı', 'Planlı Bakım', 'Temizlik', 'Diğer'];
+    }
+
+    let kasaMinMax = {};
+    const kasaMinMaxStr = props.getProperty('kasaMinMax');
+    if (kasaMinMaxStr) {
+      try { kasaMinMax = JSON.parse(kasaMinMaxStr); } catch(ex) {}
+    }
+
+    return jsonp(cb, {
+      vardiyaTolerans, otoVardiya, yedeklemeSaat,
+      maxFireLimit, arizaTipleri, kasaMinMax,
+      serverTime: new Date().getTime(),
+    });
+  }
+
+  // ============================================================
+  // saveSettings: Sistem ayarlarını ScriptProperties'e kaydeder
+  // ============================================================
+  if (e.parameter.action === 'saveSettings') {
+    const props   = PropertiesService.getScriptProperties();
+    const ss      = SpreadsheetApp.getActiveSpreadsheet();
+    const ayarlar = ss.getSheetByName('Ayarlar');
+
+    const vardiyaToleransP = e.parameter.vardiyaTolerans;
+    const otoVardiyaP      = e.parameter.otoVardiya;
+    const yedeklemeSaatP   = e.parameter.yedeklemeSaat;
+    const maxFireLimitP    = e.parameter.maxFireLimit;
+    const arizaTipleriP    = e.parameter.arizaTipleri;
+    const kasaMinMaxP      = e.parameter.kasaMinMax;
+
+    if (vardiyaToleransP !== undefined) props.setProperty('vardiyaTolerans', String(Math.max(0, Number(vardiyaToleransP) || 120)));
+    if (otoVardiyaP      !== undefined) props.setProperty('otoVardiya', otoVardiyaP === 'false' ? 'false' : 'true');
+
+    if (maxFireLimitP !== undefined) {
+      props.setProperty('maxFireLimit', String(Number(maxFireLimitP) || 200));
+      if (ayarlar) ayarlar.getRange('F2').setValue(Number(maxFireLimitP) || 200);
+    }
+
+    if (yedeklemeSaatP !== undefined) {
+      const saat = Number(yedeklemeSaatP);
+      if (!isNaN(saat) && saat >= 0 && saat <= 23) {
+        props.setProperty('yedeklemeSaat', String(saat));
+        ScriptApp.getProjectTriggers()
+          .filter(t => t.getHandlerFunction() === 'dailyExport')
+          .forEach(t => ScriptApp.deleteTrigger(t));
+        ScriptApp.newTrigger('dailyExport').timeBased().everyDays(1).atHour(saat).create();
+      }
+    }
+
+    if (arizaTipleriP !== undefined && ayarlar) {
+      let tipleri = [];
+      try { tipleri = JSON.parse(arizaTipleriP); } catch(ex) {}
+      ayarlar.getRange('G2:G30').clearContent();
+      if (tipleri.length) {
+        ayarlar.getRange(2, 7, tipleri.length, 1).setValues(tipleri.map(t => [t]));
+      }
+    }
+
+    if (kasaMinMaxP !== undefined) {
+      try { JSON.parse(kasaMinMaxP); props.setProperty('kasaMinMax', kasaMinMaxP); } catch(ex) {}
+    }
+
+    return jsonp(cb, { result: 'ok' });
+  }
+
+  // ============================================================
+  // getPersonel: Tüm personeli döndürür (Pasif dahil)
+  // ============================================================
+  if (e.parameter.action === 'getPersonel') {
+    const ss    = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = _getOrCreatePersonelSheet(ss);
+    const list  = [];
+
+    if (sheet.getLastRow() > 1) {
+      const vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getValues();
+      const disp = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getDisplayValues();
+      for (let i = 0; i < vals.length; i++) {
+        const id    = String(disp[i][0] || '').trim();
+        const ad    = String(vals[i][1] || '').trim();
+        const rol   = String(vals[i][3] || '').trim() || 'Operatör';
+        const durum = String(vals[i][4] || '').trim() || 'Aktif';
+        if (id && ad) list.push({ id, ad, rol, durum });
+      }
+    }
+
+    return jsonp(cb, { personel: list, serverTime: new Date().getTime() });
+  }
+
+  // ============================================================
+  // addPersonel: Yeni personel ekler, ID otomatik atanır
+  // ============================================================
+  if (e.parameter.action === 'addPersonel') {
+    const ss    = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = _getOrCreatePersonelSheet(ss);
+
+    const ad    = String(e.parameter.ad    || '').trim();
+    const sifre = String(e.parameter.sifre || '').trim();
+    const rol   = String(e.parameter.rol   || 'Operatör').trim();
+
+    if (!ad || !sifre) return jsonp(cb, { error: 'Ad ve şifre zorunlu' });
+
+    let maxId = 100;
+    if (sheet.getLastRow() > 1) {
+      const ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues().flat()
+        .map(v => parseInt(v) || 0);
+      maxId = Math.max(maxId, ...ids);
+    }
+    const yeniId = String(maxId + 1);
+
+    const row = sheet.getLastRow() + 1;
+    sheet.getRange(row, 1).setNumberFormat('@').setValue(yeniId);
+    sheet.getRange(row, 2).setValue(ad);
+    sheet.getRange(row, 3).setNumberFormat('@').setValue(sifre);
+    sheet.getRange(row, 4).setValue(rol);
+    sheet.getRange(row, 5).setValue('Aktif');
+
+    return jsonp(cb, { result: 'ok', id: yeniId });
+  }
+
+  // ============================================================
+  // updatePersonel: Durum (Aktif/Pasif) ve/veya Rol günceller
+  // ============================================================
+  if (e.parameter.action === 'updatePersonel') {
+    const ss       = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet    = _getOrCreatePersonelSheet(ss);
+    const hedefId  = String(e.parameter.hedef_id || '').trim();
+    const yeniDurum = e.parameter.durum;
+    const yeniRol   = e.parameter.rol;
+
+    if (!hedefId) return jsonp(cb, { error: 'Hedef ID gerekli' });
+    if (sheet.getLastRow() < 2) return jsonp(cb, { error: 'Personel bulunamadı' });
+
+    const disp = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues();
+    for (let i = 0; i < disp.length; i++) {
+      if (String(disp[i][0]).trim() === hedefId) {
+        if (yeniDurum !== undefined) sheet.getRange(i + 2, 5).setValue(yeniDurum);
+        if (yeniRol   !== undefined) sheet.getRange(i + 2, 4).setValue(yeniRol);
+        return jsonp(cb, { result: 'ok' });
+      }
+    }
+    return jsonp(cb, { error: 'Bulunamadı: ' + hedefId });
+  }
+
+  // ============================================================
+  // changePassword: Eski şifre doğrulama ile şifre değiştir
+  // ============================================================
+  if (e.parameter.action === 'changePassword') {
+    const ss        = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet     = _getOrCreatePersonelSheet(ss);
+    const hedefId   = String(e.parameter.hedef_id   || '').trim();
+    const eskiSifre = String(e.parameter.eski_sifre || '').trim();
+    const yeniSifre = String(e.parameter.yeni_sifre || '').trim();
+
+    if (!hedefId || !yeniSifre) return jsonp(cb, { error: 'Eksik parametre' });
+    if (sheet.getLastRow() < 2) return jsonp(cb, { error: 'Personel bulunamadı' });
+
+    const disp = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getDisplayValues();
+    for (let i = 0; i < disp.length; i++) {
+      if (String(disp[i][0]).trim() === hedefId) {
+        if (String(disp[i][2]).trim() !== eskiSifre) {
+          return jsonp(cb, { error: 'Mevcut şifre hatalı' });
+        }
+        sheet.getRange(i + 2, 3).setNumberFormat('@').setValue(yeniSifre);
+        return jsonp(cb, { result: 'ok' });
+      }
+    }
+    return jsonp(cb, { error: 'Personel bulunamadı' });
+  }
+
   return jsonp(cb, { error: 'Geçersiz istek' });
 }
 
@@ -933,6 +1151,47 @@ function setupDailyExport() {
     .create();
 
   Logger.log('Günlük yedek tetikleyici kuruldu: her gün 07:00');
+}
+
+// ============================================================
+// PERSONEL SHEET YARDIMCISI
+// Personel sekmesi yoksa oluşturur ve Ayarlar'dan migrate eder.
+// ============================================================
+function _getOrCreatePersonelSheet(ss) {
+  let sheet = ss.getSheetByName('Personel');
+  if (sheet) return sheet;
+
+  sheet = ss.insertSheet('Personel');
+  const headers = ['ID', 'Ad Soyad', 'Şifre', 'Rol', 'Durum'];
+  sheet.appendRow(headers);
+  const h = sheet.getRange('A1:E1');
+  h.setFontWeight('bold').setBackground('#2563eb').setFontColor('#ffffff');
+  sheet.setFrozenRows(1);
+  sheet.getRange('A:A').setNumberFormat('@');
+  sheet.getRange('C:C').setNumberFormat('@');
+  [80, 160, 100, 100, 80].forEach((w, i) => sheet.setColumnWidth(i + 1, w));
+
+  // Ayarlar'dan mevcut kullanıcıları migrate et
+  const ayarlar = ss.getSheetByName('Ayarlar');
+  if (ayarlar && ayarlar.getLastRow() > 1) {
+    const vals = ayarlar.getRange('A2:E50').getValues();
+    const disp = ayarlar.getRange('A2:E50').getDisplayValues();
+    for (let i = 0; i < vals.length; i++) {
+      const ad    = String(vals[i][0] || '').trim();
+      const id    = String(disp[i][4] || '').trim();
+      const sifre = String(disp[i][2] || '').trim();
+      if (ad && id) {
+        const row = sheet.getLastRow() + 1;
+        sheet.getRange(row, 1).setNumberFormat('@').setValue(id);
+        sheet.getRange(row, 2).setValue(ad);
+        sheet.getRange(row, 3).setNumberFormat('@').setValue(sifre);
+        sheet.getRange(row, 4).setValue('Operatör');
+        sheet.getRange(row, 5).setValue('Aktif');
+      }
+    }
+  }
+
+  return sheet;
 }
 
 function jsonp(callback, obj) {

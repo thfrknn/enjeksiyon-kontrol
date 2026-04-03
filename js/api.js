@@ -24,6 +24,10 @@ function loadLists() {
       maxFireLimit  = parseInt(json.maxFireLimit)  || 50;
       atananKasalar = json.atananKasalar || {};
 
+      // Vardiya tolerans ayarları
+      window.__otoVardiya      = json.otoVardiya !== false;
+      window.__vardiyaTolerans = Number(json.vardiyaTolerans) || 120;
+
       var idEl = document.getElementById('kullanici_id');
       if (idEl) {
         idEl.dataset.ready = '1';

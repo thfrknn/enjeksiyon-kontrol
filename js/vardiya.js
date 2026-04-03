@@ -29,14 +29,17 @@ function _inWindow(m, center, win) {
  */
 function isVardiyaActive(v) {
   if (window.__testMode) return true;
+  // Oto vardiya kapalıysa tüm vardiyalar her zaman aktif
+  if (window.__otoVardiya === false) return true;
 
+  var tol = window.__vardiyaTolerans != null ? window.__vardiyaTolerans : 120;
   var now = new Date(Date.now() + _timeOffset);
   var m   = now.getHours() * 60 + now.getMinutes();
 
   // Geçiş pencereleri — her iki komşu vardiya da seçilebilir
-  if (_inWindow(m, 9  * 60, 120)) return v === 'GECE'  || v === 'SABAH';
-  if (_inWindow(m, 17 * 60, 120)) return v === 'SABAH' || v === 'AKSAM';
-  if (_inWindow(m, 1  * 60, 120)) return v === 'AKSAM' || v === 'GECE';
+  if (_inWindow(m, 9  * 60, tol)) return v === 'GECE'  || v === 'SABAH';
+  if (_inWindow(m, 17 * 60, tol)) return v === 'SABAH' || v === 'AKSAM';
+  if (_inWindow(m, 1  * 60, tol)) return v === 'AKSAM' || v === 'GECE';
 
   // Normal zaman — sadece aktif vardiya
   var r = _VR[v];

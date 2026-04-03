@@ -5,8 +5,13 @@ const _mUserName = sessionStorage.getItem('ep_name') || '';
 
 let _mData       = null;
 let _mTimeOffset = 0;
-let _activeTab   = 'canli';    // 'canli' | 'ariza' | 'kapama' | 'uretim'
+let _activeTab   = 'canli';    // 'canli' | 'ariza' | 'kapama' | 'uretim' | 'indir' | 'personel' | 'ayarlar'
 let _activeVardiya = 'TUMU';   // 'TUMU' | 'SABAH' | 'AKSAM' | 'GECE'
+
+// Personel & Ayarlar sekme durumu
+let _personelData  = null;
+let _personelSubTab = 'ekle';   // 'ekle' | 'duzenle' | 'sifre'
+let _settingsData  = null;
 
 /* ---------- Init ---------- */
 
@@ -53,11 +58,13 @@ function loadData(silent) {
 function render() {
   if (!_mData) return;
   renderOzet();
-  if      (_activeTab === 'canli')  renderCanli();
-  else if (_activeTab === 'ariza')  renderAriza();
-  else if (_activeTab === 'kapama') renderKapama();
-  else if (_activeTab === 'uretim') renderUretim();
-  else if (_activeTab === 'indir')  renderIndir();
+  if      (_activeTab === 'canli')    renderCanli();
+  else if (_activeTab === 'ariza')    renderAriza();
+  else if (_activeTab === 'kapama')   renderKapama();
+  else if (_activeTab === 'uretim')   renderUretim();
+  else if (_activeTab === 'indir')    renderIndir();
+  else if (_activeTab === 'personel') renderPersonel();
+  else if (_activeTab === 'ayarlar')  renderAyarlar();
 }
 
 /* ---------- Özet satırı ---------- */
@@ -396,11 +403,15 @@ function renderUretim() {
 
 function setTab(tab) {
   _activeTab = tab;
-  ['canli','ariza','kapama','uretim','indir'].forEach(t => {
+  ['canli','ariza','kapama','uretim','indir','personel','ayarlar'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('tab-active', t === tab);
   });
   // Vardiya filtresi sadece canlı sekmede
   document.getElementById('vardiya-filter').style.display = tab === 'canli' ? 'flex' : 'none';
+
+  // Personel & Ayarlar sekmeleri lazy-load
+  if (tab === 'personel' && !_personelData) { loadPersonel(); return; }
+  if (tab === 'ayarlar'  && !_settingsData) { loadSettings();  return; }
   render();
 }
 
@@ -491,6 +502,388 @@ function exportNow() {
     showMonToast('Bağlantı hatası', 'err');
   };
   document.head.appendChild(s);
+}
+
+/* ---------- Personel Sekmesi ---------- */
+
+function loadPersonel() {
+  document.getElementById('main-content').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);font-weight:700">Yükleniyor...</div>';
+  const cb = 'cbPersonel_' + Date.now();
+  window[cb] = function(json) {
+    delete window[cb];
+    _personelData = json.personel || [];
+    renderPersonel();
+  };
+  const s = document.createElement('script');
+  s.src = SCRIPT_URL + '?action=getPersonel&callback=' + cb;
+  s.onerror = function() { delete window[cb]; showMonToast('Personel yüklenemedi', 'err'); };
+  document.head.appendChild(s);
+}
+
+function renderPersonel() {
+  const subTabs = [
+    { key: 'ekle',    label: '+ Ekle' },
+    { key: 'duzenle', label: '✏️ Düzenle' },
+    { key: 'sifre',   label: '🔑 Şifre' },
+  ];
+  const subTabHtml = subTabs.map(t =>
+    `<button onclick="setPersonelSubTab('${t.key}')"
+      style="padding:8px 16px;border:none;border-radius:20px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;
+             background:${_personelSubTab === t.key ? 'var(--accent)' : 'var(--bg)'};
+             color:${_personelSubTab === t.key ? 'white' : 'var(--text2)'}">${t.label}</button>`
+  ).join('');
+
+  let bodyHtml = '';
+  if (_personelSubTab === 'ekle') {
+    bodyHtml = `
+      <div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:16px">
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Ad Soyad</label>
+          <input id="prs-ad" type="text" placeholder="Ad Soyad"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Şifre (TC Son 4 Hane)</label>
+          <input id="prs-sifre" type="text" placeholder="1234" maxlength="8"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px">
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Rol</label>
+          <select id="prs-rol"
+            style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;background:white">
+            <option value="Operatör">Operatör</option>
+            <option value="Meydancı">Meydancı</option>
+            <option value="Yönetici">Yönetici</option>
+          </select>
+        </div>
+        <button onclick="addPersonel()"
+          style="width:100%;padding:13px;background:var(--accent);color:white;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer">
+          Kaydet
+        </button>
+      </div>`;
+  } else if (_personelSubTab === 'duzenle') {
+    const list = (_personelData || []).map(p => {
+      const durumBadge = p.durum === 'Pasif'
+        ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:#fee2e2;color:#dc2626">Pasif</span>'
+        : '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:#dcfce7;color:#16a34a">Aktif</span>';
+      return `
+        <div style="background:white;border:1.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+            <div>
+              <div style="font-size:14px;font-weight:800;color:var(--text)">${p.ad}</div>
+              <div style="font-size:11px;color:var(--text2);font-weight:600">ID: ${p.id} &nbsp;·&nbsp; ${p.rol}</div>
+            </div>
+            ${durumBadge}
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <select id="rol-${p.id}" onchange="updateRol('${p.id}')"
+              style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;background:white;cursor:pointer">
+              <option value="Operatör"  ${p.rol==='Operatör'  ? 'selected':''}>Operatör</option>
+              <option value="Meydancı"  ${p.rol==='Meydancı'  ? 'selected':''}>Meydancı</option>
+              <option value="Yönetici"  ${p.rol==='Yönetici'  ? 'selected':''}>Yönetici</option>
+            </select>
+            ${p.durum === 'Aktif'
+              ? `<button onclick="updateDurum('${p.id}','Pasif')"
+                  style="padding:6px 12px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer">
+                  Pasife Al
+                 </button>`
+              : `<button onclick="updateDurum('${p.id}','Aktif')"
+                  style="padding:6px 12px;background:#dcfce7;color:#16a34a;border:none;border-radius:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer">
+                  Aktif Et
+                 </button>`
+            }
+          </div>
+        </div>`;
+    }).join('');
+    bodyHtml = list || '<div style="text-align:center;padding:30px;color:var(--text2);font-weight:700">Personel bulunamadı</div>';
+  } else if (_personelSubTab === 'sifre') {
+    const opts = (_personelData || [])
+      .filter(p => p.durum === 'Aktif')
+      .map(p => `<option value="${p.id}">${p.ad} (${p.id})</option>`)
+      .join('');
+    bodyHtml = `
+      <div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:16px">
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Personel</label>
+          <select id="sp-id"
+            style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;background:white">
+            <option value="">Seç...</option>${opts}
+          </select>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Mevcut Şifre</label>
+          <input id="sp-eski" type="password" placeholder="••••"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Yeni Şifre</label>
+          <input id="sp-yeni" type="password" placeholder="••••"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px">
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Yeni Şifre Tekrar</label>
+          <input id="sp-yeni2" type="password" placeholder="••••"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px">
+        </div>
+        <button onclick="changePassword()"
+          style="width:100%;padding:13px;background:var(--accent);color:white;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer">
+          Şifreyi Güncelle
+        </button>
+      </div>`;
+  }
+
+  document.getElementById('main-content').innerHTML = `
+    <div style="padding:16px 16px 40px">
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">${subTabHtml}</div>
+      ${bodyHtml}
+    </div>`;
+}
+
+function setPersonelSubTab(key) {
+  _personelSubTab = key;
+  renderPersonel();
+}
+
+function _jsonpCall(params, onOk, onErr) {
+  const cb = 'cbApi_' + Date.now();
+  const qs = Object.entries(params).map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+  window[cb] = function(json) {
+    delete window[cb];
+    if (json.error) { showMonToast(json.error, 'err'); if (onErr) onErr(json.error); }
+    else { if (onOk) onOk(json); }
+  };
+  const s = document.createElement('script');
+  s.src = SCRIPT_URL + '?' + qs + '&callback=' + cb;
+  s.onerror = function() { delete window[cb]; showMonToast('Bağlantı hatası', 'err'); if (onErr) onErr(); };
+  document.head.appendChild(s);
+}
+
+function addPersonel() {
+  const ad    = (document.getElementById('prs-ad')?.value || '').trim();
+  const sifre = (document.getElementById('prs-sifre')?.value || '').trim();
+  const rol   = document.getElementById('prs-rol')?.value || 'Operatör';
+  if (!ad || !sifre) { showMonToast('Ad ve şifre zorunlu', 'err'); return; }
+  _jsonpCall({ action:'addPersonel', ad, sifre, rol }, json => {
+    showMonToast('✅ Personel eklendi (ID: ' + json.id + ')', 'ok');
+    _personelData = null;
+    loadPersonel();
+  });
+}
+
+function updateDurum(id, durum) {
+  _jsonpCall({ action:'updatePersonel', hedef_id: id, durum }, () => {
+    showMonToast(durum === 'Pasif' ? '✅ Pasife alındı' : '✅ Aktif edildi', 'ok');
+    const p = (_personelData || []).find(x => x.id === id);
+    if (p) p.durum = durum;
+    renderPersonel();
+  });
+}
+
+function updateRol(id) {
+  const rol = document.getElementById('rol-' + id)?.value;
+  if (!rol) return;
+  _jsonpCall({ action:'updatePersonel', hedef_id: id, rol }, () => {
+    showMonToast('✅ Rol güncellendi', 'ok');
+    const p = (_personelData || []).find(x => x.id === id);
+    if (p) p.rol = rol;
+  });
+}
+
+function changePassword() {
+  const id    = document.getElementById('sp-id')?.value || '';
+  const eski  = document.getElementById('sp-eski')?.value || '';
+  const yeni  = document.getElementById('sp-yeni')?.value || '';
+  const yeni2 = document.getElementById('sp-yeni2')?.value || '';
+  if (!id) { showMonToast('Personel seçin', 'err'); return; }
+  if (!eski || !yeni) { showMonToast('Tüm alanlar zorunlu', 'err'); return; }
+  if (yeni !== yeni2) { showMonToast('Yeni şifreler eşleşmiyor', 'err'); return; }
+  _jsonpCall({ action:'changePassword', hedef_id: id, eski_sifre: eski, yeni_sifre: yeni }, () => {
+    showMonToast('✅ Şifre güncellendi', 'ok');
+    document.getElementById('sp-eski').value = '';
+    document.getElementById('sp-yeni').value = '';
+    document.getElementById('sp-yeni2').value = '';
+  });
+}
+
+/* ---------- Ayarlar Sekmesi ---------- */
+
+function loadSettings() {
+  document.getElementById('main-content').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);font-weight:700">Yükleniyor...</div>';
+  const cb = 'cbSettings_' + Date.now();
+  window[cb] = function(json) {
+    delete window[cb];
+    _settingsData = json;
+    renderAyarlar();
+  };
+  const s = document.createElement('script');
+  s.src = SCRIPT_URL + '?action=getSettings&callback=' + cb;
+  s.onerror = function() { delete window[cb]; showMonToast('Ayarlar yüklenemedi', 'err'); };
+  document.head.appendChild(s);
+}
+
+function renderAyarlar() {
+  if (!_settingsData) { loadSettings(); return; }
+  const d = _settingsData;
+
+  // Arıza tipleri listesi
+  const _arizaList = (d.arizaTipleri || []);
+  const arizaItemsHtml = _arizaList.map((t, i) =>
+    `<div id="ariza-item-${i}" style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+       <input type="text" value="${t}" id="ariza-val-${i}"
+         style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;font-size:13px">
+       <button onclick="removeArizaTipi(${i})"
+         style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:13px">✕</button>
+     </div>`
+  ).join('');
+
+  // Kasa min/max tablosu
+  const kasaDefaults = (typeof KASA_AGIRLIK !== 'undefined') ? KASA_AGIRLIK : {};
+  const kasaData = Object.keys(kasaDefaults).length ? kasaDefaults : {};
+  const kasaSettings = Object.assign({}, kasaData, d.kasaMinMax || {});
+  const kasaRowsHtml = Object.entries(kasaSettings).map(([ebat, vals]) =>
+    `<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px">
+       <span style="font-size:13px;font-weight:700;color:var(--text);min-width:90px">${ebat}</span>
+       <input type="number" id="kasa-min-${ebat.replace(/x/g,'-')}" value="${vals.min || ''}" placeholder="Min gr"
+         style="padding:7px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;font-size:13px;width:100%;box-sizing:border-box">
+       <input type="number" id="kasa-max-${ebat.replace(/x/g,'-')}" value="${vals.max || ''}" placeholder="Max gr"
+         style="padding:7px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;font-size:13px;width:100%;box-sizing:border-box">
+     </div>`
+  ).join('');
+
+  const secStyle = 'font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--text2);margin:20px 0 10px';
+  const cardStyle = 'background:white;border:1.5px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px';
+  const lblStyle  = 'font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px';
+  const inpStyle  = 'width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:\'Nunito\',sans-serif;font-size:14px';
+
+  document.getElementById('main-content').innerHTML = `
+    <div style="padding:16px 16px 40px">
+
+      <div style="${secStyle}">Operasyon Ayarları</div>
+      <div style="${cardStyle}">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div>
+            <div style="font-size:14px;font-weight:800;color:var(--text)">Oto Vardiya</div>
+            <div style="font-size:11px;color:var(--text2);font-weight:600">Saat kontrolüyle otomatik vardiya seçimi</div>
+          </div>
+          <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer">
+            <input type="checkbox" id="ay-otoVardiya" ${d.otoVardiya !== false ? 'checked' : ''}
+              onchange="document.getElementById('ay-tolerans-row').style.display=this.checked?'block':'none'"
+              style="opacity:0;width:0;height:0">
+            <span id="oto-slider" style="position:absolute;top:0;left:0;right:0;bottom:0;border-radius:26px;background:${d.otoVardiya !== false ? 'var(--accent)' : '#cbd5e1'};transition:.3s">
+              <span style="position:absolute;width:20px;height:20px;border-radius:50%;background:white;top:3px;transition:.3s;left:${d.otoVardiya !== false ? '25px' : '3px'}"></span>
+            </span>
+          </label>
+        </div>
+
+        <div id="ay-tolerans-row" style="display:${d.otoVardiya !== false ? 'block' : 'none'};margin-bottom:14px">
+          <label style="${lblStyle}">Vardiya Geçiş Toleransı (± dakika)</label>
+          <input id="ay-tolerans" type="number" min="0" max="180" value="${d.vardiyaTolerans || 120}" ${inpStyle.replace('width:100%;box-sizing:border-box;', '')}>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="${lblStyle}">Max Tek Seferlik Fire Limiti</label>
+          <input id="ay-fireLimiti" type="number" min="1" value="${d.maxFireLimit || 200}" ${inpStyle.replace('width:100%;box-sizing:border-box;', '')}>
+        </div>
+
+        <div>
+          <label style="${lblStyle}">Oto. Yedekleme Saati (0-23)</label>
+          <input id="ay-yedekleme" type="number" min="0" max="23" value="${d.yedeklemeSaat ?? 9}" ${inpStyle.replace('width:100%;box-sizing:border-box;', '')}>
+          <div style="font-size:11px;color:var(--text2);margin-top:4px;font-weight:600">⚠️ Saat değişirse trigger yeniden kurulur (birkaç sn sürebilir)</div>
+        </div>
+
+      </div>
+
+      <div style="${secStyle}">Arıza Tipleri</div>
+      <div style="${cardStyle}">
+        <div id="ariza-list">${arizaItemsHtml}</div>
+        <button onclick="addArizaTipi()"
+          style="width:100%;padding:10px;background:var(--bg);border:1.5px dashed var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;margin-top:4px">
+          + Yeni Tip Ekle
+        </button>
+      </div>
+
+      <div style="${secStyle}">Kasa Min/Max Ağırlıkları (gr)</div>
+      <div style="${cardStyle}">
+        <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;margin-bottom:8px">
+          <span style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase">Ebat</span>
+          <span style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase">Min (gr)</span>
+          <span style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase">Max (gr)</span>
+        </div>
+        ${kasaRowsHtml}
+      </div>
+
+      <button onclick="saveSettings()"
+        style="width:100%;padding:15px;background:var(--accent);color:white;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer">
+        💾 Kaydet
+      </button>
+    </div>`;
+
+  // Toggle slider renk güncelleme
+  document.getElementById('ay-otoVardiya').addEventListener('change', function() {
+    const slider = document.getElementById('oto-slider');
+    slider.style.background = this.checked ? 'var(--accent)' : '#cbd5e1';
+    slider.querySelector('span').style.left = this.checked ? '25px' : '3px';
+  });
+}
+
+function addArizaTipi() {
+  const list = document.getElementById('ariza-list');
+  const i = list.children.length;
+  const div = document.createElement('div');
+  div.id = 'ariza-item-' + i;
+  div.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px';
+  div.innerHTML = `<input type="text" id="ariza-val-${i}" placeholder="Tip adı"
+    style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;font-size:13px">
+    <button onclick="removeArizaTipi(${i})"
+      style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:13px">✕</button>`;
+  list.appendChild(div);
+}
+
+function removeArizaTipi(i) {
+  document.getElementById('ariza-item-' + i)?.remove();
+}
+
+function saveSettings() {
+  // Arıza tipleri topla
+  const arizaList = document.getElementById('ariza-list');
+  const arizaTipleri = [];
+  if (arizaList) {
+    for (const div of arizaList.children) {
+      const inp = div.querySelector('input[type="text"]');
+      const v = inp ? inp.value.trim() : '';
+      if (v) arizaTipleri.push(v);
+    }
+  }
+
+  // Kasa min/max topla
+  const kasaDefaults = (typeof KASA_AGIRLIK !== 'undefined') ? KASA_AGIRLIK : {};
+  const kasaMinMax = {};
+  for (const ebat of Object.keys(kasaDefaults)) {
+    const key = ebat.replace(/x/g, '-');
+    const minEl = document.getElementById('kasa-min-' + key);
+    const maxEl = document.getElementById('kasa-max-' + key);
+    if (minEl && maxEl) {
+      kasaMinMax[ebat] = { min: Number(minEl.value) || 0, max: Number(maxEl.value) || 0 };
+    }
+  }
+
+  const params = {
+    action:           'saveSettings',
+    otoVardiya:       document.getElementById('ay-otoVardiya')?.checked ? 'true' : 'false',
+    vardiyaTolerans:  document.getElementById('ay-tolerans')?.value   || '120',
+    maxFireLimit:     document.getElementById('ay-fireLimiti')?.value || '200',
+    yedeklemeSaat:    document.getElementById('ay-yedekleme')?.value  || '9',
+    arizaTipleri:     JSON.stringify(arizaTipleri),
+    kasaMinMax:       JSON.stringify(kasaMinMax),
+  };
+
+  _jsonpCall(params, () => {
+    showMonToast('✅ Ayarlar kaydedildi', 'ok');
+    // Cache'i temizle, yeniden yüklensin
+    _settingsData = null;
+    loadSettings();
+  });
 }
 
 /* ---------- Toast ---------- */
