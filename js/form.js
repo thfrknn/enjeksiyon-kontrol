@@ -117,6 +117,30 @@ function syncEnjDisabled() {
   });
 }
 
+/**
+ * Çevrim süresi otomatik ondalık formatı.
+ * Operatör "1395" yazarsa → "13.95", "185" → "18.5", virgülü noktaya çevirir.
+ * 1-2 basamaklı girişlere dokunmaz (tam saniye: 14, 13 vb.)
+ */
+function formatCevrim(el) {
+  var raw = String(el.value || '').replace(/,/g, '.').trim();
+  if (!raw) return;
+  if (!raw.includes('.')) {
+    var digits = raw.replace(/\D/g, '');
+    if (digits.length === 3) {
+      // "185" → "18.5"
+      raw = digits.slice(0, 2) + '.' + digits.slice(2);
+    } else if (digits.length >= 4) {
+      // "1395" → "13.95"
+      raw = digits.slice(0, -2) + '.' + digits.slice(-2);
+    }
+  }
+  var num = parseFloat(raw);
+  if (!isNaN(num) && num > 0) el.value = num;
+  var n = el.id === 'cevrim2' ? 2 : 1;
+  calcUretim(n);
+}
+
 function setBasReadonly(n) {
   var el = document.getElementById('sayac_bas' + n);
   el.setAttribute('readonly', '');
