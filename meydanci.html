@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- meydanci.html -->
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
@@ -12,12 +13,166 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <title>Ersan Plastik — Meydancı</title>
 
-  <link rel="stylesheet" href="css/variables.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/app.css">
-
   <style>
-    /* ── Meydancı kart accordion ──────────────────── */
+    /* ── Reset & Temel ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #f1f5f9;
+      --white:   #ffffff;
+      --border:  #e2e8f0;
+      --text:    #1e293b;
+      --text2:   #64748b;
+      --accent:  #2563eb;
+      --success: #16a34a;
+      --warn:    #dc2626;
+      --orange:  #ea580c;
+      --radius:  14px;
+      --shadow:  0 1px 4px rgba(0,0,0,.08);
+    }
+    body {
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overscroll-behavior: none;
+    }
+
+    /* ── Header ────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #14532d, #16a34a);
+      color: #fff;
+      padding: 12px 16px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .hdr-left { display: flex; flex-direction: column; gap: 2px; }
+    .hdr-title { font-size: 16px; font-weight: 800; line-height: 1.2; }
+    .hdr-sub   { font-size: 11px; opacity: .8; }
+    .hdr-btns  { display: flex; gap: 8px; align-items: center; }
+    .hdr-btn {
+      padding: 6px 10px;
+      border: 1.5px solid rgba(255,255,255,.5);
+      border-radius: 8px;
+      background: rgba(255,255,255,.15);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .hdr-btn:active { background: rgba(255,255,255,.3); }
+
+    /* ── Login Ekranı ──────────────────────────────── */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 60px);
+      padding: 24px 16px;
+    }
+    .login-card {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.12);
+    }
+    .login-icon  { font-size: 40px; text-align: center; margin-bottom: 8px; }
+    .login-title { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+    .login-sub   { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 20px; }
+    .field       { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
+    .field input, .field select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .field .err { font-size: 12px; color: var(--warn); font-weight: 700; margin-top: 4px; display: none; }
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--success);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn-primary:active { opacity: .8; }
+
+    /* ── Ana Panel ─────────────────────────────────── */
+    #main-panel { display: none; }
+
+    /* ── Tab Bar ───────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      background: var(--white);
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 13px 8px;
+      border: none;
+      background: none;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text2);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all .2s;
+    }
+    .tab-btn.active {
+      color: var(--success);
+      border-bottom-color: var(--success);
+    }
+
+    /* ── Tab İçerikleri ────────────────────────────── */
+    .tab-pane { display: none; padding: 12px 14px 80px; }
+    .tab-pane.active { display: block; }
+
+    /* ── Yenile & Üst bar ──────────────────────────── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px 4px;
+      gap: 8px;
+    }
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 12px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text2);
+      cursor: pointer;
+    }
+    .refresh-btn:active { background: var(--bg); }
+    .son-guncelleme { font-size: 11px; color: var(--text2); font-weight: 600; }
+
+    /* ── Makine Kartı (Atama Tab) ──────────────────── */
     .mcard {
       background: var(--white);
       border: 2px solid var(--border);
@@ -25,269 +180,1058 @@
       margin-bottom: 10px;
       box-shadow: var(--shadow);
       overflow: hidden;
-      transition: border-color .2s;
     }
-    .mcard.mcard-red {
-      border-color: #fca5a5;
-      background: #fff5f5;
-    }
-    /* Operatörsüz — turuncu */
-    .mcard.mcard-orange {
-      border-color: #fed7aa;
-      background: #fff7ed;
-    }
+    .mcard.st-arizali { border-color: #fca5a5; }
+    .mcard.st-kapali  { border-color: #fed7aa; }
+    .mcard.st-aktif-atanmis { border-color: #bbf7d0; }
 
-    /* Header */
     .mcard-hd {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 16px 18px;
+      gap: 10px;
+      padding: 13px 14px;
       cursor: pointer;
       user-select: none;
       -webkit-user-select: none;
-      min-height: 72px;
     }
     .mcard-hd:active { background: var(--bg); }
 
-    .mcard-hd-inner {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .mcard-top {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .mcard-no {
-      font-size: 17px;
-      font-weight: 800;
+    .mcard-num {
+      font-size: 18px;
+      font-weight: 900;
       color: var(--text);
-      white-space: nowrap;
-    }
-    .mcard-info-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-    }
-    .mcard-info-red {
-      font-size: 12px;
-      font-weight: 700;
-      color: #b91c1c;
-    }
-    .mchip {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text2);
-      background: var(--bg);
-      border: 1.5px solid var(--border);
-      border-radius: 20px;
-      padding: 2px 8px;
-      white-space: nowrap;
-    }
-    .mchip-orange {
-      color: #c2410c;
-      background: #fff7ed;
-      border-color: #fed7aa;
-    }
-    .mcard-arrow {
-      font-size: 13px;
-      color: var(--text2);
+      min-width: 46px;
       flex-shrink: 0;
     }
 
-    /* Badge */
+    .mcard-info { flex: 1; min-width: 0; }
+    .mcard-op   { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mcard-kasa { font-size: 11px; font-weight: 600; color: var(--text2); margin-top: 2px; }
+    .mcard-empty { font-size: 12px; font-weight: 600; color: var(--text2); font-style: italic; }
+
+    .mcard-badges { display: flex; gap: 5px; flex-shrink: 0; align-items: center; }
     .mbadge {
-      font-size: 11px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 20px;
+      font-size: 10px; font-weight: 800;
+      padding: 3px 7px; border-radius: 20px;
       white-space: nowrap;
     }
     .mbadge-green  { background: #dcfce7; color: #15803d; }
     .mbadge-red    { background: #fee2e2; color: #dc2626; }
     .mbadge-orange { background: #fff7ed; color: #c2410c; }
-    .mbadge-yellow { background: #fef9c3; color: #a16207; }
+    .mbadge-gray   { background: #f1f5f9; color: #64748b; }
 
-    /* Body */
+    .mcard-arrow { font-size: 11px; color: var(--text2); flex-shrink: 0; transition: transform .2s; }
+    .mcard.open .mcard-arrow { transform: rotate(180deg); }
+
+    /* ── Atama Formu ───────────────────────────────── */
     .mcard-bd {
       padding: 0 14px 14px;
       border-top: 1px solid var(--border);
     }
-
-    /* Textarea */
-    .mtextarea {
+    .form-row { margin-top: 10px; }
+    .form-row label {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-bottom: 5px;
+    }
+    .form-row select, .form-row input {
       width: 100%;
-      padding: 12px;
-      font-size: 15px;
-      font-family: 'Nunito', sans-serif;
+      padding: 10px 12px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--text);
-      background: white;
-      border: 2px solid var(--border);
-      border-radius: 12px;
+      background: var(--white);
       outline: none;
-      resize: vertical;
-      transition: border-color .2s;
     }
-    .mtextarea:focus { border-color: var(--accent); background: white; }
+    .form-row select:focus, .form-row input:focus { border-color: var(--accent); }
 
-    /* Radio group */
-    .rad-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 6px;
-    }
-    .rad-lbl {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-      cursor: pointer;
-      padding: 8px 10px;
+    .btn-row  { display: flex; gap: 8px; margin-top: 12px; }
+    .btn-save {
+      flex: 1;
+      padding: 11px;
+      background: var(--success);
+      color: #fff;
+      border: none;
       border-radius: 10px;
-      border: 1.5px solid var(--border);
-      background: white;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
     }
-    .rad-lbl input[type="radio"] {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--warn);
-      flex-shrink: 0;
-    }
-    .rad-lbl:has(input:checked) {
-      border-color: var(--warn);
-      background: #fff1f1;
-      color: var(--warn);
-    }
-
-    /* Yenile butonu */
-    .refresh-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 9px 14px;
+    .btn-save:active { opacity: .8; }
+    .btn-clear {
+      padding: 11px 14px;
+      background: var(--bg);
       border: 2px solid var(--border);
       border-radius: 10px;
-      background: white;
-      font-family: 'Nunito', sans-serif;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
       color: var(--text2);
       cursor: pointer;
     }
-    .refresh-btn:active { background: var(--bg); }
-
-    /* Hızlı aksiyon butonu */
-    .mq-hdr-btn {
-      flex-shrink: 0;
-      width: 40px;
-      height: 40px;
-      border: none;
-      border-radius: 50%;
-      font-size: 20px;
+    .btn-clear:active { background: var(--border); }
+    .btn-tasi {
+      padding: 11px 14px;
+      background: #fff7ed;
+      border: 2px solid #fed7aa;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #c2410c;
       cursor: pointer;
+    }
+    .btn-tasi:active { background: #fed7aa; }
+
+    /* ── Arıza Tab — Makine Listesi ─────────────────── */
+    .ariza-card {
+      background: var(--white);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .ariza-card.st-arizali { border-color: #fca5a5; background: #fff5f5; }
+    .ariza-card.st-kapali  { border-color: #fed7aa; background: #fff7ed; }
+
+    .ariza-hd {
       display: flex;
       align-items: center;
-      justify-content: center;
-      -webkit-tap-highlight-color: transparent;
-      transition: opacity .15s;
+      gap: 10px;
+      padding: 13px 14px;
+      cursor: pointer;
+      user-select: none;
     }
-    .mq-hdr-btn:active { opacity: .65; }
-    .mq-hdr-red   { background: #fee2e2; }
-    .mq-hdr-green { background: #dcfce7; }
+    .ariza-hd:active { background: rgba(0,0,0,.03); }
+    .ariza-num { font-size: 17px; font-weight: 900; min-width: 46px; }
+    .ariza-info { flex: 1; min-width: 0; }
+    .ariza-op   { font-size: 12px; font-weight: 700; color: var(--text2); }
+    .ariza-sorun-txt { font-size: 11px; font-weight: 700; color: var(--warn); margin-top: 2px; }
 
-    /* Section */
-    .mcard-section {
-      margin-top: 14px;
+    .ariza-bd {
+      border-top: 1px solid var(--border);
+      padding: 14px;
+    }
+
+    /* Action butonları */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .action-btn {
+      padding: 11px 8px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .action-btn:active { opacity: .7; }
+    .action-btn.red    { border-color: #fca5a5; background: #fff5f5; color: var(--warn); }
+    .action-btn.green  { border-color: #bbf7d0; background: #f0fdf4; color: var(--success); }
+    .action-btn.orange { border-color: #fed7aa; background: #fff7ed; color: var(--orange); }
+    .action-btn.blue   { border-color: #bfdbfe; background: #eff6ff; color: var(--accent); }
+
+    /* ── Arıza Formu (inline) ───────────────────────── */
+    .inline-form {
       background: var(--bg);
       border: 2px solid var(--border);
       border-radius: 12px;
       padding: 14px;
+      margin-top: 8px;
     }
-    .mcard-sec-title {
+    .inline-form-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-bottom: 10px;
+    }
+    .form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* ── Arıza Log Listesi ──────────────────────────── */
+    .log-section-title {
       font-size: 11px;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: .6px;
-      color: #b91c1c;
-      margin-bottom: 12px;
+      letter-spacing: .5px;
+      color: var(--text2);
+      margin: 16px 0 8px;
+    }
+    .log-item {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+    }
+    .log-item-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .log-makine  { font-size: 13px; font-weight: 800; color: var(--text); }
+    .log-tip     { font-size: 11px; font-weight: 800; color: var(--warn); text-transform: uppercase; }
+    .log-zaman   { font-size: 10px; color: var(--text2); margin-left: auto; }
+    .log-sorun   { font-size: 12px; color: var(--text); margin-bottom: 4px; }
+    .log-cozum   { font-size: 12px; font-weight: 700; color: var(--success); }
+    .log-durum-badge {
+      font-size: 10px; font-weight: 800;
+      padding: 2px 7px; border-radius: 20px;
+    }
+    .log-durum-acik   { background: #fee2e2; color: var(--warn); }
+    .log-durum-kapali { background: #dcfce7; color: var(--success); }
+
+    /* ── Transfer Modal ─────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 100;
+      display: flex;
+      align-items: flex-end;
+    }
+    .modal-sheet {
+      background: var(--white);
+      border-radius: 20px 20px 0 0;
+      padding: 8px 16px 44px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      animation: slideUp .22s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 10px auto 16px; }
+    .modal-title  { font-size: 16px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+    .modal-sub    { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 18px; }
+    .modal-btn-row { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+    .btn-modal-confirm {
+      width: 100%; padding: 14px;
+      border: none; border-radius: 12px;
+      font-size: 14px; font-weight: 800;
+      cursor: pointer;
+    }
+    .btn-modal-confirm.green  { background: var(--success); color: #fff; }
+    .btn-modal-confirm.orange { background: var(--orange);  color: #fff; }
+    .btn-modal-confirm.red    { background: var(--warn);    color: #fff; }
+    .btn-modal-cancel {
+      width: 100%; padding: 13px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg);
+      font-size: 14px; font-weight: 700;
+      color: var(--text2);
+      cursor: pointer;
     }
 
-    /* Bottom sheet */
-    .bsheet-overlay {
+    /* ── Toast & Loading ────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e293b;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 22px;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0;
+      transition: all .3s;
+      z-index: 999;
+      white-space: nowrap;
+      pointer-events: none;
+      max-width: calc(100vw - 32px);
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .loading {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
       z-index: 200;
+      flex-direction: column;
+      gap: 12px;
     }
-    .bsheet {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: white;
-      border-radius: 20px 20px 0 0;
-      padding: 8px 16px 44px;
-      z-index: 201;
-      max-height: 88vh;
-      overflow-y: auto;
-      box-shadow: 0 -4px 24px rgba(0,0,0,.18);
-      animation: bsSlideUp .22s ease;
+    .loading.show { display: flex; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
     }
-    @keyframes bsSlideUp {
-      from { transform: translateY(100%); }
-      to   { transform: translateY(0); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: #fff; font-size: 13px; font-weight: 700; }
+
+    /* ── Transfer seçim listesi ─────────────────────── */
+    .mlist {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-    .bsheet-handle {
-      width: 40px; height: 4px;
-      background: #ddd;
-      border-radius: 2px;
-      margin: 8px auto 18px;
+    .mlist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--white);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
     }
+    .mlist-item:active { background: var(--bg); }
+    .mlist-item.disabled { opacity: .4; cursor: not-allowed; }
+    .mlist-item-sub { font-size: 11px; color: var(--text2); font-weight: 600; margin-top: 2px; }
   </style>
 </head>
 <body>
 
+<!-- ── Header ───────────────────────────────────────── -->
 <header>
-  <h1>🏭 Ersan Plastik</h1>
-  <p id="user-header">Meydancı Paneli</p>
-  <div id="header-date"></div>
+  <div class="hdr-left">
+    <div class="hdr-title">🏭 Ersan Plastik</div>
+    <div class="hdr-sub" id="hdr-user">Meydancı Paneli</div>
+  </div>
+  <div class="hdr-btns">
+    <button class="hdr-btn" onclick="refreshData()">🔄 Yenile</button>
+    <button class="hdr-btn" onclick="doLogout()">Çıkış</button>
+  </div>
 </header>
 
-<!-- Üst bar -->
-<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 4px">
-  <a href="index.html"
-     style="font-size:13px;font-weight:700;color:var(--text2);text-decoration:none;display:flex;align-items:center;gap:4px">
-    ← Çıkış
-  </a>
-  <button class="refresh-btn" onclick="loadStatuses(false)">🔄 Yenile</button>
+<!-- ══════════════════════════════════════════════════
+     GİRİŞ EKRANI
+══════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-icon">🏭</div>
+    <div class="login-title">Meydancı Girişi</div>
+    <div class="login-sub">Personel ID ve şifrenizi girin</div>
+
+    <div class="field">
+      <label>Personel ID</label>
+      <input type="text" id="l-id" placeholder="ID numaranız" inputmode="numeric" maxlength="6" autocomplete="off">
+      <div class="err" id="l-err-id">Bu ID tanımlı değil</div>
+    </div>
+    <div class="field" id="l-sifre-field" style="display:none">
+      <label>Şifre</label>
+      <input type="password" id="l-sifre" placeholder="••••" inputmode="numeric">
+      <div class="err" id="l-err-sifre">Şifre hatalı veya yetkiniz yok</div>
+    </div>
+
+    <button class="btn-primary" onclick="doLogin()">Giriş Yap →</button>
+  </div>
 </div>
 
-<!-- Makine kartları -->
-<div id="machines-container" style="padding:8px 16px 40px"></div>
+<!-- ══════════════════════════════════════════════════
+     ANA PANEL
+══════════════════════════════════════════════════ -->
+<div id="main-panel">
 
-<!-- Loading & Toast -->
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-btn-atama"  onclick="setTab('atama')">📋 Atamalar</button>
+    <button class="tab-btn"        id="tab-btn-ariza"  onclick="setTab('ariza')">⚠️ Arıza &amp; Durum</button>
+  </div>
+
+  <!-- Üst bar -->
+  <div class="top-bar">
+    <span class="son-guncelleme" id="son-guncelleme">Yükleniyor...</span>
+    <button class="refresh-btn" onclick="refreshData()">🔄 Yenile</button>
+  </div>
+
+  <!-- ── TAB 1: ATAMALAR ───────────────────────────── -->
+  <div class="tab-pane active" id="tab-atama">
+    <div id="atama-cards"></div>
+  </div>
+
+  <!-- ── TAB 2: ARIZA & DURUM ─────────────────────── -->
+  <div class="tab-pane" id="tab-ariza">
+    <div id="ariza-cards"></div>
+    <div class="log-section-title">📋 Son Arıza Kayıtları</div>
+    <div id="ariza-log-list"></div>
+  </div>
+
+</div>
+
+<!-- ── Transfer Modal ────────────────────────────────── -->
+<div class="modal-overlay" id="transfer-modal" style="display:none" onclick="closeTransferModal(event)">
+  <div class="modal-sheet" id="transfer-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔄 Operatör Taşı</div>
+    <div class="modal-sub" id="transfer-sub">Operatörü hangi makineye taşıyacaksınız?</div>
+    <div class="mlist" id="transfer-machine-list"></div>
+    <div class="modal-btn-row">
+      <button class="btn-modal-cancel" onclick="closeTransferModal()">İptal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast & Loading ───────────────────────────────── -->
+<div class="toast" id="toast"></div>
 <div class="loading" id="loading">
   <div class="spinner"></div>
-  <span id="load-text">Yükleniyor...</span>
-</div>
-<div class="toast" id="toast"></div>
-
-<!-- Hızlı aksiyon bottom sheet -->
-<div class="bsheet-overlay" id="bsheet-overlay" onclick="closeQuickSheet()" style="display:none"></div>
-<div class="bsheet" id="bsheet" style="display:none">
-  <div class="bsheet-handle"></div>
-  <div id="bsheet-content"></div>
+  <div class="loading-text" id="loading-text">Yükleniyor...</div>
 </div>
 
 <script src="js/config.js"></script>
-<script src="js/meydanci.js"></script>
+<script>
+// ================================================================
+// MEYDANCI PANELİ — js/meydanci.js yerine burada inline
+// ================================================================
+
+// ── State ────────────────────────────────────────────
+var MS = {
+  user:        null,    // { id, ad, rol }
+  data:        null,    // getMachineStatuses response
+  lists:       null,    // getLists response (kasa listesi için)
+  activeTab:   'atama',
+  transferCtx: null,    // { makineNo, operatorId, operatorAd }
+  openCards:   {},      // { makineNo: true/false }
+  openAriza:   {},
+  arizaForms:  {},      // hangi makine arıza formu açık
+  refreshTimer: null,
+};
+
+// ── Yardımcı: JSONP çağrısı ──────────────────────────
+function apiCall(params, cb) {
+  var cbName = '_mcb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+  window[cbName] = function(data) {
+    delete window[cbName];
+    sc.parentNode.removeChild(sc);
+    cb(data);
+  };
+  var url = SCRIPT_URL + '?' + Object.keys(params).map(function(k) {
+    return encodeURIComponent(k) + '=' + encodeURIComponent(params[k] || '');
+  }).join('&') + '&callback=' + cbName;
+  var sc = document.createElement('script');
+  sc.src = url;
+  sc.onerror = function() {
+    delete window[cbName];
+    cb({ error: 'Bağlantı hatası' });
+    sc.parentNode.removeChild(sc);
+  };
+  document.head.appendChild(sc);
+}
+
+// ── Loading & Toast ───────────────────────────────────
+function showLoading(txt) {
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('loading-text').textContent = txt || 'Yükleniyor...';
+}
+function hideLoading() {
+  document.getElementById('loading').classList.remove('show');
+}
+function showToast(msg, dur) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, dur || 2500);
+}
+
+// ── Login ─────────────────────────────────────────────
+document.getElementById('l-id').addEventListener('input', function() {
+  var id = this.value.trim();
+  document.getElementById('l-err-id').style.display = 'none';
+  document.getElementById('l-sifre-field').style.display = id.length >= 2 ? 'block' : 'none';
+});
+
+document.getElementById('l-sifre').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogin() {
+  var id    = document.getElementById('l-id').value.trim();
+  var sifre = document.getElementById('l-sifre').value.trim();
+
+  document.getElementById('l-err-id').style.display    = 'none';
+  document.getElementById('l-err-sifre').style.display = 'none';
+
+  if (!id) { document.getElementById('l-err-id').style.display = 'block'; return; }
+
+  showLoading('Giriş yapılıyor...');
+  apiCall({ action: 'getLists' }, function(data) {
+    hideLoading();
+    if (data.error) { showToast('❌ ' + data.error); return; }
+
+    var kul = data.kullanicilar && data.kullanicilar[id];
+    if (!kul) {
+      document.getElementById('l-err-id').style.display = 'block';
+      return;
+    }
+    if (kul.sifre !== sifre) {
+      document.getElementById('l-err-sifre').style.display = 'block';
+      return;
+    }
+    // Rol kontrolü: sadece Meydancı ve Yönetici erişebilir
+    if (kul.rol !== 'Meydancı' && kul.rol !== 'Yönetici') {
+      document.getElementById('l-err-sifre').textContent = 'Bu panel için yetkiniz yok';
+      document.getElementById('l-err-sifre').style.display = 'block';
+      return;
+    }
+
+    MS.user  = { id: id, ad: kul.name, rol: kul.rol };
+    MS.lists = data;
+    localStorage.setItem('meydanci_session', JSON.stringify(MS.user));
+
+    document.getElementById('hdr-user').textContent = kul.name + ' (' + kul.rol + ')';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-panel').style.display   = 'block';
+
+    loadData();
+    startAutoRefresh();
+  });
+}
+
+function doLogout() {
+  localStorage.removeItem('meydanci_session');
+  stopAutoRefresh();
+  location.reload();
+}
+
+// ── Veri Yükle ───────────────────────────────────────
+function loadData() {
+  showLoading('Makineler yükleniyor...');
+  var listsLoaded = false, statusesLoaded = false;
+
+  function check() {
+    if (listsLoaded && statusesLoaded) {
+      hideLoading();
+      renderAll();
+      var now = new Date();
+      document.getElementById('son-guncelleme').textContent =
+        'Son güncelleme: ' + now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+    }
+  }
+
+  apiCall({ action: 'getLists' }, function(data) {
+    if (!data.error) MS.lists = data;
+    listsLoaded = true;
+    check();
+  });
+
+  apiCall({ action: 'getMachineStatuses' }, function(data) {
+    if (!data.error) MS.data = data;
+    statusesLoaded = true;
+    check();
+  });
+}
+
+function refreshData() {
+  loadData();
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  MS.refreshTimer = setInterval(function() { loadData(); }, 45000);
+}
+
+function stopAutoRefresh() {
+  if (MS.refreshTimer) { clearInterval(MS.refreshTimer); MS.refreshTimer = null; }
+}
+
+// ── Render ────────────────────────────────────────────
+function renderAll() {
+  renderAtamaCards();
+  renderArizaCards();
+  renderArizaLog();
+}
+
+// ── Tab ───────────────────────────────────────────────
+function setTab(tab) {
+  MS.activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+  document.getElementById('tab-btn-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ================================================================
+// TAB 1: ATAMA KARTLARI
+// ================================================================
+
+function renderAtamaCards() {
+  if (!MS.data) return;
+  var container = document.getElementById('atama-cards');
+  var html = '';
+
+  for (var i = 1; i <= 12; i++) {
+    var makineNo = 'Enjeksiyon ' + i;
+    var atama    = (MS.data.atananlar && MS.data.atananlar[makineNo]) || null;
+    var durum    = (MS.data.statuses && MS.data.statuses[makineNo] && MS.data.statuses[makineNo].durum) || 'Aktif';
+    var isOpen   = !!MS.openCards[makineNo];
+
+    var stClass  = durum === 'Arızalı' ? 'st-arizali'
+                 : durum === 'Kapalı'  ? 'st-kapali'
+                 : (atama && atama.operatorId) ? 'st-aktif-atanmis' : '';
+
+    var badgeHtml = '';
+    if (durum === 'Arızalı') badgeHtml = '<span class="mbadge mbadge-red">⚠️ Arızalı</span>';
+    else if (durum === 'Kapalı') badgeHtml = '<span class="mbadge mbadge-orange">🔒 Kapalı</span>';
+    else if (atama && atama.operatorId) badgeHtml = '<span class="mbadge mbadge-green">✓ Atandı</span>';
+    else badgeHtml = '<span class="mbadge mbadge-gray">Boş</span>';
+
+    var infoHtml = '';
+    if (atama && atama.operatorAd) {
+      infoHtml = '<div class="mcard-op">👤 ' + atama.operatorAd + '</div>';
+      if (atama.kasa) infoHtml += '<div class="mcard-kasa">📦 ' + atama.kasa + '</div>';
+    } else {
+      infoHtml = '<div class="mcard-empty">Operatör atanmadı</div>';
+    }
+
+    html += '<div class="mcard ' + stClass + (isOpen ? ' open' : '') + '" id="mc-' + i + '">';
+    html += '  <div class="mcard-hd" onclick="toggleCard(' + i + ')">';
+    html += '    <div class="mcard-num">Enj ' + i + '</div>';
+    html += '    <div class="mcard-info">' + infoHtml + '</div>';
+    html += '    <div class="mcard-badges">' + badgeHtml + '</div>';
+    html += '    <div class="mcard-arrow">▼</div>';
+    html += '  </div>';
+
+    if (isOpen) {
+      html += renderAtamaForm(i, makineNo, atama);
+    }
+
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function renderAtamaForm(i, makineNo, atama) {
+  var kasalar = (MS.lists && MS.lists.kasaEbatlari) || [];
+  var operatorler = (MS.data && MS.data.personelList) || [];
+
+  var kasaOpts = '<option value="">— Kasa seç —</option>';
+  kasalar.forEach(function(k) {
+    var sel = (atama && atama.kasa === k) ? ' selected' : '';
+    kasaOpts += '<option value="' + k + '"' + sel + '>' + k + '</option>';
+  });
+
+  var opOpts = '<option value="">— Operatör seç —</option>';
+  operatorler.forEach(function(op) {
+    var sel = (atama && atama.operatorId == op.id) ? ' selected' : '';
+    opOpts += '<option value="' + op.id + '"' + sel + '>' + op.ad + ' (#' + op.id + ')</option>';
+  });
+
+  var tasiBtn = (atama && atama.operatorId)
+    ? '<button class="btn-tasi" onclick="openTransferModal(\'' + makineNo + '\')">🔄 Taşı</button>'
+    : '';
+
+  return '<div class="mcard-bd">'
+    + '  <div class="form-row">'
+    + '    <label>Operatör</label>'
+    + '    <select id="op-sel-' + i + '">' + opOpts + '</select>'
+    + '  </div>'
+    + '  <div class="form-row">'
+    + '    <label>Kasa Ebatı</label>'
+    + '    <select id="kasa-sel-' + i + '">' + kasaOpts + '</select>'
+    + '  </div>'
+    + '  <div class="btn-row">'
+    + '    <button class="btn-save" onclick="saveAtama(' + i + ')">✓ Kaydet</button>'
+    + '    <button class="btn-clear" onclick="clearAtama(' + i + ')">Boşalt</button>'
+    + '    ' + tasiBtn
+    + '  </div>'
+    + '</div>';
+}
+
+function toggleCard(i) {
+  var makineNo = 'Enjeksiyon ' + i;
+  MS.openCards[makineNo] = !MS.openCards[makineNo];
+  renderAtamaCards();
+}
+
+// ── Atama Kaydet ──────────────────────────────────────
+function saveAtama(i) {
+  var makineNo  = 'Enjeksiyon ' + i;
+  var opSel     = document.getElementById('op-sel-' + i);
+  var kasaSel   = document.getElementById('kasa-sel-' + i);
+  var opVal     = opSel ? opSel.value : '';
+  var kasaVal   = kasaSel ? kasaSel.value : '';
+
+  var opAd = '';
+  if (opVal && MS.data && MS.data.personelList) {
+    var found = MS.data.personelList.filter(function(p) { return String(p.id) === String(opVal); });
+    if (found.length) opAd = found[0].ad;
+  }
+
+  showLoading('Atama kaydediliyor...');
+  apiCall({
+    action:      'saveAssignment',
+    makine_no:   makineNo,
+    operator_id: opVal,
+    operator_ad: opAd,
+    kasa:        kasaVal,
+    mod:         'Tek'
+  }, function(data) {
+    hideLoading();
+    if (data.error) { showToast('❌ ' + data.error); return; }
+    showToast('✅ ' + makineNo + ' atandı');
+    MS.openCards[makineNo] = false;
+    loadData();
+  });
+}
+
+// ── Atamayı Boşalt ────────────────────────────────────
+function clearAtama(i) {
+  var makineNo = 'Enjeksiyon ' + i;
+  showLoading('Temizleniyor...');
+  apiCall({
+    action:      'saveAssignment',
+    makine_no:   makineNo,
+    operator_id: '',
+    operator_ad: '',
+    kasa:        '',
+    mod:         'Tek'
+  }, function(data) {
+    hideLoading();
+    if (data.error) { showToast('❌ ' + data.error); return; }
+    showToast('🗑️ ' + makineNo + ' ataması temizlendi');
+    MS.openCards[makineNo] = false;
+    loadData();
+  });
+}
+
+// ================================================================
+// TAB 2: ARIZA & DURUM KARTLARI
+// ================================================================
+
+function renderArizaCards() {
+  if (!MS.data) return;
+  var container = document.getElementById('ariza-cards');
+  var html = '';
+
+  for (var i = 1; i <= 12; i++) {
+    var makineNo  = 'Enjeksiyon ' + i;
+    var durum     = (MS.data.statuses && MS.data.statuses[makineNo] && MS.data.statuses[makineNo].durum) || 'Aktif';
+    var sonAriza  = (MS.data.statuses && MS.data.statuses[makineNo] && MS.data.statuses[makineNo].sonAriza);
+    var atama     = (MS.data.atananlar && MS.data.atananlar[makineNo]) || null;
+    var isOpen    = !!MS.openAriza[makineNo];
+
+    var stClass = durum === 'Arızalı' ? 'st-arizali' : durum === 'Kapalı' ? 'st-kapali' : '';
+
+    var badgeHtml = '';
+    if (durum === 'Arızalı') badgeHtml = '<span class="mbadge mbadge-red">⚠️ Arızalı</span>';
+    else if (durum === 'Kapalı') badgeHtml = '<span class="mbadge mbadge-orange">🔒 Kapalı</span>';
+    else badgeHtml = '<span class="mbadge mbadge-green">✓ Aktif</span>';
+
+    var opTxt = (atama && atama.operatorAd) ? atama.operatorAd : 'Operatör yok';
+    var sorunTxt = (durum !== 'Aktif' && sonAriza) ? sonAriza.sorun || sonAriza.tip : '';
+
+    html += '<div class="ariza-card ' + stClass + '" id="ac-' + i + '">';
+    html += '  <div class="ariza-hd" onclick="toggleArizaCard(' + i + ')">';
+    html += '    <div class="ariza-num">Enj ' + i + '</div>';
+    html += '    <div class="ariza-info">';
+    html += '      <div class="ariza-op">👤 ' + opTxt + '</div>';
+    if (sorunTxt) html += '      <div class="ariza-sorun-txt">' + sorunTxt + '</div>';
+    html += '    </div>';
+    html += '    <div class="mcard-badges">' + badgeHtml + '</div>';
+    html += '    <div class="mcard-arrow">▼</div>';
+    html += '  </div>';
+
+    if (isOpen) {
+      html += renderArizaBody(i, makineNo, durum, atama);
+    }
+
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function renderArizaBody(i, makineNo, durum, atama) {
+  var arizaTipleri = (MS.data && MS.data.arizaTipleri) || ['Makine Kaynaklı', 'Kalıp Kaynaklı', 'Diğer'];
+
+  // Hızlı aksiyon butonları
+  var actionHtml = '<div class="action-grid">';
+  if (durum === 'Aktif') {
+    actionHtml += '<button class="action-btn red" onclick="openArizaForm(' + i + ', \'ariza\')">⚠️ Arıza Gir</button>';
+    actionHtml += '<button class="action-btn orange" onclick="quickToggle(\'' + makineNo + '\', \'Kapalı\')">🔒 Bakıma Kapat</button>';
+  } else if (durum === 'Kapalı') {
+    actionHtml += '<button class="action-btn green" onclick="quickToggle(\'' + makineNo + '\', \'Aktif\')">🔓 Makineyi Aç</button>';
+    actionHtml += '<button class="action-btn red" onclick="openArizaForm(' + i + ', \'ariza\')">⚠️ Arıza Gir</button>';
+  } else if (durum === 'Arızalı') {
+    actionHtml += '<button class="action-btn green" onclick="openArizaForm(' + i + ', \'cozum\')">✅ Çözüm Gir</button>';
+    actionHtml += '<button class="action-btn orange" onclick="quickToggle(\'' + makineNo + '\', \'Aktif\')">🔓 Aktife Al</button>';
+  }
+  if (atama && atama.operatorId) {
+    actionHtml += '<button class="action-btn blue" onclick="openTransferModal(\'' + makineNo + '\')">🔄 Operatör Taşı</button>';
+  }
+  actionHtml += '</div>';
+
+  // Arıza formu (gösteriliyorsa)
+  var formHtml = '';
+  if (MS.arizaForms[makineNo]) {
+    var tip = MS.arizaForms[makineNo]; // 'ariza' veya 'cozum'
+    var tipOpts = '';
+    arizaTipleri.forEach(function(t) { tipOpts += '<option>' + t + '</option>'; });
+
+    if (tip === 'ariza') {
+      formHtml = '<div class="inline-form">'
+        + '<div class="inline-form-title">⚠️ Arıza Kaydı</div>'
+        + '<div class="form-row"><label>Arıza Tipi</label><select id="ariza-tip-' + i + '">' + tipOpts + '</select></div>'
+        + '<div class="form-row"><label>Sorun Açıklaması</label><input type="text" id="ariza-sorun-' + i + '" placeholder="Kısa açıklama..."></div>'
+        + '<div class="btn-row">'
+        + '  <button class="btn-save" style="background:var(--warn)" onclick="submitAriza(' + i + ')">⚠️ Arızayı Kaydet</button>'
+        + '  <button class="btn-clear" onclick="closeArizaForm(' + i + ')">İptal</button>'
+        + '</div>'
+        + '</div>';
+    } else if (tip === 'cozum') {
+      formHtml = '<div class="inline-form">'
+        + '<div class="inline-form-title">✅ Çözüm Kaydı</div>'
+        + '<div class="form-row"><label>Çözüm Açıklaması</label><input type="text" id="ariza-cozum-' + i + '" placeholder="Yapılan işlem..."></div>'
+        + '<div class="btn-row">'
+        + '  <button class="btn-save" onclick="submitCozum(' + i + ')">✅ Çözümü Kaydet</button>'
+        + '  <button class="btn-clear" onclick="closeArizaForm(' + i + ')">İptal</button>'
+        + '</div>'
+        + '</div>';
+    }
+  }
+
+  return '<div class="ariza-bd">' + actionHtml + formHtml + '</div>';
+}
+
+function toggleArizaCard(i) {
+  var makineNo = 'Enjeksiyon ' + i;
+  MS.openAriza[makineNo] = !MS.openAriza[makineNo];
+  renderArizaCards();
+}
+
+function openArizaForm(i, tip) {
+  var makineNo = 'Enjeksiyon ' + i;
+  MS.arizaForms[makineNo] = tip;
+  MS.openAriza[makineNo] = true;
+  renderArizaCards();
+}
+
+function closeArizaForm(i) {
+  var makineNo = 'Enjeksiyon ' + i;
+  delete MS.arizaForms[makineNo];
+  renderArizaCards();
+}
+
+// ── Hızlı Makine Aç/Kapat ────────────────────────────
+function quickToggle(makineNo, yeniDurum) {
+  showLoading(yeniDurum === 'Kapalı' ? 'Makine kapatılıyor...' : 'Makine açılıyor...');
+  apiCall({
+    action:      'toggleMachine',
+    makine_no:   makineNo,
+    durum:       yeniDurum,
+    neden:       yeniDurum === 'Kapalı' ? 'Planlı Bakım' : 'Bakım Tamamlandı',
+    tekniker_id: MS.user.id,
+    tekniker_ad: MS.user.ad
+  }, function(data) {
+    hideLoading();
+    if (data.error) { showToast('❌ ' + data.error); return; }
+    showToast(yeniDurum === 'Kapalı' ? '🔒 Makine kapatıldı' : '🔓 Makine açıldı');
+    loadData();
+  });
+}
+
+// ── Arıza Kaydet ─────────────────────────────────────
+function submitAriza(i) {
+  var makineNo = 'Enjeksiyon ' + i;
+  var tipEl    = document.getElementById('ariza-tip-' + i);
+  var sorunEl  = document.getElementById('ariza-sorun-' + i);
+  var tip      = tipEl   ? tipEl.value   : 'Diğer';
+  var sorun    = sorunEl ? sorunEl.value : '';
+
+  if (!sorun.trim()) { showToast('⚠️ Sorun açıklaması yazın'); return; }
+
+  showLoading('Arıza kaydediliyor...');
+  apiCall({
+    action:      'logAriza',
+    makine_no:   makineNo,
+    ariza_tipi:  tip,
+    sorun:       sorun,
+    tekniker_id: MS.user.id,
+    tekniker_ad: MS.user.ad
+  }, function(data) {
+    hideLoading();
+    if (data.error) { showToast('❌ ' + data.error); return; }
+    showToast('⚠️ Arıza kaydedildi');
+    delete MS.arizaForms[makineNo];
+    loadData();
+  });
+}
+
+// ── Çözüm Kaydet ─────────────────────────────────────
+function submitCozum(i) {
+  var makineNo = 'Enjeksiyon ' + i;
+  var cozumEl  = document.getElementById('ariza-cozum-' + i);
+  var cozum    = cozumEl ? cozumEl.value : '';
+
+  showLoading('Çözüm kaydediliyor...');
+  var nowStr = new Date().toTimeString().slice(0,5);
+  apiCall({
+    action:      'logAriza',
+    makine_no:   makineNo,
+    ariza_tipi:  'Çözüldü',
+    sorun:       '',
+    cozum:       cozum,
+    bit_saat:    nowStr,
+    tekniker_id: MS.user.id,
+    tekniker_ad: MS.user.ad
+  }, function(data) {
+    hideLoading();
+    if (data.error) { showToast('❌ ' + data.error); return; }
+    showToast('✅ Çözüm kaydedildi, makine aktife alındı');
+    delete MS.arizaForms[makineNo];
+    loadData();
+  });
+}
+
+// ── Arıza Log Listesi ─────────────────────────────────
+function renderArizaLog() {
+  if (!MS.data || !MS.data.machineData) return;
+  var container = document.getElementById('ariza-log-list');
+
+  // Arıza log için getMachineStatuses'ta machineData değil, getMonitorData'daki arizaLog lazım
+  // Şimdilik makinelerin mevcut durumunu özetleyelim
+  var arizalilar = [];
+  for (var i = 1; i <= 12; i++) {
+    var makineNo = 'Enjeksiyon ' + i;
+    var s = MS.data.statuses && MS.data.statuses[makineNo];
+    if (s && s.durum !== 'Aktif') {
+      arizalilar.push({ makine: makineNo, durum: s.durum, sonAriza: s.sonAriza, sonGuncelleme: s.sonGuncelleme });
+    }
+  }
+
+  if (!arizalilar.length) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text2);font-size:13px;font-weight:600">✅ Aktif arıza kaydı yok</div>';
+    return;
+  }
+
+  var html = '';
+  arizalilar.forEach(function(item) {
+    var tipClass = item.durum === 'Arızalı' ? 'log-durum-acik' : 'log-durum-kapali';
+    html += '<div class="log-item">';
+    html += '  <div class="log-item-top">';
+    html += '    <span class="log-makine">' + item.makine + '</span>';
+    html += '    <span class="mbadge ' + (item.durum === 'Arızalı' ? 'mbadge-red' : 'mbadge-orange') + '">' + item.durum + '</span>';
+    if (item.sonGuncelleme) html += '    <span class="log-zaman">' + item.sonGuncelleme + '</span>';
+    html += '  </div>';
+    if (item.sonAriza) {
+      if (item.sonAriza.tip)   html += '  <div class="log-tip">'   + item.sonAriza.tip   + '</div>';
+      if (item.sonAriza.sorun) html += '  <div class="log-sorun">' + item.sonAriza.sorun + '</div>';
+    }
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// ================================================================
+// TRANSFER (OPERATÖR TAŞIMA)
+// ================================================================
+
+function openTransferModal(makineNo) {
+  var atama = MS.data && MS.data.atananlar && MS.data.atananlar[makineNo];
+  if (!atama || !atama.operatorId) { showToast('Bu makinede atanmış operatör yok'); return; }
+
+  MS.transferCtx = { makineNo: makineNo, operatorId: atama.operatorId, operatorAd: atama.operatorAd };
+
+  document.getElementById('transfer-sub').textContent =
+    atama.operatorAd + ' hangi makineye taşınacak?';
+
+  // Hedef makine listesi
+  var html = '';
+  for (var i = 1; i <= 12; i++) {
+    var hedef    = 'Enjeksiyon ' + i;
+    var hedefAtama = MS.data.atananlar && MS.data.atananlar[hedef];
+    var hedefDurum = (MS.data.statuses && MS.data.statuses[hedef] && MS.data.statuses[hedef].durum) || 'Aktif';
+    var disabled   = (hedef === makineNo) || (hedefDurum !== 'Aktif');
+    var subTxt     = hedefDurum !== 'Aktif' ? hedefDurum
+                   : (hedefAtama && hedefAtama.operatorAd ? '👤 ' + hedefAtama.operatorAd : 'Boş');
+
+    html += '<div class="mlist-item ' + (disabled ? 'disabled' : '') + '" '
+         + (disabled ? '' : 'onclick="doTransfer(\'' + hedef + '\')"') + '>';
+    html += '  <div style="flex:1">';
+    html += '    <div>' + hedef + '</div>';
+    html += '    <div class="mlist-item-sub">' + subTxt + '</div>';
+    html += '  </div>';
+    if (!disabled) html += '  <span style="color:var(--accent);font-weight:800">→</span>';
+    html += '</div>';
+  }
+
+  document.getElementById('transfer-machine-list').innerHTML = html;
+  document.getElementById('transfer-modal').style.display = 'flex';
+}
+
+function closeTransferModal(e) {
+  if (e && e.target !== document.getElementById('transfer-modal')) return;
+  document.getElementById('transfer-modal').style.display = 'none';
+}
+
+function doTransfer(hedefMakine) {
+  var ctx = MS.transferCtx;
+  if (!ctx) return;
+
+  document.getElementById('transfer-modal').style.display = 'none';
+  showLoading(ctx.operatorAd + ' taşınıyor...');
+
+  apiCall({
+    action:      'transferMakine',
+    eski_makine: ctx.makineNo,
+    yeni_makine: hedefMakine,
+    operator_id: ctx.operatorId,
+    operator_ad: ctx.operatorAd,
+    meydanci_id: MS.user.id,
+    meydanci_ad: MS.user.ad,
+    neden:       'Meydancı Transferi'
+  }, function(data) {
+    hideLoading();
+    if (data.error) { showToast('❌ ' + data.error); return; }
+    showToast('✅ ' + ctx.operatorAd + ' → ' + hedefMakine + ' taşındı');
+    MS.transferCtx = null;
+    loadData();
+  });
+}
+
+// ================================================================
+// BAŞLANGIÇ
+// ================================================================
+
+window.addEventListener('load', function() {
+  // Oturum kontrolü
+  var saved = localStorage.getItem('meydanci_session');
+  if (saved) {
+    try {
+      var u = JSON.parse(saved);
+      if (u && u.id && u.ad && u.rol) {
+        MS.user = u;
+        document.getElementById('hdr-user').textContent = u.ad + ' (' + u.rol + ')';
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-panel').style.display   = 'block';
+        loadData();
+        startAutoRefresh();
+        return;
+      }
+    } catch(e) {}
+  }
+  // Login ekranı zaten görünür
+});
+</script>
 
 </body>
 </html>
