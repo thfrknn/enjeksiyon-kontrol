@@ -306,22 +306,13 @@ function goNext(from) {
     if (hatirla && si) localStorage.setItem('sifre_' + id, si);
     else               localStorage.removeItem('sifre_' + id);
 
-    // Rol bazlı yönlendirme
-    var kullanici = kullanicilar[id];
-    var rolRaw = (kullanici && kullanici.rol) || '';
-    // API'den gelen Türkçe rol adlarını normalize et
-    var rol = rolRaw === 'Meydancı' ? 'meydanci'
-            : rolRaw === 'Yönetici' ? 'yonetici'
-            : rolRaw === 'Operatör' ? 'operatör'
-            : (id.charAt(0) === '1' ? 'meydanci'
-              : id.charAt(0) === '3' ? 'yonetici'
-              : 'operatör');
-    if (rol === 'meydanci') {
+    // ID prefix her zaman önceliklidir: 1xx → meydancı, 3xx → yönetici
+    if (id.charAt(0) === '1') {
       localStorage.setItem('meydanci_session', JSON.stringify({ id: id, ad: _adSoyad, rol: 'Meydancı' }));
       window.location.href = 'meydanci.html';
       return;
     }
-    if (rol === 'yonetici') {
+    if (id.charAt(0) === '3') {
       localStorage.setItem('yonetici_session', JSON.stringify({ id: id, ad: _adSoyad }));
       window.location.href = 'monitor.html';
       return;
@@ -385,7 +376,10 @@ function validate1() {
     }
   }
 
-  if (!vardiya) { document.getElementById('err-vardiya').classList.add('show'); ok = false; }
+  // Meydancı (1xx) ve yönetici (3xx) vardiya seçmek zorunda değil
+  var idForVardiya = idEl.value ? idEl.value.trim() : '';
+  var isMeydanciOrYonetici = (idForVardiya.charAt(0) === '1' || idForVardiya.charAt(0) === '3');
+  if (!vardiya && !isMeydanciOrYonetici) { document.getElementById('err-vardiya').classList.add('show'); ok = false; }
 
   if (!ok) {
     var first = document.querySelector('#page-1 .error, #page-1 .err-msg.show');
