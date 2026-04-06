@@ -480,7 +480,7 @@ function getMonitorData(cb) {
   const verilerSheet = ss.getSheetByName('Veriler');
   if (verilerSheet && verilerSheet.getLastRow() > 1) {
     const lastRow  = verilerSheet.getLastRow();
-    const startRow = Math.max(2, lastRow - 199);
+    const startRow = Math.max(2, lastRow - 499);
     const tz = ss.getSpreadsheetTimeZone();
     const vv = verilerSheet.getRange(startRow, 1, lastRow - startRow + 1, 24).getValues();
     for (let i = vv.length - 1; i >= 0; i--) {
