@@ -1,5 +1,15 @@
 /* ── Yönetici İzleme Paneli ─────────────────────────── */
 
+// PWA kalıcı oturum: sessionStorage yoksa localStorage'dan geri yükle
+(function() {
+  if (!sessionStorage.getItem('ep_id')) {
+    try {
+      var s = localStorage.getItem('yonetici_session');
+      if (s) { var u = JSON.parse(s); if (u && u.id) { sessionStorage.setItem('ep_id', u.id); sessionStorage.setItem('ep_name', u.ad || ''); } }
+    } catch(e) {}
+  }
+})();
+
 const _mUserId   = sessionStorage.getItem('ep_id')   || '';
 const _mUserName = sessionStorage.getItem('ep_name') || '';
 

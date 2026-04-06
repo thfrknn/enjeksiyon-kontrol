@@ -271,7 +271,8 @@
 
 <!-- Üst bar: çıkış + yenile -->
 <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 4px">
-  <a href="index.html"
+  <a href="javascript:void(0)"
+     onclick="localStorage.removeItem('yonetici_session');window.location.href='index.html';"
      style="font-size:13px;font-weight:700;color:var(--text2);text-decoration:none">← Çıkış</a>
   <button onclick="loadData(false)"
           style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:2px solid var(--border);border-radius:10px;background:white;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer">

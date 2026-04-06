@@ -65,55 +65,6 @@
     }
     .hdr-btn:active { background: rgba(255,255,255,.3); }
 
-    /* ── Login Ekranı ──────────────────────────────── */
-    #login-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: calc(100vh - 60px);
-      padding: 24px 16px;
-    }
-    .login-card {
-      background: var(--white);
-      border-radius: 20px;
-      padding: 28px 24px;
-      width: 100%;
-      max-width: 380px;
-      box-shadow: 0 4px 20px rgba(0,0,0,.12);
-    }
-    .login-icon  { font-size: 40px; text-align: center; margin-bottom: 8px; }
-    .login-title { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 4px; }
-    .login-sub   { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 20px; }
-    .field       { margin-bottom: 14px; }
-    .field label { display: block; font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
-    .field input, .field select {
-      width: 100%;
-      padding: 12px 14px;
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text);
-      background: var(--white);
-      outline: none;
-      transition: border-color .2s;
-    }
-    .field input:focus, .field select:focus { border-color: var(--accent); }
-    .field .err { font-size: 12px; color: var(--warn); font-weight: 700; margin-top: 4px; display: none; }
-    .btn-primary {
-      width: 100%;
-      padding: 14px;
-      background: var(--success);
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 800;
-      cursor: pointer;
-      transition: opacity .15s;
-    }
-    .btn-primary:active { opacity: .8; }
-
     /* ── Ana Panel ─────────────────────────────────── */
     #main-panel { display: none; }
 
@@ -521,30 +472,6 @@
 </header>
 
 <!-- ══════════════════════════════════════════════════
-     GİRİŞ EKRANI
-══════════════════════════════════════════════════ -->
-<div id="login-screen">
-  <div class="login-card">
-    <div class="login-icon">🏭</div>
-    <div class="login-title">Meydancı Girişi</div>
-    <div class="login-sub">Personel ID ve şifrenizi girin</div>
-
-    <div class="field">
-      <label>Personel ID</label>
-      <input type="text" id="l-id" placeholder="ID numaranız" inputmode="numeric" maxlength="6" autocomplete="off">
-      <div class="err" id="l-err-id">Bu ID tanımlı değil</div>
-    </div>
-    <div class="field" id="l-sifre-field" style="display:none">
-      <label>Şifre</label>
-      <input type="password" id="l-sifre" placeholder="••••" inputmode="numeric">
-      <div class="err" id="l-err-sifre">Şifre hatalı veya yetkiniz yok</div>
-    </div>
-
-    <button class="btn-primary" onclick="doLogin()">Giriş Yap →</button>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════════
      ANA PANEL
 ══════════════════════════════════════════════════ -->
 <div id="main-panel">
@@ -650,64 +577,10 @@ function showToast(msg, dur) {
   setTimeout(function() { t.classList.remove('show'); }, dur || 2500);
 }
 
-// ── Login ─────────────────────────────────────────────
-document.getElementById('l-id').addEventListener('input', function() {
-  var id = this.value.trim();
-  document.getElementById('l-err-id').style.display = 'none';
-  document.getElementById('l-sifre-field').style.display = id.length >= 2 ? 'block' : 'none';
-});
-
-document.getElementById('l-sifre').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') doLogin();
-});
-
-function doLogin() {
-  var id    = document.getElementById('l-id').value.trim();
-  var sifre = document.getElementById('l-sifre').value.trim();
-
-  document.getElementById('l-err-id').style.display    = 'none';
-  document.getElementById('l-err-sifre').style.display = 'none';
-
-  if (!id) { document.getElementById('l-err-id').style.display = 'block'; return; }
-
-  showLoading('Giriş yapılıyor...');
-  apiCall({ action: 'getLists' }, function(data) {
-    hideLoading();
-    if (data.error) { showToast('❌ ' + data.error); return; }
-
-    var kul = data.kullanicilar && data.kullanicilar[id];
-    if (!kul) {
-      document.getElementById('l-err-id').style.display = 'block';
-      return;
-    }
-    if (kul.sifre !== sifre) {
-      document.getElementById('l-err-sifre').style.display = 'block';
-      return;
-    }
-    // Rol kontrolü: sadece Meydancı ve Yönetici erişebilir
-    if (kul.rol !== 'Meydancı' && kul.rol !== 'Yönetici') {
-      document.getElementById('l-err-sifre').textContent = 'Bu panel için yetkiniz yok';
-      document.getElementById('l-err-sifre').style.display = 'block';
-      return;
-    }
-
-    MS.user  = { id: id, ad: kul.name, rol: kul.rol };
-    MS.lists = data;
-    localStorage.setItem('meydanci_session', JSON.stringify(MS.user));
-
-    document.getElementById('hdr-user').textContent = kul.name + ' (' + kul.rol + ')';
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('main-panel').style.display   = 'block';
-
-    loadData();
-    startAutoRefresh();
-  });
-}
-
 function doLogout() {
   localStorage.removeItem('meydanci_session');
   stopAutoRefresh();
-  location.reload();
+  window.location.href = 'index.html';
 }
 
 // ── Veri Yükle ───────────────────────────────────────
@@ -1218,18 +1091,18 @@ window.addEventListener('load', function() {
   if (saved) {
     try {
       var u = JSON.parse(saved);
-      if (u && u.id && u.ad && u.rol) {
+      if (u && u.id && u.ad) {
         MS.user = u;
-        document.getElementById('hdr-user').textContent = u.ad + ' (' + u.rol + ')';
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('main-panel').style.display   = 'block';
+        document.getElementById('hdr-user').textContent = u.ad + (u.rol ? ' (' + u.rol + ')' : '');
+        document.getElementById('main-panel').style.display = 'block';
         loadData();
         startAutoRefresh();
         return;
       }
     } catch(e) {}
   }
-  // Login ekranı zaten görünür
+  // Geçerli oturum yok — giriş sayfasına yönlendir
+  window.location.href = 'index.html';
 });
 </script>
 
