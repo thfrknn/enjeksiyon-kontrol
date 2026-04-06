@@ -31,8 +31,13 @@
       border-color: #fca5a5;
       background: #fff5f5;
     }
+    /* Operatörsüz — turuncu */
+    .mcard.mcard-orange {
+      border-color: #fed7aa;
+      background: #fff7ed;
+    }
 
-    /* Header (collapse/expand bar) */
+    /* Header */
     .mcard-hd {
       display: flex;
       align-items: center;
@@ -63,7 +68,6 @@
       color: var(--text);
       white-space: nowrap;
     }
-    /* Kapalı bar — metrik chip satırı */
     .mcard-info-row {
       display: flex;
       flex-wrap: wrap;
@@ -85,6 +89,11 @@
       padding: 2px 8px;
       white-space: nowrap;
     }
+    .mchip-orange {
+      color: #c2410c;
+      background: #fff7ed;
+      border-color: #fed7aa;
+    }
     .mcard-arrow {
       font-size: 13px;
       color: var(--text2);
@@ -99,49 +108,15 @@
       border-radius: 20px;
       white-space: nowrap;
     }
-    .mbadge-green { background: #dcfce7; color: #15803d; }
+    .mbadge-green  { background: #dcfce7; color: #15803d; }
     .mbadge-red    { background: #fee2e2; color: #dc2626; }
     .mbadge-orange { background: #fff7ed; color: #c2410c; }
+    .mbadge-yellow { background: #fef9c3; color: #a16207; }
 
     /* Body */
     .mcard-bd {
       padding: 0 14px 14px;
       border-top: 1px solid var(--border);
-    }
-
-    /* Toggle button */
-    .m-toggle-btn {
-      width: 100%;
-      padding: 15px;
-      margin: 14px 0 0;
-      border: none;
-      border-radius: 14px;
-      font-family: 'Nunito', sans-serif;
-      font-size: 15px;
-      font-weight: 800;
-      cursor: pointer;
-      transition: opacity .15s;
-    }
-    .m-toggle-btn:active { opacity: .85; }
-    .mtbtn-red   { background: #dc2626; color: white; }
-    .mtbtn-green { background: #16a34a; color: white; }
-
-    /* Section inside body */
-    .mcard-section {
-      margin-top: 14px;
-      background: var(--bg);
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
-    }
-    .mcard-section-dim { opacity: .55; }
-    .mcard-sec-title {
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .6px;
-      color: #b91c1c;
-      margin-bottom: 12px;
     }
 
     /* Textarea */
@@ -210,7 +185,7 @@
     }
     .refresh-btn:active { background: var(--bg); }
 
-    /* ── Header hızlı aksiyon butonu ─────────────────── */
+    /* Hızlı aksiyon butonu */
     .mq-hdr-btn {
       flex-shrink: 0;
       width: 40px;
@@ -229,7 +204,24 @@
     .mq-hdr-red   { background: #fee2e2; }
     .mq-hdr-green { background: #dcfce7; }
 
-    /* ── Bottom sheet ─────────────────────────────────── */
+    /* Section */
+    .mcard-section {
+      margin-top: 14px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .mcard-sec-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: #b91c1c;
+      margin-bottom: 12px;
+    }
+
+    /* Bottom sheet */
     .bsheet-overlay {
       position: fixed;
       inset: 0;
@@ -268,13 +260,13 @@
   <div id="header-date"></div>
 </header>
 
-<!-- Üst bar: çıkış + yenile -->
+<!-- Üst bar -->
 <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 4px">
   <a href="index.html"
      style="font-size:13px;font-weight:700;color:var(--text2);text-decoration:none;display:flex;align-items:center;gap:4px">
     ← Çıkış
   </a>
-  <button class="refresh-btn" onclick="loadStatuses()">🔄 Yenile</button>
+  <button class="refresh-btn" onclick="loadStatuses(false)">🔄 Yenile</button>
 </div>
 
 <!-- Makine kartları -->
