@@ -96,8 +96,14 @@ function getLists(cb, e) {
       const id    = String(pd[i][0] || '').trim();
       const ad    = String(pv[i][1] || '').trim();
       const sifre = String(pd[i][2] || '').trim();
-      const rol   = String(pv[i][3] || 'Operatör').trim();    // YENİ: rol eklendi
       const durum = String(pv[i][4] || '').trim();
+      // Rol: sütundan oku; boş veya belirsizse ID prefix'e göre belirle
+      let rol = String(pv[i][3] || '').trim();
+      if (!rol || rol === 'Operatör') {
+        if      (id.charAt(0) === '1') rol = 'Meydancı';
+        else if (id.charAt(0) === '3') rol = 'Yönetici';
+        else                            rol = 'Operatör';
+      }
       if (id && ad && durum !== 'Pasif') kullanicilar[id] = { name: ad, sifre, rol };
     }
   } else {
