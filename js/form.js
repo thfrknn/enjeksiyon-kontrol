@@ -299,7 +299,7 @@ function goStep(n) {
 function goNext(from) {
   if (from === 1 && !validate1()) return;
   if (from === 1) {
-    var id      = document.getElementById('kullanici_id').value;
+    var id      = document.getElementById('kullanici_id').value.trim();
     var si      = document.getElementById('sifre').value;
     var hatirla = document.getElementById('hatirla').checked;
     _adSoyad    = (kullanicilar[id] && kullanicilar[id].name) || id;
