@@ -846,9 +846,10 @@ function renderPersonel() {
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <select id="rol-${p.id}" onchange="updateRol('${p.id}')"
               style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;background:white;cursor:pointer">
-              <option value="Operatör"  ${p.rol==='Operatör'  ? 'selected':''}>Operatör</option>
-              <option value="Meydancı"  ${p.rol==='Meydancı'  ? 'selected':''}>Meydancı</option>
-              <option value="Yönetici"  ${p.rol==='Yönetici'  ? 'selected':''}>Yönetici</option>
+              <option value="Operatör"    ${p.rol==='Operatör'    ? 'selected':''}>Operatör</option>
+              <option value="Meydancı"    ${p.rol==='Meydancı'    ? 'selected':''}>Meydancı</option>
+              <option value="Yönetici"    ${p.rol==='Yönetici'    ? 'selected':''}>Yönetici</option>
+              <option value="Denetleyici" ${p.rol==='Denetleyici' ? 'selected':''}>Denetleyici</option>
             </select>
             ${p.durum === 'Aktif'
               ? `<button onclick="updateDurum('${p.id}','Pasif')"

@@ -61,6 +61,12 @@
       <input type="text" id="kullanici_id" placeholder="ID numaranızı girin"
              inputmode="numeric" maxlength="3" autocomplete="off" oninput="onIdChange()">
       <div class="err-msg" id="err-ad">Bu ID sistemde tanımlı değil</div>
+      <div style="margin-top:8px;text-align:right">
+        <button type="button" id="listeden-sec-btn" onclick="openPersonelPicker()"
+          style="background:none;border:none;color:var(--accent);font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;padding:4px 0;display:none">
+          👥 Listeden seçin
+        </button>
+      </div>
     </div>
 
     <div class="field" id="sifre-field" style="display:none">
@@ -404,6 +410,17 @@
 <!-- ══════════════════════════════════════════════════
      MODALLER
 ══════════════════════════════════════════════════ -->
+
+<!-- Personel Seçici -->
+<div class="modal-overlay" id="personel-picker-modal" style="display:none" onclick="if(event.target===this)closePersonelPicker()">
+  <div class="modal-box" style="max-width:380px;max-height:80vh;display:flex;flex-direction:column;padding:20px">
+    <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:14px;text-align:center">👥 Personel Seçin</div>
+    <input type="text" id="personel-ara" placeholder="İsim ara..." oninput="filterPersonelPicker(this.value)"
+      style="margin-bottom:12px;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-family:'Nunito',sans-serif;font-weight:600;width:100%;box-sizing:border-box">
+    <div id="personel-liste" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px"></div>
+    <button onclick="closePersonelPicker()" style="margin-top:14px;padding:12px;border:2px solid var(--border);border-radius:10px;background:white;font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;cursor:pointer;color:var(--text2)">İptal</button>
+  </div>
+</div>
 
 <!-- Fire onayı -->
 <div class="modal-overlay" id="fire-modal" style="display:none">

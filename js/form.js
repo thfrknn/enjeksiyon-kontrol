@@ -1,5 +1,69 @@
 /* ── Form Yardımcıları, Doğrulama & Özet ───────────── */
 
+/* ── Personel Listesi Seçici ──────────────────────── */
+
+function openPersonelPicker() {
+  var modal = document.getElementById('personel-picker-modal');
+  var liste = document.getElementById('personel-liste');
+  var ara   = document.getElementById('personel-ara');
+  if (!modal || !liste) return;
+
+  // Sadece operatörleri listele (1xx=meydancı, 3xx=yönetici, 4xx=denetleyici hariç)
+  var ops = Object.keys(kullanicilar)
+    .filter(function(id) { return id.charAt(0) === '2'; })
+    .sort(function(a, b) { return kullanicilar[a].name.localeCompare(kullanicilar[b].name, 'tr'); });
+
+  // Tüm kullanıcıları göster (bulamazlarsa başka rol de seçebilsin)
+  if (!ops.length) ops = Object.keys(kullanicilar).sort(function(a, b) {
+    return kullanicilar[a].name.localeCompare(kullanicilar[b].name, 'tr');
+  });
+
+  window._pickerOps = ops;
+  ara.value = '';
+  renderPickerList(ops);
+  modal.style.display = 'flex';
+  setTimeout(function() { ara.focus(); }, 100);
+}
+
+function renderPickerList(ops) {
+  var liste = document.getElementById('personel-liste');
+  liste.innerHTML = '';
+  ops.forEach(function(id) {
+    var kul = kullanicilar[id];
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = 'padding:12px 14px;border:2px solid var(--border);border-radius:10px;background:white;font-family:\'Nunito\',sans-serif;font-size:15px;font-weight:700;cursor:pointer;text-align:left;width:100%;color:var(--text);display:flex;justify-content:space-between;align-items:center';
+    btn.innerHTML = '<span>' + kul.name + '</span><span style="font-size:12px;color:var(--text2);font-weight:600">' + id + '</span>';
+    btn.onclick = function() { selectPersonelFromList(id); };
+    liste.appendChild(btn);
+  });
+  if (!ops.length) {
+    liste.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;font-size:14px">Sonuç bulunamadı</div>';
+  }
+}
+
+function filterPersonelPicker(q) {
+  if (!window._pickerOps) return;
+  var lower = q.toLowerCase().replace(/\s+/g, '');
+  var filtered = window._pickerOps.filter(function(id) {
+    var name = kullanicilar[id].name.toLowerCase().replace(/\s+/g, '');
+    return name.includes(lower) || id.includes(q);
+  });
+  renderPickerList(filtered);
+}
+
+function selectPersonelFromList(id) {
+  closePersonelPicker();
+  var idEl = document.getElementById('kullanici_id');
+  idEl.value = id;
+  onIdChange();
+}
+
+function closePersonelPicker() {
+  var modal = document.getElementById('personel-picker-modal');
+  if (modal) modal.style.display = 'none';
+}
+
 function fillSelect(selId, skelId, items) {
   var sel = document.getElementById(selId);
   items.forEach(function(v) {
@@ -328,6 +392,12 @@ function goNext(from) {
     if (id.charAt(0) === '3') {
       localStorage.setItem('yonetici_session', JSON.stringify({ id: id, ad: _adSoyad }));
       window.location.href = 'monitor.html';
+      return;
+    }
+    if (id.charAt(0) === '4') {
+      var _denSifre = (document.getElementById('sifre') || {}).value || '';
+      localStorage.setItem('denetleyici_session', JSON.stringify({ id: id, ad: _adSoyad, rol: 'Denetleyici', sifre: _denSifre }));
+      window.location.href = 'denetleyici.html';
       return;
     }
   }
