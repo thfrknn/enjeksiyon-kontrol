@@ -429,7 +429,7 @@ function renderUretim() {
 
   // ── Sonuç yoksa ──────────────────────────────────
   if (!sorted.length) {
-    document.getElementById('main-content').innerHTML = filtrebar +
+    document.getElementById('main-content').innerHTML =
       '<div style="text-align:center;padding:48px 16px;color:var(--text2);font-weight:700">Filtreye uyan üretim kaydı bulunamadı</div>';
     return;
   }
@@ -551,7 +551,7 @@ function renderUretim() {
   }
 
   bodyHtml += '</div>';
-  document.getElementById('main-content').innerHTML = filtrebar + bodyHtml;
+  document.getElementById('main-content').innerHTML = bodyHtml;
 }
 
 /* ---------- Tab geçişi ---------- */
@@ -563,6 +563,13 @@ function setTab(tab) {
   });
   // Vardiya filtresi sadece canlı sekmede
   document.getElementById('vardiya-filter').style.display = tab === 'canli' ? 'flex' : 'none';
+
+  // Üretim filtre barı sadece üretim sekmesinde
+  var ufBar = document.getElementById('uretim-filter-bar');
+  if (ufBar) {
+    ufBar.style.display = tab === 'uretim' ? 'block' : 'none';
+    if (tab === 'uretim') renderUretimFiltrebar();
+  }
 
   // Personel & Ayarlar sekmeleri lazy-load
   if (tab === 'personel' && !_personelData) { loadPersonel(); return; }

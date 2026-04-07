@@ -583,6 +583,17 @@ function doLogout() {
   window.location.href = 'index.html';
 }
 
+// ── Mevcut Vardiyayı Hesapla ──────────────────────────
+function getCurrentVardiya() {
+  // Sunucudan gelen vardiya bilgisini kullan (en güncel)
+  if (MS.data && MS.data.vardiya) return MS.data.vardiya;
+  // Yoksa saatten hesapla
+  var h = new Date().getHours();
+  if (h >= 9 && h < 17) return 'SABAH';
+  if (h >= 17 || h === 0) return 'AKSAM';
+  return 'GECE';
+}
+
 // ── Veri Yükle ───────────────────────────────────────
 function loadData() {
   showLoading('Makineler yükleniyor...');
@@ -593,7 +604,9 @@ function loadData() {
       hideLoading();
       renderAll();
       var now = new Date();
+      var vardiyaLabel = { SABAH: '☀️ Sabah', AKSAM: '🌆 Akşam', GECE: '🌙 Gece' };
       document.getElementById('son-guncelleme').textContent =
+        (vardiyaLabel[getCurrentVardiya()] || '') + ' vardiyası • ' +
         'Son güncelleme: ' + now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
     }
   }
@@ -604,7 +617,7 @@ function loadData() {
     check();
   });
 
-  apiCall({ action: 'getMachineStatuses' }, function(data) {
+  apiCall({ action: 'getMachineStatuses', vardiya: getCurrentVardiya() }, function(data) {
     if (!data.error) MS.data = data;
     statusesLoaded = true;
     check();
@@ -755,7 +768,8 @@ function saveAtama(i) {
     operator_id: opVal,
     operator_ad: opAd,
     kasa:        kasaVal,
-    mod:         'Tek'
+    mod:         'Tek',
+    vardiya:     getCurrentVardiya()
   }, function(data) {
     hideLoading();
     if (data.error) { showToast('❌ ' + data.error); return; }
@@ -775,7 +789,8 @@ function clearAtama(i) {
     operator_id: '',
     operator_ad: '',
     kasa:        '',
-    mod:         'Tek'
+    mod:         'Tek',
+    vardiya:     getCurrentVardiya()
   }, function(data) {
     hideLoading();
     if (data.error) { showToast('❌ ' + data.error); return; }
@@ -1071,7 +1086,8 @@ function doTransfer(hedefMakine) {
     operator_ad: ctx.operatorAd,
     meydanci_id: MS.user.id,
     meydanci_ad: MS.user.ad,
-    neden:       'Meydancı Transferi'
+    neden:       'Meydancı Transferi',
+    vardiya:     getCurrentVardiya()
   }, function(data) {
     hideLoading();
     if (data.error) { showToast('❌ ' + data.error); return; }

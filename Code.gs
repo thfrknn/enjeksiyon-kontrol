@@ -22,7 +22,7 @@ function doGet(e) {
       case 'runMonthlyMaintenance':return jsonp(cb, { result: monthlyBackupAndCleanup() });
       case 'submitForm':           return submitForm(cb, e);
       case 'getMonitorData':       return getMonitorData(cb);
-      case 'getMachineStatuses':   return getMachineStatuses(cb);
+      case 'getMachineStatuses':   return getMachineStatuses(cb, e);
       case 'saveAssignment':       return saveAssignment(cb, e);
       case 'transferMakine':       return transferMakine(cb, e);   // YENİ
       case 'logAriza':             return logAriza(cb, e);
@@ -119,8 +119,8 @@ function getLists(cb, e) {
   const lockedMachines = getLockedMachines(ss);
   const atananKasalar  = readAtananKasalar(ss);
 
-  // YENİ: Atamalar sheet'inden operatör → makine listesini oku
-  const atananMakineler = readAtananMakineler(ss);
+  // Atamalar sheet'inden operatör → makine listesini oku (mevcut vardiyaya göre)
+  const atananMakineler = readAtananMakineler(ss, _getCurrentVardiya());
 
   return jsonp(cb, {
     kasaEbatlari: kasaEbatlariS,
@@ -189,8 +189,8 @@ function getStatus(cb, e) {
     }
   }
 
-  // YENİ: Kullanıcının atanan makinelerini de döndür
-  const kullaniciAtamalar = kullaniciId ? readAtananMakinelerForUser(ss, kullaniciId) : [];
+  // Kullanıcının atanan makinelerini de döndür (vardiyaya göre filtrele)
+  const kullaniciAtamalar = kullaniciId ? readAtananMakinelerForUser(ss, kullaniciId, vardiya) : [];
 
   return jsonp(cb, {
     olcumNo, enj1, kasa1, enj2, kasa2, enjSayisi,
@@ -551,9 +551,10 @@ function getMonitorData(cb) {
 // ACTION: getMachineStatuses — Meydancı paneli için
 // ================================================================
 
-function getMachineStatuses(cb) {
+function getMachineStatuses(cb, e) {
   const ss      = SpreadsheetApp.getActiveSpreadsheet();
   const ayarlar = ss.getSheetByName('Ayarlar');
+  const curVardiya = String((e && e.parameter && e.parameter.vardiya) || '').trim() || _getCurrentVardiya();
 
   let arizaTipleri = [];
   if (ayarlar) {
@@ -568,14 +569,17 @@ function getMachineStatuses(cb) {
   const atananlar  = {};
   const atamaSheet = ss.getSheetByName('Atamalar');
   if (atamaSheet && atamaSheet.getLastRow() > 1) {
-    atamaSheet.getRange(2, 1, atamaSheet.getLastRow() - 1, 6).getValues().forEach(row => {
-      const makine = String(row[0]).trim();
+    atamaSheet.getRange(2, 1, atamaSheet.getLastRow() - 1, 7).getValues().forEach(row => {
+      const makine     = String(row[0]).trim();
+      const rowVardiya = String(row[1]).trim();
       if (!makine) return;
+      // Sadece mevcut vardiyaya ait atamaları göster (boş vardiya = eski veri, görmezden gel)
+      if (rowVardiya !== curVardiya) return;
       atananlar[makine] = {
-        operatorId: String(row[1]).trim(),
-        operatorAd: String(row[2]).trim(),
-        kasa:       String(row[3]).trim(),
-        mod:        String(row[4]).trim()
+        operatorId: String(row[2]).trim(),
+        operatorAd: String(row[3]).trim(),
+        kasa:       String(row[4]).trim(),
+        mod:        String(row[5]).trim()
       };
     });
   }
@@ -600,6 +604,7 @@ function getMachineStatuses(cb) {
   return jsonp(cb, {
     statuses, arizaTipleri, machineData, kasaEbatlari,
     atananKasalar, atananlar, personelList,
+    vardiya: curVardiya,
     serverTime: new Date().getTime()
   });
 }
@@ -613,29 +618,32 @@ function saveAssignment(cb, e) {
   let sheet = ss.getSheetByName('Atamalar');
   if (!sheet) {
     sheet = ss.insertSheet('Atamalar');
-    sheet.appendRow(['Makine No', 'Operatör ID', 'Operatör Adı', 'Kasa Ebatı', 'Çalışma Modu', 'Son Güncelleme']);
-    sheet.getRange('A1:F1').setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff');
+    sheet.appendRow(['Makine No', 'Vardiya', 'Operatör ID', 'Operatör Adı', 'Kasa Ebatı', 'Çalışma Modu', 'Son Güncelleme']);
+    sheet.getRange('A1:G1').setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff');
     sheet.setFrozenRows(1);
-    [120, 100, 140, 120, 100, 140].forEach((w, i) => sheet.setColumnWidth(i + 1, w));
+    [120, 80, 100, 140, 120, 100, 140].forEach((w, i) => sheet.setColumnWidth(i + 1, w));
   }
 
   const makineNo   = String(e.parameter.makine_no   || '').trim();
+  const vardiya    = String(e.parameter.vardiya      || _getCurrentVardiya()).trim();
   const operatorId = String(e.parameter.operator_id || '').trim();
   const operatorAd = String(e.parameter.operator_ad || '').trim();
   const kasa       = String(e.parameter.kasa        || '').trim();
   const mod        = String(e.parameter.mod         || 'Tek').trim();
   const simdi      = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy HH:mm');
 
-  const rowData = [makineNo, operatorId, operatorAd, kasa, mod, simdi];
+  const rowData = [makineNo, vardiya, operatorId, operatorAd, kasa, mod, simdi];
 
-  // Atamalar sheet'ini güncelle
+  // Atamalar sheet'ini güncelle (aynı makine + vardiya kombinasyonu varsa üzerine yaz)
   const data = sheet.getDataRange().getValues();
   let targetRow = -1;
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]).trim() == makineNo) { targetRow = i + 1; break; }
+    if (String(data[i][0]).trim() === makineNo && String(data[i][1]).trim() === vardiya) {
+      targetRow = i + 1; break;
+    }
   }
   if (targetRow > 0) {
-    sheet.getRange(targetRow, 1, 1, 6).setValues([rowData]);
+    sheet.getRange(targetRow, 1, 1, 7).setValues([rowData]);
   } else {
     sheet.appendRow(rowData);
   }
@@ -667,11 +675,13 @@ function transferMakine(cb, e) {
 
   if (!eskiMakine || !yeniMakine) return jsonp(cb, { error: 'Eski ve yeni makine belirtilmeli' });
 
+  const vardiya = String(e.parameter.vardiya || _getCurrentVardiya()).trim();
+
   let atamaSheet = ss.getSheetByName('Atamalar');
   if (!atamaSheet) {
     atamaSheet = ss.insertSheet('Atamalar');
-    atamaSheet.appendRow(['Makine No', 'Operatör ID', 'Operatör Adı', 'Kasa Ebatı', 'Çalışma Modu', 'Son Güncelleme']);
-    atamaSheet.getRange('A1:F1').setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff');
+    atamaSheet.appendRow(['Makine No', 'Vardiya', 'Operatör ID', 'Operatör Adı', 'Kasa Ebatı', 'Çalışma Modu', 'Son Güncelleme']);
+    atamaSheet.getRange('A1:G1').setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff');
     atamaSheet.setFrozenRows(1);
   }
 
@@ -681,21 +691,23 @@ function transferMakine(cb, e) {
   let eskiRow = -1, yeniRow = -1;
   for (let i = 1; i < data.length; i++) {
     const m = String(data[i][0]).trim();
-    if (m === eskiMakine) eskiRow = i + 1;
-    if (m === yeniMakine) yeniRow = i + 1;
+    const v = String(data[i][1]).trim();
+    if (m === eskiMakine && v === vardiya) eskiRow = i + 1;
+    if (m === yeniMakine && v === vardiya) yeniRow = i + 1;
   }
 
   // Eski makineyi boşalt (operatörü kaldır)
   if (eskiRow > 0) {
-    atamaSheet.getRange(eskiRow, 2, 1, 4).setValues([['', '', '', simdi]]);
+    // Col 3-7: vardiya sabit kalır, opId/opAd/mod temizlenir
+    atamaSheet.getRange(eskiRow, 3, 1, 5).setValues([['', '', '', '', simdi]]);
   }
 
   // Yeni makineye operatörü ata
-  const yeniKasa = kasa || (yeniRow > 0 ? String(data[yeniRow - 1][3] || '').trim() : '');
+  const yeniKasa = kasa || (yeniRow > 0 ? String(data[yeniRow - 1][4] || '').trim() : '');
   if (yeniRow > 0) {
-    atamaSheet.getRange(yeniRow, 1, 1, 6).setValues([[yeniMakine, operatorId, operatorAd, yeniKasa, mod, simdi]]);
+    atamaSheet.getRange(yeniRow, 1, 1, 7).setValues([[yeniMakine, vardiya, operatorId, operatorAd, yeniKasa, mod, simdi]]);
   } else {
-    atamaSheet.appendRow([yeniMakine, operatorId, operatorAd, yeniKasa, mod, simdi]);
+    atamaSheet.appendRow([yeniMakine, vardiya, operatorId, operatorAd, yeniKasa, mod, simdi]);
   }
 
   // Kasa varsa Makine Kasa'yı da güncelle
@@ -1144,16 +1156,19 @@ function readAtananKasalar(ss) {
 // YARDIMCI: YENİ — Atamalar sheet'inden operatör→makine listesi oku
 // ================================================================
 
-function readAtananMakineler(ss) {
+function readAtananMakineler(ss, vardiya) {
   // Returns: { "101": ["Enjeksiyon 3"], "102": ["Enjeksiyon 7", "Enjeksiyon 8"] }
   const result = {};
   const sheet  = ss.getSheetByName('Atamalar');
   if (!sheet || sheet.getLastRow() < 2) return result;
 
-  sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues().forEach(row => {
-    const makine = String(row[0]).trim();
-    const opId   = String(row[1]).trim();
+  const curVardiya = vardiya || _getCurrentVardiya();
+  sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues().forEach(row => {
+    const makine     = String(row[0]).trim();
+    const rowVardiya = String(row[1]).trim();
+    const opId       = String(row[2]).trim();  // col 3 = Operatör ID
     if (!makine || !opId) return;
+    if (rowVardiya !== curVardiya) return;  // Vardiya filtresi
     if (!result[opId]) result[opId] = [];
     result[opId].push(makine);
   });
@@ -1165,16 +1180,20 @@ function readAtananMakineler(ss) {
 // YARDIMCI: YENİ — Belirli bir kullanıcının atanan makineleri
 // ================================================================
 
-function readAtananMakinelerForUser(ss, kullaniciId) {
+function readAtananMakinelerForUser(ss, kullaniciId, vardiya) {
   // Returns: ["Enjeksiyon 3", "Enjeksiyon 7"]
   const result = [];
   const sheet  = ss.getSheetByName('Atamalar');
   if (!sheet || sheet.getLastRow() < 2) return result;
 
-  sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues().forEach(row => {
-    const makine = String(row[0]).trim();
-    const opId   = String(row[1]).trim();
-    if (makine && opId === String(kullaniciId).trim()) result.push(makine);
+  const curVardiya = vardiya || _getCurrentVardiya();
+  sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getValues().forEach(row => {
+    const makine     = String(row[0]).trim();
+    const rowVardiya = String(row[1]).trim();
+    const opId       = String(row[2]).trim();  // col 3 = Operatör ID
+    if (makine && opId === String(kullaniciId).trim() && rowVardiya === curVardiya) {
+      result.push(makine);
+    }
   });
 
   return result;
@@ -1211,6 +1230,14 @@ function _updateMakineKasa(ss, makineNo, kasa, tekniker) {
 // ================================================================
 // YARDIMCI FONKSIYONLAR
 // ================================================================
+
+// Sunucu saatine göre mevcut vardiyayı döndürür
+function _getCurrentVardiya() {
+  const h = new Date().getHours();
+  if (h >= 9 && h < 17) return 'SABAH';
+  if (h >= 17 || h === 0) return 'AKSAM';
+  return 'GECE';  // 01:00-08:59
+}
 
 function vardiyaBaslangicTarih(tarih, saat, vardiya) {
   if (vardiya !== 'AKSAM' || !saat) return tarih;
@@ -1612,7 +1639,7 @@ function gercektenTemizleVeKur() {
     { ad: 'Üretim Kaydı',     h: ['Kayıt Zamanı', 'Vardiya Tarihi', 'Vardiya', 'Ölçüm Saati', 'Ad Soyad', 'Ölçüm No', 'Makine No', 'Kasa', 'Çevrim(sn)', 'Ağırlık(gr)', 'Sayaç Baş', 'Sayaç Bit', 'Üretim', 'Fire'], r: '#0f766e' },
     { ad: 'Makine Kasa',      h: ['Makine No', 'Kasa Ebatı', 'Son Güncelleme', 'Güncelleyen'], r: '#2563eb' },
     { ad: 'Machine Locks',    h: ['Makine No', 'Tarih', 'Vardiya', 'Operatör', 'Durum'], r: '#dc2626' },
-    { ad: 'Atamalar',         h: ['Makine No', 'Operatör ID', 'Operatör Adı', 'Kasa Ebatı', 'Çalışma Modu', 'Son Güncelleme'], r: '#1e3a8a' },
+    { ad: 'Atamalar',         h: ['Makine No', 'Vardiya', 'Operatör ID', 'Operatör Adı', 'Kasa Ebatı', 'Çalışma Modu', 'Son Güncelleme'], r: '#1e3a8a' },
     { ad: 'Gecmis Arama',     h: [], r: '#0f766e' },
   ];
 
