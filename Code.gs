@@ -1021,11 +1021,21 @@ function addPersonel(cb, e) {
 
   if (!ad || !sifre) return jsonp(cb, { error: 'Ad ve şifre zorunlu' });
 
-  let maxId = 100;
+  // Rol'e göre ID aralığı: Meydancı=1xx, Operatör=2xx, Yönetici=3xx, Denetleyici=4xx
+  const rolMin = { 'Meydancı': 100, 'Operatör': 200, 'Yönetici': 300, 'Denetleyici': 400 };
+  const rolMax = { 'Meydancı': 199, 'Operatör': 299, 'Yönetici': 399, 'Denetleyici': 499 };
+  const idMin  = rolMin[rol] || 200;
+  const idMax  = rolMax[rol] || 299;
+
+  let maxId = idMin - 1;
   if (sheet.getLastRow() > 1) {
-    const ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues().flat().map(v => parseInt(v) || 0);
-    maxId = Math.max(maxId, ...ids);
+    const ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues()
+      .flat().map(v => parseInt(v) || 0)
+      .filter(v => v >= idMin && v <= idMax);
+    if (ids.length) maxId = Math.max(maxId, ...ids);
   }
+
+  if (maxId >= idMax) return jsonp(cb, { error: rol + ' için ID aralığı dolu (' + idMin + '-' + idMax + ')' });
 
   const yeniId = String(maxId + 1);
   const row    = sheet.getLastRow() + 1;
