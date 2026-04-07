@@ -817,11 +817,12 @@ function renderPersonel() {
         </div>
         <div style="margin-bottom:16px">
           <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Rol</label>
-          <select id="prs-rol"
+          <select id="prs-rol" onchange="onEkleRolChange()"
             style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;background:white">
-            <option value="Operatör">Operatör</option>
-            <option value="Meydancı">Meydancı</option>
-            <option value="Yönetici">Yönetici</option>
+            <option value="Operatör">Operatör (2xx)</option>
+            <option value="Meydancı">Meydancı (1xx)</option>
+            <option value="Yönetici">Yönetici (3xx)</option>
+            <option value="Denetleyici">Denetleyici (4xx)</option>
           </select>
         </div>
         <button onclick="addPersonel()"
