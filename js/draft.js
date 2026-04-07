@@ -3,25 +3,28 @@
 function saveDraft() {
   if (!document.getElementById('kullanici_id').value) return;
   var d = {
-    ts:         Date.now(),
+    ts:           Date.now(),
     kullanici_id: document.getElementById('kullanici_id').value,
-    adSoyad:    _adSoyad,
-    vardiya:    vardiya,
-    tarih:      document.getElementById('tarih').value,
-    enjSayisi:  enjSayisi,
-    step:       currentStep,
-    enj1_no:    document.getElementById('enj1_no').value,
-    kasa1:      document.getElementById('kasa1').value,
-    enj2_no:    document.getElementById('enj2_no').value,
-    kasa2:      document.getElementById('kasa2').value,
-    cevrim1:    document.getElementById('cevrim1').value,
-    agirlik1:   document.getElementById('agirlik1').value,
-    sayac_bas1: document.getElementById('sayac_bas1').value,
-    sayac_bit1: document.getElementById('sayac_bit1').value,
-    cevrim2:    document.getElementById('cevrim2').value,
-    agirlik2:   document.getElementById('agirlik2').value,
-    sayac_bas2: document.getElementById('sayac_bas2').value,
-    sayac_bit2: document.getElementById('sayac_bit2').value,
+    adSoyad:      _adSoyad,
+    vardiya:      vardiya,
+    tarih:        document.getElementById('tarih').value,
+    enjSayisi:    enjSayisi,
+    step:         currentStep,
+    olcumNo:      olcumNo,
+    enj1Kilitli:  enj1Kilitli,
+    enj2Kilitli:  enj2Kilitli,
+    enj1_no:      document.getElementById('enj1_no').value,
+    kasa1:        document.getElementById('kasa1').value,
+    enj2_no:      document.getElementById('enj2_no').value,
+    kasa2:        document.getElementById('kasa2').value,
+    cevrim1:      document.getElementById('cevrim1').value,
+    agirlik1:     document.getElementById('agirlik1').value,
+    sayac_bas1:   document.getElementById('sayac_bas1').value,
+    sayac_bit1:   document.getElementById('sayac_bit1').value,
+    cevrim2:      document.getElementById('cevrim2').value,
+    agirlik2:     document.getElementById('agirlik2').value,
+    sayac_bas2:   document.getElementById('sayac_bas2').value,
+    sayac_bit2:   document.getElementById('sayac_bit2').value,
   };
   try { localStorage.setItem('enj_draft', JSON.stringify(d)); } catch(e) {}
 }
@@ -79,6 +82,11 @@ function restoreDraft() {
     if (d.tarih)   document.getElementById('tarih').value = d.tarih;
     setEnjSayisi(d.enjSayisi || 1);
 
+    // Kilitleme durumunu ve ölçüm numarasını geri yükle
+    if (d.olcumNo)     olcumNo     = d.olcumNo;
+    if (d.enj1Kilitli) enj1Kilitli = true;
+    if (d.enj2Kilitli) enj2Kilitli = true;
+
     ['enj1_no','kasa1','enj2_no','kasa2',
      'cevrim1','agirlik1','sayac_bas1','sayac_bit1',
      'cevrim2','agirlik2','sayac_bas2','sayac_bit2',
@@ -86,6 +94,10 @@ function restoreDraft() {
       var el = document.getElementById(id);
       if (el && d[id] !== undefined) el.value = d[id];
     });
+
+    // Sayaç başlama kilidini geri uygula (sunucu yanıtı beklenmeden)
+    if (enj1Kilitli) setBasReadonly(1);
+    if (enj2Kilitli) setBasReadonly(2);
 
     [1, 2].forEach(function(n) {
       var val = d['enj' + n + '_no'];
@@ -102,7 +114,7 @@ function restoreDraft() {
     calcUretim(1); calcUretim(2);
     syncEnjDisabled();
     if (d.step && d.step > 1) goStep(d.step);
-    checkStatus();
+    checkStatus();  // Sunucu yanıtı gelirse kilitleri taze veriye göre günceller
     showToast('Kaldığın yerden devam ediyorsun', 'ok');
   } catch (e) { clearDraft(); }
 }

@@ -271,7 +271,8 @@
 
 <!-- Üst bar: çıkış + yenile -->
 <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 4px">
-  <a href="index.html"
+  <a href="javascript:void(0)"
+     onclick="localStorage.removeItem('yonetici_session');window.location.href='index.html';"
      style="font-size:13px;font-weight:700;color:var(--text2);text-decoration:none">← Çıkış</a>
   <button onclick="loadData(false)"
           style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:2px solid var(--border);border-radius:10px;background:white;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer">
@@ -305,6 +306,9 @@
   <button class="vf-btn"           id="vf-AKSAM" onclick="setVardiyaFilter('AKSAM')">🌆 Akşam</button>
   <button class="vf-btn"           id="vf-GECE"  onclick="setVardiyaFilter('GECE')">🌙 Gece</button>
 </div>
+
+<!-- Üretim filtre barı (sadece Üretim sekmesinde) -->
+<div id="uretim-filter-bar" style="display:none;background:white;border-bottom:2px solid var(--border);padding:12px 14px 10px"></div>
 
 <!-- Ana içerik -->
 <div id="main-content"></div>

@@ -1,5 +1,15 @@
 /* ── Yönetici İzleme Paneli ─────────────────────────── */
 
+// PWA kalıcı oturum: sessionStorage yoksa localStorage'dan geri yükle
+(function() {
+  if (!sessionStorage.getItem('ep_id')) {
+    try {
+      var s = localStorage.getItem('yonetici_session');
+      if (s) { var u = JSON.parse(s); if (u && u.id) { sessionStorage.setItem('ep_id', u.id); sessionStorage.setItem('ep_name', u.ad || ''); } }
+    } catch(e) {}
+  }
+})();
+
 const _mUserId   = sessionStorage.getItem('ep_id')   || '';
 const _mUserName = sessionStorage.getItem('ep_name') || '';
 
@@ -12,6 +22,11 @@ let _activeVardiya = 'TUMU';   // 'TUMU' | 'SABAH' | 'AKSAM' | 'GECE'
 let _personelData  = null;
 let _personelSubTab = 'ekle';   // 'ekle' | 'duzenle' | 'sifre'
 let _settingsData  = null;
+
+// Üretim sekmesi filtre durumu
+let _uretimFiltTarih   = '';      // 'yyyy-MM-dd' | ''
+let _uretimFiltVardiya = 'TÜMÜ'; // 'TÜMÜ'|'SABAH'|'AKSAM'|'GECE'
+let _uretimFiltEnj     = 'TÜMÜ'; // 'TÜMÜ'|'Enjeksiyon 3'|...
 
 /* ---------- Init ---------- */
 
@@ -260,157 +275,283 @@ function _saatToSec(s) {
   return parseInt(p[0]) * 3600 + parseInt(p[1]) * 60;
 }
 
+// ── Filtre barı render (monitor.html'deki #uretim-filter-bar'a) ──
+function renderUretimFiltrebar() {
+  const el = document.getElementById('uretim-filter-bar');
+  if (!el) return;
+  const V_ICON = { SABAH:'☀️', AKSAM:'🌆', GECE:'🌙' };
+  const isAktif = _uretimFiltTarih || _uretimFiltVardiya !== 'TÜMÜ' || _uretimFiltEnj !== 'TÜMÜ';
+
+  el.innerHTML = `
+    <!-- Tarih satırı -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:800;color:var(--text2)">📅</span>
+      <input id="uf-tarih-inp" type="date" value="${_uretimFiltTarih}"
+        onchange="uretimFiltreTarih(this.value)"
+        style="border:2px solid var(--border);border-radius:10px;padding:5px 10px;
+               font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text);outline:none">
+      <button onclick="uretimBugün()"
+        style="padding:5px 12px;border:2px solid var(--accent);border-radius:20px;background:white;
+               color:var(--accent);font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer">
+        Bugün</button>
+      ${isAktif ? `<button onclick="uretimTemizle()"
+        style="padding:5px 12px;border:2px solid #dc2626;border-radius:20px;background:white;
+               color:#dc2626;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer">
+        ✕ Temizle</button>` : ''}
+    </div>
+    <!-- Vardiya satırı -->
+    <div style="display:flex;gap:6px;margin-bottom:7px;flex-wrap:wrap">
+      ${['TÜMÜ','SABAH','AKSAM','GECE'].map(v => {
+        const act = _uretimFiltVardiya === v;
+        return `<button class="uf-vbtn" data-v="${v}" onclick="uretimFiltreVardiya('${v}')"
+          style="padding:5px 11px;border:2px solid ${act ? 'var(--accent)' : 'var(--border)'};
+                 border-radius:20px;background:${act ? 'var(--accent)' : 'white'};
+                 color:${act ? 'white' : 'var(--text2)'};font-family:'Nunito',sans-serif;
+                 font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">
+          ${V_ICON[v] || ''} ${v}</button>`;
+      }).join('')}
+    </div>
+    <!-- Makine satırı -->
+    <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:11px;font-weight:800;color:var(--text2);white-space:nowrap">Makine:</span>
+      ${['TÜMÜ',...[1,2,3,4,5,6,7,8,9,10,11,12].map(n => 'Enjeksiyon ' + n)].map(e => {
+        const act = _uretimFiltEnj === e;
+        const lbl = e === 'TÜMÜ' ? 'Tümü' : e.replace('Enjeksiyon ','');
+        return `<button class="uf-ebtn" data-e="${e}" onclick="uretimFiltreEnj('${e}')"
+          style="padding:4px 10px;border:2px solid ${act ? '#7c3aed' : 'var(--border)'};
+                 border-radius:16px;background:${act ? '#7c3aed' : 'white'};
+                 color:${act ? 'white' : 'var(--text2)'};font-family:'Nunito',sans-serif;
+                 font-size:12px;font-weight:800;cursor:pointer">
+          ${lbl}</button>`;
+      }).join('')}
+    </div>`;
+}
+
+// ── Filtre event handler'ları ─────────────────────────
+function uretimFiltreTarih(val) {
+  _uretimFiltTarih = val || '';
+  renderUretimFiltrebar();
+  renderUretim();
+}
+function uretimFiltreVardiya(v) {
+  _uretimFiltVardiya = v;
+  renderUretimFiltrebar();
+  renderUretim();
+}
+function uretimFiltreEnj(v) {
+  _uretimFiltEnj = v;
+  renderUretimFiltrebar();
+  renderUretim();
+}
+function uretimBugün() {
+  const today = new Date();
+  _uretimFiltTarih = today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
+  renderUretimFiltrebar();
+  renderUretim();
+}
+function uretimTemizle() {
+  _uretimFiltTarih   = '';
+  _uretimFiltVardiya = 'TÜMÜ';
+  _uretimFiltEnj     = 'TÜMÜ';
+  renderUretimFiltrebar();
+  renderUretim();
+}
+
+// ── Ana render ────────────────────────────────────────
 function renderUretim() {
   const rows = _mData.uretimGecmisi || [];
+  const V_ICON = { SABAH: '☀️', AKSAM: '🌆', GECE: '🌙' };
 
-  if (!rows.length) {
-    document.getElementById('main-content').innerHTML =
-      '<div style="text-align:center;padding:40px;color:var(--text2);font-weight:700">Üretim kaydı bulunamadı</div>';
-    return;
-  }
-
-  // Tüm satırları tarih+vardiya+makine bazında grupla (tüm ölçümler birlikte)
-  const groups = {};   // key = tarih_vardiya
+  // ── Veriyi grupla (tarih+vardiya+makine) ─────────
+  const groups = {};
   for (const r of rows) {
+    if (_uretimFiltTarih && r.tarih !== _uretimFiltTarih) continue;
+    if (_uretimFiltVardiya !== 'TÜMÜ' && r.vardiya !== _uretimFiltVardiya) continue;
+
     const gk = r.tarih + '_' + r.vardiya;
     if (!groups[gk]) groups[gk] = { tarih: r.tarih, vardiya: r.vardiya, makineler: {} };
 
-    function addMakine(enjNo, kasa, cevrim, bas, bit, uretim, fire) {
+    const addMakine = (enjNo, kasa, cevrim, bas, bit, uretim, fire, adsoyad) => {
       if (!enjNo || enjNo === '00') return;
-      if (!groups[gk].makineler[enjNo]) {
-        groups[gk].makineler[enjNo] = { enjNo, kasa: kasa || '', olcumler: [] };
-      }
+      if (_uretimFiltEnj !== 'TÜMÜ' && enjNo !== _uretimFiltEnj) return;
+      if (!groups[gk].makineler[enjNo])
+        groups[gk].makineler[enjNo] = { enjNo, kasa:'', olcumler:[], operatorler: new Set() };
       const m = groups[gk].makineler[enjNo];
       if (kasa && !m.kasa) m.kasa = kasa;
-      m.olcumler.push({ no: r.olcumNo, saat: r.saat, cevrim: cevrim || 0,
-                        bas: bas || 0, bit: bit || 0, uretim: uretim || 0, fire: fire || 0 });
-    }
-    addMakine(r.enj1, r.kasa1, r.cevrim1, r.sayacBas1, r.sayacBit1, r.uretim1, r.fire1);
-    addMakine(r.enj2, '',      r.cevrim2, r.sayacBas2, r.sayacBit2, r.uretim2, r.fire2);
+      if (adsoyad) m.operatorler.add(adsoyad);
+      m.olcumler.push({ no: r.olcumNo, saat: r.saat, cevrim: cevrim||0,
+                        bas: bas||0, bit: bit||0, uretim: uretim||0, fire: fire||0 });
+    };
+    addMakine(r.enj1, r.kasa1, r.cevrim1, r.sayacBas1, r.sayacBit1, r.uretim1, r.fire1, r.adsoyad);
+    addMakine(r.enj2, '',      r.cevrim2, r.sayacBas2, r.sayacBit2, r.uretim2, r.fire2, r.adsoyad);
   }
 
-  // Her makine için özet hesapla
+  // ── Her makine için özet hesapla ─────────────────
   for (const gk in groups) {
     for (const enjNo in groups[gk].makineler) {
       const m = groups[gk].makineler[enjNo];
       m.olcumler.sort((a, b) => a.no - b.no);
-      const last = m.olcumler[m.olcumler.length - 1];
       const first = m.olcumler[0];
+      const last  = m.olcumler[m.olcumler.length - 1];
+      m.olcumSayisi = m.olcumler.length;
 
-      // Son ölçümün bitiş sayacı - ilk ölçümün başlangıç sayacı = gerçek toplam üretim
       const sayacRange = (last.bit > 0 && first.bas > 0) ? last.bit - first.bas : 0;
-      m.toplamUretim = sayacRange > 0 ? sayacRange : m.olcumler.reduce((s, o) => s + o.uretim, 0);
-      m.toplamFire   = last.fire;   // kümülatif fire zaten son ölçümde birikmiş
+      m.toplamUretim  = sayacRange > 0 ? sayacRange : m.olcumler.reduce((s,o) => s + o.uretim, 0);
+      m.toplamFire    = last.fire;
       m.cevrimGirilen = last.cevrim || 0;
 
-      // Gerçek çevrim: (son_saat - ilk_saat) / sayaç_farkı
+      // Çevrim 1 — Mesai çevrimi: 8 saatlik mesai ÷ toplam üretim
+      m.cevrimMesai = m.toplamUretim > 0 ? Math.round(28800 / m.toplamUretim) : 0;
+
+      // Çevrim 2 — Ölçüm çevrimi: (son_saat - ilk_saat) ÷ sayaç_farkı
       if (m.olcumler.length >= 2 && sayacRange > 0) {
         let t1 = _saatToSec(first.saat), t2 = _saatToSec(last.saat);
         if (t1 >= 0 && t2 >= 0) {
-          if (t2 < t1) t2 += 86400;   // gece yarısı geçişi
-          const saniye = t2 - t1;
-          if (saniye > 0) m.cevrimHesaplanan = Math.round(saniye / sayacRange);
+          if (t2 < t1) t2 += 86400;
+          const sn = t2 - t1;
+          if (sn > 0) m.cevrimOlcum = Math.round(sn / sayacRange);
         }
       }
+
+      // Operatör listesi (Set → Array)
+      m.operatorlerArr = [...m.operatorler];
     }
   }
 
+  // ── Sırala ───────────────────────────────────────
   const sorted = Object.values(groups).sort((a, b) => {
     if (b.tarih !== a.tarih) return b.tarih.localeCompare(a.tarih);
-    const vOrder = { SABAH: 0, AKSAM: 1, GECE: 2 };
-    return (vOrder[a.vardiya] ?? 9) - (vOrder[b.vardiya] ?? 9);
+    const vO = { SABAH:0, AKSAM:1, GECE:2 };
+    return (vO[a.vardiya] ?? 9) - (vO[b.vardiya] ?? 9);
   });
 
-  const vardiyaIcon = { SABAH: '☀️', AKSAM: '🌆', GECE: '🌙' };
+  // ── Sonuç yoksa ──────────────────────────────────
+  if (!sorted.length) {
+    document.getElementById('main-content').innerHTML =
+      '<div style="text-align:center;padding:48px 16px;color:var(--text2);font-weight:700">Filtreye uyan üretim kaydı bulunamadı</div>';
+    return;
+  }
 
+  // ── HTML oluştur ──────────────────────────────────
   let lastDate = '';
-  let html = '<div style="padding:0 16px 40px">';
+  let bodyHtml = '<div style="padding:0 14px 60px">';
+
   for (const g of sorted) {
-    const d = new Date(g.tarih);
-    const displayDate = d.toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long' });
+    const d = new Date(g.tarih + 'T12:00:00');
+    const displayDate = d.toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
     if (g.tarih !== lastDate) {
-      html += `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin:20px 0 8px;padding-left:2px">${displayDate}</div>`;
+      bodyHtml += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;
+        letter-spacing:.6px;color:var(--text2);margin:20px 0 6px;padding-left:2px">
+        ${displayDate}</div>`;
       lastDate = g.tarih;
     }
 
-    // Toplam üretim/fire bu vardiyada
-    const makineler = Object.values(g.makineler);
-    const toplamU = makineler.reduce((s, m) => s + m.toplamUretim, 0);
-    const toplamF = makineler.reduce((s, m) => s + m.toplamFire, 0);
+    const makineler = Object.values(g.makineler).sort((a,b) => {
+      const na = parseInt((a.enjNo.match(/\d+/)||['0'])[0]);
+      const nb = parseInt((b.enjNo.match(/\d+/)||['0'])[0]);
+      return na - nb;
+    });
 
-    // Makine satırları
-    const makineHtml = makineler
-      .sort((a, b) => {
-        const na = parseInt((a.enjNo.match(/\d+/) || ['0'])[0]);
-        const nb = parseInt((b.enjNo.match(/\d+/) || ['0'])[0]);
-        return na - nb;
-      })
-      .map(m => {
-        let cevrimHtml = '';
-        if (m.cevrimGirilen > 0) {
-          const g = m.cevrimGirilen;
-          const h = m.cevrimHesaplanan;
-          let gercekHtml = '';
-          if (h > 0) {
-            const fark = h - g;
-            const pct  = Math.abs(fark / g) * 100;
-            const renk = pct <= 10 ? '#16a34a' : pct <= 30 ? '#d97706' : '#dc2626';
-            const isaret = fark > 0 ? '+' : '';
-            gercekHtml = `<span style="color:${renk};font-weight:700;font-size:12px"> → Ölçüm: ${h}sn (${isaret}${fark}sn)</span>`;
-          }
-          cevrimHtml = `<div style="font-size:12px;color:var(--text2);margin-top:3px">⏱ Girilen: <strong>${g}sn</strong>${gercekHtml}</div>`;
+    const toplamU = makineler.reduce((s,m) => s + m.toplamUretim, 0);
+    const toplamF = makineler.reduce((s,m) => s + m.toplamFire, 0);
+
+    const makineHtml = makineler.map(m => {
+      // Duplicate badge
+      const dupBadge = m.olcumSayisi > 1
+        ? `<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;
+            border-radius:10px;padding:1px 7px;font-size:10px;font-weight:800;margin-left:6px">
+            ⚠️ ${m.olcumSayisi} ölçüm</span>` : '';
+
+      // Operatör
+      const opHtml = m.operatorlerArr.length
+        ? `<div style="font-size:11px;color:var(--text2);font-weight:700;margin-top:2px">
+            👤 ${m.operatorlerArr.join(', ')}</div>` : '';
+
+      // Çevrim satırları
+      let cevrimHtml = '';
+      if (m.cevrimGirilen > 0 || m.cevrimMesai > 0) {
+        const cg = m.cevrimGirilen;
+
+        // Mesai çevrimi (birincil — kalın)
+        if (m.cevrimMesai > 0) {
+          const fark   = cg > 0 ? m.cevrimMesai - cg : null;
+          const pct    = fark !== null ? Math.abs(fark / cg) * 100 : null;
+          const renk   = pct === null ? '#7c3aed'
+                       : pct <= 10   ? '#16a34a'
+                       : pct <= 30   ? '#d97706' : '#dc2626';
+          const farkTxt = fark !== null
+            ? `<span style="color:${renk};font-weight:800;font-size:12px"> (${fark>0?'+':''}${fark}sn)</span>` : '';
+          cevrimHtml += `
+            <div style="display:flex;align-items:center;gap:6px;margin-top:5px">
+              <span style="font-size:11px;font-weight:800;color:#7c3aed;white-space:nowrap">📊 Gerçek çevrim</span>
+              <span style="font-size:16px;font-weight:900;color:#7c3aed">${m.cevrimMesai}sn</span>
+              ${farkTxt}
+              <span style="font-size:10px;color:var(--text2);font-weight:600">28.800÷${m.toplamUretim.toLocaleString('tr-TR')}</span>
+            </div>`;
         }
-        // Mesai çevrimi: 8 saatlik mesai / toplam üretim
-        if (m.toplamUretim > 0) {
-          const mesai = Math.round(28800 / m.toplamUretim);
-          const g     = m.cevrimGirilen;
-          let farkHtml = '';
-          if (g > 0) {
-            const fark   = mesai - g;
-            const pct    = Math.abs(fark / g) * 100;
-            const renk   = pct <= 10 ? '#16a34a' : pct <= 30 ? '#d97706' : '#dc2626';
-            const isaret = fark > 0 ? '+' : '';
-            farkHtml = `<span style="color:${renk};font-weight:700"> (${isaret}${fark}sn)</span>`;
-          }
-          cevrimHtml += `<div style="font-size:12px;color:#7c3aed;margin-top:2px">📊 Mesai: <strong>${mesai}sn</strong>${farkHtml} <span style="font-weight:600;color:var(--text2);font-size:11px">(28800÷${m.toplamUretim.toLocaleString('tr-TR')})</span></div>`;
+
+        // Girilen çevrim (ikincil)
+        if (cg > 0) {
+          cevrimHtml += `<div style="font-size:11px;color:var(--text2);font-weight:700;margin-top:2px">
+            ⏱ Girilen: <strong>${cg}sn</strong></div>`;
         }
-        return `
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9">
+
+        // Ölçüm çevrimi (zamana dayalı, varsa)
+        if (m.cevrimOlcum > 0) {
+          const fark2 = cg > 0 ? m.cevrimOlcum - cg : null;
+          const r2    = fark2 !== null
+            ? `<span style="color:${Math.abs(fark2/cg)*100<=10?'#16a34a':Math.abs(fark2/cg)*100<=30?'#d97706':'#dc2626'};font-weight:700"> (${fark2>0?'+':''}${fark2}sn)</span>` : '';
+          cevrimHtml += `<div style="font-size:11px;color:var(--text2);font-weight:700;margin-top:1px">
+            🕐 Ölçüm çevrimi: <strong>${m.cevrimOlcum}sn</strong>${r2}
+            <span style="font-size:10px;font-weight:600"> (${m.olcumSayisi} ölçüm arası)</span></div>`;
+        }
+      }
+
+      return `
+        <div style="border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:white">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:800;color:var(--text)">
-                ${m.enjNo}${m.kasa ? `<span style="font-weight:600;color:var(--text2);margin-left:6px">· ${m.kasa}</span>` : ''}
+                ${m.enjNo}
+                ${m.kasa ? `<span style="font-weight:600;color:var(--text2);margin-left:5px">· ${m.kasa}</span>` : ''}
+                ${dupBadge}
               </div>
+              ${opHtml}
               ${cevrimHtml}
             </div>
-            <div style="display:flex;gap:10px;flex-shrink:0;margin-left:10px">
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
               <div style="text-align:center">
-                <div style="font-size:15px;font-weight:800;color:#16a34a">${m.toplamUretim.toLocaleString('tr-TR')}</div>
-                <div style="font-size:9px;color:#15803d;font-weight:700;text-transform:uppercase">Üretim</div>
+                <div style="font-size:18px;font-weight:900;color:#16a34a">${m.toplamUretim.toLocaleString('tr-TR')}</div>
+                <div style="font-size:9px;color:#15803d;font-weight:800;text-transform:uppercase">üretim</div>
               </div>
               ${m.toplamFire > 0 ? `
               <div style="text-align:center">
-                <div style="font-size:15px;font-weight:800;color:#dc2626">${m.toplamFire}</div>
-                <div style="font-size:9px;color:#dc2626;font-weight:700;text-transform:uppercase">Fire</div>
+                <div style="font-size:16px;font-weight:800;color:#dc2626">${m.toplamFire}</div>
+                <div style="font-size:9px;color:#dc2626;font-weight:800;text-transform:uppercase">fire</div>
               </div>` : ''}
             </div>
-          </div>`;
-      }).join('');
+          </div>
+        </div>`;
+    }).join('');
 
-    html += `
-      <div class="ariza-row" style="margin-bottom:10px">
-        <div class="ariza-row-top">
-          <span style="font-size:15px;font-weight:800">${vardiyaIcon[g.vardiya] || ''} ${g.vardiya}</span>
-          <div style="display:flex;gap:12px;margin-left:auto">
+    bodyHtml += `
+      <div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:15px;font-weight:800">${V_ICON[g.vardiya]||''} ${g.vardiya}</span>
+          <div style="display:flex;gap:10px">
             <span style="font-size:13px;font-weight:800;color:#16a34a">${toplamU.toLocaleString('tr-TR')} üretim</span>
             ${toplamF > 0 ? `<span style="font-size:13px;font-weight:800;color:#dc2626">${toplamF} fire</span>` : ''}
           </div>
         </div>
-        <div style="margin-top:6px">${makineHtml}</div>
+        ${makineHtml}
       </div>`;
   }
-  html += '</div>';
 
-  document.getElementById('main-content').innerHTML = html;
+  bodyHtml += '</div>';
+  document.getElementById('main-content').innerHTML = bodyHtml;
 }
 
 /* ---------- Tab geçişi ---------- */
@@ -422,6 +563,13 @@ function setTab(tab) {
   });
   // Vardiya filtresi sadece canlı sekmede
   document.getElementById('vardiya-filter').style.display = tab === 'canli' ? 'flex' : 'none';
+
+  // Üretim filtre barı sadece üretim sekmesinde
+  var ufBar = document.getElementById('uretim-filter-bar');
+  if (ufBar) {
+    ufBar.style.display = tab === 'uretim' ? 'block' : 'none';
+    if (tab === 'uretim') renderUretimFiltrebar();
+  }
 
   // Personel & Ayarlar sekmeleri lazy-load
   if (tab === 'personel' && !_personelData) { loadPersonel(); return; }
