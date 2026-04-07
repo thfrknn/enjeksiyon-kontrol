@@ -1,5 +1,10 @@
 /* ── Tüm Sunucu İletişimi (JSONP) ──────────────────── */
 
+// Her form gönderiminde benzersiz token üretir (duplicate önleme)
+function _genToken() {
+  return Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 8);
+}
+
 /**
  * Ayarlar sekmesinden kasa ebatlarını, kullanıcıları ve limitleri çeker.
  * Sunucu zamanını okuyarak _timeOffset senkronizasyonu yapar.
@@ -247,6 +252,7 @@ function submitForm(onaylandi) {
       uretim2:    data.uretim2   || 0,
       fire2:      data.fire2     || '00',
       onaylandi:  onaylandi ? 'true' : 'false',
+      submitToken: _genToken(),
     });
 
     var s = document.createElement('script');
