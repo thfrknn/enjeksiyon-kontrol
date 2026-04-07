@@ -34,6 +34,7 @@ function doGet(e) {
       case 'addPersonel':          return addPersonel(cb, e);
       case 'updatePersonel':       return updatePersonel(cb, e);
       case 'changePassword':       return changePassword(cb, e);
+      case 'resetSayac':          return resetSayac(cb, e);
       default:                     return jsonp(cb, { error: 'Geçersiz istek' });
     }
   } catch (err) {
@@ -208,19 +209,36 @@ function getLastCounter(cb, e) {
   const enjNo = e.parameter.enj_no;
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Veriler');
-  if (!sheet || sheet.getLastRow() < 2) return jsonp(cb, { sayacBit: null });
 
-  const vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 24).getValues();
-  let sayacBit = null;
+  let sayacBit  = null;
+  let lastTime  = 0;   // En son Veriler kaydının zamanı (bu makine için)
 
-  for (const row of vals) {
-    if (String(row[7]).trim() === String(enjNo).trim()) {
-      const b = parseInt(row[12]);
-      if (!isNaN(b)) sayacBit = b;
+  if (sheet && sheet.getLastRow() >= 2) {
+    const vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 24).getValues();
+    for (const row of vals) {
+      const ts = row[0] instanceof Date ? row[0].getTime() : 0;
+      if (String(row[7]).trim() === String(enjNo).trim()) {
+        const b = parseInt(row[12]);
+        if (!isNaN(b)) { sayacBit = b; if (ts > lastTime) lastTime = ts; }
+      }
+      if (String(row[15]).trim() === String(enjNo).trim()) {
+        const b = parseInt(row[20]);
+        if (!isNaN(b)) { sayacBit = b; if (ts > lastTime) lastTime = ts; }
+      }
     }
-    if (String(row[15]).trim() === String(enjNo).trim()) {
-      const b = parseInt(row[20]);
-      if (!isNaN(b)) sayacBit = b;
+  }
+
+  // Daha yeni bir sayaç sıfırlama kaydı varsa onu kullan
+  const logSheet = ss.getSheetByName('SayacLogları');
+  if (logSheet && logSheet.getLastRow() > 1) {
+    const logVals = logSheet.getRange(2, 1, logSheet.getLastRow() - 1, 3).getValues();
+    for (const row of logVals) {
+      if (String(row[1]).trim() !== String(enjNo).trim()) continue;
+      const ts = row[0] instanceof Date ? row[0].getTime() : 0;
+      if (ts > lastTime) {
+        lastTime = ts;
+        sayacBit = parseInt(row[2]) || 0;
+      }
     }
   }
 
@@ -237,6 +255,33 @@ function getLastCounter(cb, e) {
   }
 
   return jsonp(cb, { sayacBit, kasaAtanan });
+}
+
+// ================================================================
+// ACTION: resetSayac — Makine sayacı sıfırlandığında meydancı kaydeder
+// ================================================================
+
+function resetSayac(cb, e) {
+  const ss         = SpreadsheetApp.getActiveSpreadsheet();
+  const makineNo   = String(e.parameter.makine_no   || '').trim();
+  const yeniSayac  = parseInt(e.parameter.yeni_sayac) || 0;
+  const meydanciId = String(e.parameter.meydanci_id  || '').trim();
+  const meydanciAd = String(e.parameter.meydanci_ad  || '').trim();
+
+  if (!makineNo) return jsonp(cb, { error: 'Makine no belirtilmedi' });
+
+  let sheet = ss.getSheetByName('SayacLogları');
+  if (!sheet) {
+    sheet = ss.insertSheet('SayacLogları');
+    sheet.appendRow(['Zaman', 'Makine No', 'Yeni Sayaç', 'Meydancı ID', 'Meydancı Ad']);
+    sheet.getRange('A1:E1').setFontWeight('bold').setBackground('#7c3aed').setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+    [160, 140, 120, 100, 140].forEach((w, i) => sheet.setColumnWidth(i + 1, w));
+  }
+
+  sheet.appendRow([new Date(), makineNo, yeniSayac, meydanciId, meydanciAd]);
+
+  return jsonp(cb, { result: 'ok', makineNo, yeniSayac });
 }
 
 // ================================================================

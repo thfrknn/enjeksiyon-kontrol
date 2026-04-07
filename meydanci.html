@@ -502,6 +502,30 @@
 
 </div>
 
+<!-- ── Sayaç Sıfırla Modal ───────────────────────────── -->
+<div class="modal-overlay" id="sayac-modal" style="display:none" onclick="closeSayacModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔢 Sayaç Sıfırlama</div>
+    <div class="modal-sub" id="sayac-modal-sub">Sayaç yeniden başlatıldı</div>
+    <div style="padding:12px 0 8px">
+      <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">Yeni sayaç değeri (sıfırdan başlıyorsa 0 bırakın)</label>
+      <input type="number" id="sayac-yeni-val" value="0" min="0"
+             style="width:100%;box-sizing:border-box;padding:12px 14px;font-size:20px;font-weight:900;
+                    border:2px solid #c4b5fd;border-radius:12px;text-align:center;
+                    font-family:'Nunito',sans-serif;color:#7c3aed;outline:none">
+    </div>
+    <div class="modal-btn-row">
+      <button class="btn-modal-cancel" onclick="closeSayacModal()">İptal</button>
+      <button onclick="doSayacSifirla()"
+              style="flex:1;background:#7c3aed;color:white;border:none;border-radius:12px;
+                     padding:13px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer">
+        ✓ Kaydet
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Transfer Modal ────────────────────────────────── -->
 <div class="modal-overlay" id="transfer-modal" style="display:none" onclick="closeTransferModal(event)">
   <div class="modal-sheet" id="transfer-sheet">
@@ -737,6 +761,14 @@ function renderAtamaForm(i, makineNo, atama) {
     + '    <button class="btn-save" onclick="saveAtama(' + i + ')">✓ Kaydet</button>'
     + '    <button class="btn-clear" onclick="clearAtama(' + i + ')">Boşalt</button>'
     + '    ' + tasiBtn
+    + '  </div>'
+    + '  <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">'
+    + '    <button onclick="openSayacModal(\'' + makineNo + '\')"'
+    + '            style="width:100%;background:#f5f3ff;color:#7c3aed;border:1.5px solid #c4b5fd;'
+    + '                   border-radius:12px;padding:10px;font-family:\'Nunito\',sans-serif;'
+    + '                   font-size:13px;font-weight:800;cursor:pointer">'
+    + '      🔢 Sayaç Sıfırlandı'
+    + '    </button>'
     + '  </div>'
     + '</div>';
 }
@@ -1094,6 +1126,49 @@ function doTransfer(hedefMakine) {
     showToast('✅ ' + ctx.operatorAd + ' → ' + hedefMakine + ' taşındı');
     MS.transferCtx = null;
     loadData();
+  });
+}
+
+// ================================================================
+// SAYAÇ SIFIRLA
+// ================================================================
+
+var _sayacMakineNo = '';
+
+function openSayacModal(makineNo) {
+  _sayacMakineNo = makineNo;
+  document.getElementById('sayac-modal-sub').textContent = makineNo + ' sayacı yeniden başlatıldı';
+  document.getElementById('sayac-yeni-val').value = '0';
+  document.getElementById('sayac-modal').style.display = 'flex';
+  setTimeout(function() {
+    var inp = document.getElementById('sayac-yeni-val');
+    inp.focus();
+    inp.select();
+  }, 150);
+}
+
+function closeSayacModal(e) {
+  if (e && e.target !== document.getElementById('sayac-modal')) return;
+  document.getElementById('sayac-modal').style.display = 'none';
+}
+
+function doSayacSifirla() {
+  var yeniSayac = parseInt(document.getElementById('sayac-yeni-val').value);
+  if (isNaN(yeniSayac) || yeniSayac < 0) { showToast('⚠️ Geçerli bir sayaç değeri girin'); return; }
+
+  document.getElementById('sayac-modal').style.display = 'none';
+  showLoading('Kaydediliyor...');
+
+  apiCall({
+    action:      'resetSayac',
+    makine_no:   _sayacMakineNo,
+    yeni_sayac:  yeniSayac,
+    meydanci_id: MS.user ? MS.user.id : '',
+    meydanci_ad: MS.user ? MS.user.ad : '',
+  }, function(data) {
+    hideLoading();
+    if (data.error) { showToast('❌ ' + data.error); return; }
+    showToast('✅ ' + _sayacMakineNo + ' sayacı → ' + yeniSayac + ' olarak güncellendi');
   });
 }
 
