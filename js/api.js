@@ -41,6 +41,10 @@ function loadLists() {
         if (idEl.value.trim().length === 3) onIdChange();
       }
 
+      // Personel listesi yüklendiyse "Listeden seçin" butonunu göster
+      var listBtn = document.getElementById('listeden-sec-btn');
+      if (listBtn && Object.keys(kullanicilar).length > 0) listBtn.style.display = 'inline-block';
+
       // Şifre alanı: doğru şifre girilince "Devam Et" butonuna odaklan
       var sifreEl = document.getElementById('sifre');
       if (sifreEl && !sifreEl.dataset.listenerAdded) {
