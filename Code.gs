@@ -1100,7 +1100,7 @@ function changePassword(cb, e) {
 
 function buildMachineStatuses(ss) {
   const statuses = {};
-  for (let i = 1; i <= 12; i++) statuses['Enjeksiyon ' + i] = { durum: 'Aktif', sonAriza: null };
+  for (let i = 1; i <= 13; i++) statuses['Enjeksiyon ' + i] = { durum: 'Aktif', sonAriza: null };
 
   const durSheet = ss.getSheetByName('Makine Durumları');
   if (durSheet && durSheet.getLastRow() > 1) {
@@ -1448,7 +1448,7 @@ function setMachineDurum(ss, makineNo, durum, tip, sorun) {
     sheet.appendRow(['Makine No', 'Durum', 'Son Güncelleme', 'Sorun', 'Arıza Tipi']);
     sheet.getRange('A1:E1').setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff');
     sheet.setFrozenRows(1);
-    for (let i = 1; i <= 12; i++) sheet.appendRow(['Enjeksiyon ' + i, 'Aktif', '', '', '']);
+    for (let i = 1; i <= 13; i++) sheet.appendRow(['Enjeksiyon ' + i, 'Aktif', '', '', '']);
   }
 
   const now     = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
