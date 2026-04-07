@@ -122,6 +122,10 @@ function getLists(cb, e) {
   // Atamalar sheet'inden operatör → makine listesini oku (mevcut vardiyaya göre)
   const atananMakineler = readAtananMakineler(ss, _getCurrentVardiya());
 
+  let kasaMinMax = {};
+  const kasaMinMaxStr = props.getProperty('kasaMinMax');
+  if (kasaMinMaxStr) { try { kasaMinMax = JSON.parse(kasaMinMaxStr); } catch(ex) {} }
+
   return jsonp(cb, {
     kasaEbatlari: kasaEbatlariS,
     kullanicilar,
@@ -129,9 +133,10 @@ function getLists(cb, e) {
     kasaLimitlari,
     maxFireLimit,
     atananKasalar,
-    atananMakineler,        // YENİ: { "101": ["Enjeksiyon 3"], "102": ["Enjeksiyon 7"] }
+    atananMakineler,
     vardiyaTolerans,
     otoVardiya,
+    kasaMinMax,
     serverTime: new Date().getTime(),
     lockedMachines
   });
@@ -146,27 +151,14 @@ function getStatus(cb, e) {
   const tarih       = e.parameter.tarih;
   const vardiya     = e.parameter.vardiya;
   const saat        = e.parameter.saat || '';
-  const kullaniciId = e.parameter.kullanici_id || '';   // YENİ
+  const kullaniciId = e.parameter.kullanici_id || '';
 
-    // Kasa ağırlık min/max limitlerini de gönder (operatör formundaki uyarılar için)
-    let kasaMinMaxL = {};
-    const kasaMinMaxStrL = _propsL.getProperty('kasaMinMax');
-    if (kasaMinMaxStrL) {
-      try { kasaMinMaxL = JSON.parse(kasaMinMaxStrL); } catch(ex) {}
-    }
-
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Veriler');
+  if (!sheet || sheet.getLastRow() < 2) {
     return jsonp(cb, {
-      kasaEbatlari: kasaEbatlariS,
-      kullanicilar,
-      uretimLimiti,
-      kasaLimitlari,
-      maxFireLimit,
-      atananKasalar,
-      vardiyaTolerans,
-      otoVardiya,
-      kasaMinMax: kasaMinMaxL,
-      serverTime: new Date().getTime(),
-      lockedMachines
+      olcumNo: 1, enj1: null, kasa1: null, enj2: null, kasa2: null, enjSayisi: 1,
+      atananMakineler: kullaniciId ? readAtananMakinelerForUser(ss, kullaniciId, vardiya) : []
     });
   }
 
@@ -201,55 +193,65 @@ function getStatus(cb, e) {
       const f2 = parseInt(row[22]); if (!isNaN(f2)) fireToplam2 += f2;
     }
   }
-  if (e.parameter.action === 'getLastCounter') {
-    const enjNo = e.parameter.enj_no;
-    const ss    = SpreadsheetApp.getActiveSpreadsheet();
 
-    // Sayaç sıfırlama bayrağını kontrol et
-    const props = PropertiesService.getScriptProperties();
-    const resetList = (props.getProperty('counterResetList') || '').split(',').filter(Boolean);
-    if (resetList.indexOf(String(enjNo).trim()) !== -1) {
-      // Sıfırlanmış makine — null döndür, operatör manuel girsin
-      let kasaAtanan2 = null;
-      const kasaSheet2 = ss.getSheetByName('Makine Kasa');
-      if (kasaSheet2 && kasaSheet2.getLastRow() > 1) {
-        const kv2 = kasaSheet2.getRange(2, 1, kasaSheet2.getLastRow() - 1, 2).getValues();
-        for (const row of kv2) {
-          if (String(row[0]).trim() === String(enjNo).trim()) { kasaAtanan2 = String(row[1]).trim() || null; break; }
-        }
-      }
-      return jsonp(cb, { sayacBit: null, kasaAtanan: kasaAtanan2, manuelGerekli: true });
-    }
+  const kullaniciAtamalar = kullaniciId ? readAtananMakinelerForUser(ss, kullaniciId, vardiya) : [];
 
-    const sheet = ss.getSheetByName('Veriler');
-    let sayacBit = null;
+  return jsonp(cb, {
+    olcumNo, enj1, kasa1, enj2, kasa2, enjSayisi,
+    sayacBit1, sayacBit2, fireToplam1, fireToplam2,
+    lockedMachines: getLockedMachines(ss),
+    atananMakineler: kullaniciAtamalar
+  });
+}
 
-    if (sheet && sheet.getLastRow() > 1) {
-      const lastRow = sheet.getLastRow();
-      const vals = sheet.getRange(2, 1, lastRow - 1, 24).getValues();
-      for (let i = 0; i < vals.length; i++) {
-        if (String(vals[i][7]).trim() === String(enjNo).trim()) {
-          const b = parseInt(vals[i][12]);
-          if (!isNaN(b)) sayacBit = b;
-        }
-        if (String(vals[i][15]).trim() === String(enjNo).trim()) {
-          const b = parseInt(vals[i][20]);
-          if (!isNaN(b)) sayacBit = b;
-        }
+// ================================================================
+// ACTION: getLastCounter
+// ================================================================
+
+function getLastCounter(cb, e) {
+  const enjNo = e.parameter.enj_no;
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Sayaç sıfırlama bayrağını kontrol et
+  const props = PropertiesService.getScriptProperties();
+  const resetList = (props.getProperty('counterResetList') || '').split(',').filter(Boolean);
+  if (resetList.indexOf(String(enjNo).trim()) !== -1) {
+    let kasaAtanan2 = null;
+    const kasaSheet2 = ss.getSheetByName('Makine Kasa');
+    if (kasaSheet2 && kasaSheet2.getLastRow() > 1) {
+      const kv2 = kasaSheet2.getRange(2, 1, kasaSheet2.getLastRow() - 1, 2).getValues();
+      for (const row of kv2) {
+        if (String(row[0]).trim() === String(enjNo).trim()) { kasaAtanan2 = String(row[1]).trim() || null; break; }
       }
     }
+    return jsonp(cb, { sayacBit: null, kasaAtanan: kasaAtanan2, manuelGerekli: true });
+  }
 
-    // Veriler'de bulunamadıysa Devir sekmesinden devir sayacını al (ay sonu temizliği sonrası)
-    if (sayacBit === null) {
-      const devirSheet = ss.getSheetByName('Devir');
-      if (devirSheet && devirSheet.getLastRow() > 1) {
-        const dv = devirSheet.getRange(2, 1, devirSheet.getLastRow() - 1, 2).getValues();
-        for (const row of dv) {
-          if (String(row[0]).trim() === String(enjNo).trim()) {
-            const b = parseInt(row[1]);
-            if (!isNaN(b) && b > 0) sayacBit = b;
-            break;
-          }
+  const sheet = ss.getSheetByName('Veriler');
+  let sayacBit = null;
+
+  if (sheet && sheet.getLastRow() > 1) {
+    const vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 24).getValues();
+    for (const row of vals) {
+      if (String(row[7]).trim() === String(enjNo).trim()) {
+        const b = parseInt(row[12]); if (!isNaN(b)) sayacBit = b;
+      }
+      if (String(row[15]).trim() === String(enjNo).trim()) {
+        const b = parseInt(row[20]); if (!isNaN(b)) sayacBit = b;
+      }
+    }
+  }
+
+  // Veriler'de bulunamadıysa Devir sekmesinden devir sayacını al (ay sonu temizliği sonrası)
+  if (sayacBit === null) {
+    const devirSheet = ss.getSheetByName('Devir');
+    if (devirSheet && devirSheet.getLastRow() > 1) {
+      const dv = devirSheet.getRange(2, 1, devirSheet.getLastRow() - 1, 2).getValues();
+      for (const row of dv) {
+        if (String(row[0]).trim() === String(enjNo).trim()) {
+          const b = parseInt(row[1]);
+          if (!isNaN(b) && b > 0) sayacBit = b;
+          break;
         }
       }
     }
