@@ -106,6 +106,8 @@ function restoreDraft() {
           if (b.getAttribute('onclick').includes("'" + val + "'")) b.classList.add('sel');
         });
         loadAccumulatedFire(n, val);
+        // iOS arka plan donması sonrası sayaç değerini yenile
+        fetchLastCounter(n, val);
       }
     });
 

@@ -143,14 +143,16 @@ function formatCevrim(el) {
 
 function setBasReadonly(n) {
   var el = document.getElementById('sayac_bas' + n);
-  el.setAttribute('readonly', '');
-  el.style.cssText = 'font-size:18px;font-weight:800;background:var(--accent-light);border-color:var(--accent);color:var(--accent)';
+  el.readOnly = true;                   // DOM property — iOS'ta setAttribute('readonly') unreliable
+  el.style.pointerEvents = 'none';      // dokunuşu engelle (iOS PWA)
+  el.style.cssText = 'font-size:18px;font-weight:800;background:var(--accent-light);border-color:var(--accent);color:var(--accent);pointer-events:none';
   document.getElementById('lbl-bas' + n).innerHTML = 'Sayaç Başlama <small style="color:var(--accent);font-size:12px;font-weight:700">(önceki kayıt)</small>';
 }
 
 function setBasEditable(n) {
   var el = document.getElementById('sayac_bas' + n);
-  el.removeAttribute('readonly');
+  el.readOnly = false;                  // DOM property
+  el.style.pointerEvents = 'auto';
   el.style.cssText = 'font-size:18px;font-weight:800';
   document.getElementById('lbl-bas' + n).innerHTML = 'Sayaç Başlama <span class="req">*</span>';
 }
@@ -217,6 +219,17 @@ function getKasaBounds(n) {
     : document.getElementById('kasa' + n).value;
   if (!kasa) return null;
   var key = kasa.trim().toLowerCase().replace(/\s+/g, '');
+
+  // Önce sunucudan gelen dinamik limitler (kasaMinMax) → monitör Ayarlar'dan güncellenir
+  var dynKeys = Object.keys(kasaMinMax || {});
+  for (var di = 0; di < dynKeys.length; di++) {
+    if (dynKeys[di].toLowerCase().replace(/\s+/g, '') === key) {
+      var d = kasaMinMax[dynKeys[di]];
+      if (d && (d.min > 0 || d.max > 0)) return d;
+    }
+  }
+
+  // Fallback: statik KASA_AGIRLIK (config.js)
   var keys = Object.keys(KASA_AGIRLIK);
   for (var i = 0; i < keys.length; i++) {
     if (keys[i].toLowerCase() === key) return KASA_AGIRLIK[keys[i]];

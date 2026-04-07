@@ -11,6 +11,7 @@ var enj2Kilitli  = false;
 var kullanicilar  = {};
 var uretimLimiti  = 0;
 var kasaLimitlari = {};
+var kasaMinMax    = {};  // Kasa ebatı → { min, max } ağırlık limitleri (sunucudan)
 var atananKasalar = {};  // Makine No → kasa ebatı (meydancı tarafından)
 var _adSoyad      = '';
 var maxFireLimit  = 200;  // Sheets'ten güncellenir
