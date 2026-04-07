@@ -243,6 +243,20 @@ function buildCard(n, makineNo, status) {
           </button>
         </div>
       </div>
+
+      <!-- Sayaç Sıfırlama -->
+      <div class="mcard-section" style="border-color:#fda4af">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="mcard-sec-title" style="color:#b91c1c;margin-bottom:2px">🔄 Sayaç Sıfırla</div>
+            <div style="font-size:12px;color:var(--text2);font-weight:600">Operatör sayacı manuel girer</div>
+          </div>
+          <button onclick="openSayacSifirlaModal(${n}, '${makineNo}')"
+                  style="padding:10px 14px;background:#fff1f2;color:#b91c1c;border:1.5px solid #fda4af;border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer">
+            Sıfırla
+          </button>
+        </div>
+      </div>
     </div>
   `;
 
@@ -722,6 +736,109 @@ function qsOpenMachine(n, makineNo) {
     };
     document.head.appendChild(s);
   }
+}
+
+/* ---------- Sayaç Sıfırlama ---------- */
+
+let _resetTargetMakino = null;
+let _resetTargetN      = null;
+
+function openSayacSifirlaModal(n, makineNo) {
+  _resetTargetN      = n;
+  _resetTargetMakino = makineNo;
+
+  // Modal HTML yoksa oluştur
+  if (!document.getElementById('sayac-sifirla-modal')) {
+    const m = document.createElement('div');
+    m.id = 'sayac-sifirla-modal';
+    m.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center';
+    m.innerHTML = `
+      <div style="background:white;border-radius:20px;padding:24px;width:calc(100% - 40px);max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="font-size:17px;font-weight:800;color:#b91c1c;margin-bottom:6px">🔄 Sayaç Sıfırla</div>
+        <div id="sayac-sifirla-sub" style="font-size:13px;color:var(--text2);margin-bottom:14px"></div>
+        <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px;font-size:12px;font-weight:600;color:#92400e;margin-bottom:14px">
+          Sıfırlandıktan sonra operatör sayaç başlangıcını manuel girer.
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Şifreniz</label>
+          <input id="sayac-sifirla-sifre" type="password" inputmode="numeric"
+                 style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:16px;font-family:'Nunito',sans-serif;font-weight:700" placeholder="Şifrenizi girin">
+        </div>
+        <div id="sayac-sifirla-err" style="display:none;color:#dc2626;font-size:13px;font-weight:700;margin-bottom:12px;padding:8px;background:#fff1f2;border-radius:8px"></div>
+        <div style="display:flex;gap:10px">
+          <button onclick="closeSayacSifirlaModal()"
+                  style="flex:1;padding:13px;background:#f1f5f9;color:#334155;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer">
+            İptal
+          </button>
+          <button id="sayac-sifirla-ok-btn" onclick="confirmSayacSifirla()"
+                  style="flex:1;padding:13px;background:#dc2626;color:white;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer">
+            Sıfırla
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+  }
+
+  document.getElementById('sayac-sifirla-sifre').value = '';
+  document.getElementById('sayac-sifirla-err').style.display = 'none';
+  document.getElementById('sayac-sifirla-sub').textContent = makineNo + ' — sayaç başlangıcını sıfırla';
+  const modal = document.getElementById('sayac-sifirla-modal');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('sayac-sifirla-sifre').focus(), 100);
+}
+
+function closeSayacSifirlaModal() {
+  const m = document.getElementById('sayac-sifirla-modal');
+  if (m) m.style.display = 'none';
+}
+
+function confirmSayacSifirla() {
+  const sifre = (document.getElementById('sayac-sifirla-sifre').value || '').trim();
+  const errEl = document.getElementById('sayac-sifirla-err');
+  const btn   = document.getElementById('sayac-sifirla-ok-btn');
+
+  if (!sifre) {
+    errEl.textContent = 'Şifre gerekli';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  errEl.style.display = 'none';
+
+  const cb = 'cbRSC_' + Date.now();
+  window[cb] = function(json) {
+    delete window[cb];
+    document.getElementById('jsonp-rsc')?.remove();
+    btn.disabled = false;
+    btn.textContent = 'Sıfırla';
+
+    if (json && json.result === 'ok') {
+      closeSayacSifirlaModal();
+      showMToast('✅ Sayaç sıfırlandı — operatör manuel girer', 'ok');
+    } else {
+      errEl.textContent = json && json.error ? json.error : 'Hata oluştu';
+      errEl.style.display = 'block';
+    }
+  };
+
+  const s = document.createElement('script');
+  s.id  = 'jsonp-rsc';
+  s.src = SCRIPT_URL
+    + '?action=resetMachineCounter'
+    + '&makine_no='    + encodeURIComponent(_resetTargetMakino)
+    + '&tekniker_id='  + encodeURIComponent(_userId)
+    + '&sifre='        + encodeURIComponent(sifre)
+    + '&callback='     + cb;
+  s.onerror = function() {
+    delete window[cb];
+    btn.disabled = false;
+    btn.textContent = 'Sıfırla';
+    errEl.textContent = 'Bağlantı hatası';
+    errEl.style.display = 'block';
+  };
+  document.head.appendChild(s);
 }
 
 /* ---------- Toast ---------- */

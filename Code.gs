@@ -145,21 +145,53 @@ function doGet(e) {
   if (e.parameter.action === 'getLastCounter') {
     const enjNo = e.parameter.enj_no;
     const ss    = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName('Veriler');
-    if (!sheet || sheet.getLastRow() < 2) return jsonp(cb, { sayacBit: null });
 
-    const lastRow = sheet.getLastRow();
-    const vals = sheet.getRange(2, 1, lastRow - 1, 24).getValues();
+    // Sayaç sıfırlama bayrağını kontrol et
+    const props = PropertiesService.getScriptProperties();
+    const resetList = (props.getProperty('counterResetList') || '').split(',').filter(Boolean);
+    if (resetList.indexOf(String(enjNo).trim()) !== -1) {
+      // Sıfırlanmış makine — null döndür, operatör manuel girsin
+      let kasaAtanan2 = null;
+      const kasaSheet2 = ss.getSheetByName('Makine Kasa');
+      if (kasaSheet2 && kasaSheet2.getLastRow() > 1) {
+        const kv2 = kasaSheet2.getRange(2, 1, kasaSheet2.getLastRow() - 1, 2).getValues();
+        for (const row of kv2) {
+          if (String(row[0]).trim() === String(enjNo).trim()) { kasaAtanan2 = String(row[1]).trim() || null; break; }
+        }
+      }
+      return jsonp(cb, { sayacBit: null, kasaAtanan: kasaAtanan2, manuelGerekli: true });
+    }
+
+    const sheet = ss.getSheetByName('Veriler');
     let sayacBit = null;
 
-    for (let i = 0; i < vals.length; i++) {
-      if (String(vals[i][7]).trim() === String(enjNo).trim()) {
-        const b = parseInt(vals[i][12]);
-        if (!isNaN(b)) sayacBit = b;
+    if (sheet && sheet.getLastRow() > 1) {
+      const lastRow = sheet.getLastRow();
+      const vals = sheet.getRange(2, 1, lastRow - 1, 24).getValues();
+      for (let i = 0; i < vals.length; i++) {
+        if (String(vals[i][7]).trim() === String(enjNo).trim()) {
+          const b = parseInt(vals[i][12]);
+          if (!isNaN(b)) sayacBit = b;
+        }
+        if (String(vals[i][15]).trim() === String(enjNo).trim()) {
+          const b = parseInt(vals[i][20]);
+          if (!isNaN(b)) sayacBit = b;
+        }
       }
-      if (String(vals[i][15]).trim() === String(enjNo).trim()) {
-        const b = parseInt(vals[i][20]);
-        if (!isNaN(b)) sayacBit = b;
+    }
+
+    // Veriler'de bulunamadıysa Devir sekmesinden devir sayacını al (ay sonu temizliği sonrası)
+    if (sayacBit === null) {
+      const devirSheet = ss.getSheetByName('Devir');
+      if (devirSheet && devirSheet.getLastRow() > 1) {
+        const dv = devirSheet.getRange(2, 1, devirSheet.getLastRow() - 1, 2).getValues();
+        for (const row of dv) {
+          if (String(row[0]).trim() === String(enjNo).trim()) {
+            const b = parseInt(row[1]);
+            if (!isNaN(b) && b > 0) sayacBit = b;
+            break;
+          }
+        }
       }
     }
 
@@ -973,6 +1005,149 @@ function doGet(e) {
       }
     }
     return jsonp(cb, { error: 'Personel bulunamadı' });
+  }
+
+  // ============================================================
+  // resetMachineCounter: Meydancı — sayaç sıfırlama (şifre onaylı)
+  // Makineyi ScriptProperties sıfırlama listesine ekler.
+  // Sonraki getLastCounter çağrısı null dönerek manuel girişe zorlar.
+  // ============================================================
+  if (e.parameter.action === 'resetMachineCounter') {
+    const ss      = SpreadsheetApp.getActiveSpreadsheet();
+    const makino  = String(e.parameter.makine_no  || '').trim();
+    const reqId   = String(e.parameter.tekniker_id || '').trim();
+    const reqSifre = String(e.parameter.sifre      || '').trim();
+
+    if (!makino || !reqId || !reqSifre) return jsonp(cb, { error: 'Eksik parametre' });
+
+    // Şifre doğrulama — Personel sekmesinden kontrol
+    const pSheet = _getOrCreatePersonelSheet(ss);
+    const pLastRow = pSheet.getLastRow();
+    let dogruSifre = false;
+    if (pLastRow > 1) {
+      const pDisp = pSheet.getRange(2, 1, pLastRow - 1, 3).getDisplayValues();
+      for (let i = 0; i < pDisp.length; i++) {
+        if (String(pDisp[i][0]).trim() === reqId && String(pDisp[i][2]).trim() === reqSifre) {
+          dogruSifre = true;
+          break;
+        }
+      }
+    }
+    if (!dogruSifre) return jsonp(cb, { error: 'Şifre hatalı' });
+
+    // Makineyi sıfırlama listesine ekle
+    const props2 = PropertiesService.getScriptProperties();
+    const cur = (props2.getProperty('counterResetList') || '').split(',').filter(Boolean);
+    if (cur.indexOf(makino) === -1) cur.push(makino);
+    props2.setProperty('counterResetList', cur.join(','));
+
+    return jsonp(cb, { result: 'ok' });
+  }
+
+  // ============================================================
+  // monthlyBackupAndCleanup: Ay sonu temizliği
+  // Son sayaçları Devir sekmesine kaydeder, log sekmelerini temizler.
+  // Personel sekmesi ve Makine Durumları dokunulmaz.
+  // ============================================================
+  if (e.parameter.action === 'monthlyBackupAndCleanup') {
+    const ss     = SpreadsheetApp.getActiveSpreadsheet();
+    const reqId2 = String(e.parameter.admin_id  || '').trim();
+    const reqSifre2 = String(e.parameter.sifre  || '').trim();
+
+    // Şifre doğrulama — yetkili kullanıcı (Meydancı veya Admin rolü)
+    const pSheet2 = _getOrCreatePersonelSheet(ss);
+    const pLastRow2 = pSheet2.getLastRow();
+    let authorized = false;
+    if (pLastRow2 > 1) {
+      const pDisp2 = pSheet2.getRange(2, 1, pLastRow2 - 1, 5).getDisplayValues();
+      for (let i = 0; i < pDisp2.length; i++) {
+        const id2   = String(pDisp2[i][0]).trim();
+        const sifre2 = String(pDisp2[i][2]).trim();
+        const rol2  = String(pDisp2[i][3]).trim();
+        if (id2 === reqId2 && sifre2 === reqSifre2 && (rol2 === 'Meydancı' || rol2 === 'Admin')) {
+          authorized = true;
+          break;
+        }
+      }
+    }
+    if (!authorized) return jsonp(cb, { error: 'Yetkisiz erişim — Meydancı/Admin şifresi gerekli' });
+
+    const now2 = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+
+    // ── 1. Son sayaçları Devir sekmesine kaydet ──────────────
+    let devirSheet = ss.getSheetByName('Devir');
+    if (!devirSheet) {
+      devirSheet = ss.insertSheet('Devir');
+      devirSheet.appendRow(['Makine No', 'Son Sayaç', 'Tarih', 'Yapan']);
+      const dh = devirSheet.getRange('A1:D1');
+      dh.setFontWeight('bold').setBackground('#7c3aed').setFontColor('#ffffff');
+      devirSheet.setFrozenRows(1);
+    }
+
+    const vSheet = ss.getSheetByName('Veriler');
+    const lastSayac = {};  // makineNo → son sayaç_bit
+    if (vSheet && vSheet.getLastRow() > 1) {
+      const vv = vSheet.getRange(2, 1, vSheet.getLastRow() - 1, 24).getValues();
+      for (const row of vv) {
+        const enj1 = String(row[7]).trim();
+        const bit1 = parseInt(row[12]);
+        if (enj1 && !isNaN(bit1)) lastSayac[enj1] = bit1;
+        const enj2 = String(row[15]).trim();
+        const bit2 = parseInt(row[20]);
+        if (enj2 && !isNaN(bit2) && enj2 !== '00') lastSayac[enj2] = bit2;
+      }
+    }
+
+    // Devir sekmesini güncelle — makine varsa üzerine yaz, yoksa ekle
+    for (let mn = 1; mn <= 12; mn++) {
+      const mKey = 'Enjeksiyon ' + mn;
+      if (lastSayac[mKey] === undefined) continue;
+      const dLastRow = devirSheet.getLastRow();
+      let found2 = false;
+      if (dLastRow > 1) {
+        const dv = devirSheet.getRange(2, 1, dLastRow - 1, 1).getValues();
+        for (let di = 0; di < dv.length; di++) {
+          if (String(dv[di][0]).trim() === mKey) {
+            devirSheet.getRange(di + 2, 2, 1, 3).setValues([[lastSayac[mKey], now2, reqId2]]);
+            found2 = true;
+            break;
+          }
+        }
+      }
+      if (!found2) devirSheet.appendRow([mKey, lastSayac[mKey], now2, reqId2]);
+    }
+
+    // ── 2. Log sekmelerini temizle (başlık satırı korunur) ───
+    const sheetsToClear = ['Veriler', 'Fire Log', 'Arıza Log', 'Günlük Özet', 'Üretim Kaydı', 'Machine Locks', 'Makine Kasa'];
+    const cleared = [];
+    for (const name of sheetsToClear) {
+      const sh = ss.getSheetByName(name);
+      if (sh && sh.getLastRow() > 1) {
+        sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).clearContent();
+        cleared.push(name);
+      }
+    }
+
+    // Canlı İzleme veri hücrelerini temizle (başlık + bölüm satırları korunur)
+    const ciSheet = ss.getSheetByName('Canlı İzleme');
+    if (ciSheet) {
+      // Veri satırları: 3-14 (SABAH), 16-27 (AKSAM), 29-40 (GECE) — B:L sütunları
+      const dataRanges = ['B3:L14', 'B16:L27', 'B29:L40'];
+      for (const r of dataRanges) {
+        try { ciSheet.getRange(r).clearContent(); } catch(_) {}
+      }
+      cleared.push('Canlı İzleme');
+    }
+
+    // ── 3. Sayaç sıfırlama listesini temizle ─────────────────
+    PropertiesService.getScriptProperties().setProperty('counterResetList', '');
+
+    return jsonp(cb, {
+      result: 'ok',
+      devirKaydedilen: Object.keys(lastSayac).length,
+      temizlenen: cleared,
+      zaman: now2
+    });
   }
 
   return jsonp(cb, { error: 'Geçersiz istek' });

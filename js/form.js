@@ -143,14 +143,16 @@ function formatCevrim(el) {
 
 function setBasReadonly(n) {
   var el = document.getElementById('sayac_bas' + n);
-  el.setAttribute('readonly', '');
-  el.style.cssText = 'font-size:18px;font-weight:800;background:var(--accent-light);border-color:var(--accent);color:var(--accent)';
+  el.readOnly = true;                   // DOM property — iOS'ta setAttribute('readonly') unreliable
+  el.style.pointerEvents = 'none';      // dokunuşu engelle (iOS PWA)
+  el.style.cssText = 'font-size:18px;font-weight:800;background:var(--accent-light);border-color:var(--accent);color:var(--accent);pointer-events:none';
   document.getElementById('lbl-bas' + n).innerHTML = 'Sayaç Başlama <small style="color:var(--accent);font-size:12px;font-weight:700">(önceki kayıt)</small>';
 }
 
 function setBasEditable(n) {
   var el = document.getElementById('sayac_bas' + n);
-  el.removeAttribute('readonly');
+  el.readOnly = false;                  // DOM property
+  el.style.pointerEvents = 'auto';
   el.style.cssText = 'font-size:18px;font-weight:800';
   document.getElementById('lbl-bas' + n).innerHTML = 'Sayaç Başlama <span class="req">*</span>';
 }

@@ -74,22 +74,35 @@ function loadLists() {
 
 /**
  * Seçilen makine için en son sayaç bitiş değerini çeker.
- * Değer bulunursa sayaç başlama alanını salt-okunur yapar.
+ * iOS PWA güvenilirliği için 3 deneme + artan gecikme.
  */
-function fetchLastCounter(n, enjNo) {
+function fetchLastCounter(n, enjNo, _attempt) {
+  var attempt = _attempt || 1;
+  var MAX_ATTEMPTS = 3;
   var bas = document.getElementById('sayac_bas' + n);
-  bas.value = '';
-  setBasEditable(n);
-  calcUretim(n);
+
+  if (attempt === 1) {
+    bas.value = '';
+    setBasEditable(n);
+    calcUretim(n);
+  }
+
+  // Önceki isteği temizle
+  document.getElementById('lcs' + n)?.remove();
 
   var cb = 'cbLC' + n + '_' + Date.now();
+  var timeoutMs = attempt * 4000;  // 4s, 8s, 12s
 
-  // Zaman aşımı: 6 saniye içinde cevap gelmezse alan düzenlenebilir kalır
   var _t = setTimeout(function() {
     delete window[cb];
     document.getElementById('lcs' + n)?.remove();
-    setBasEditable(n);
-  }, 6000);
+    if (attempt < MAX_ATTEMPTS) {
+      fetchLastCounter(n, enjNo, attempt + 1);
+    } else {
+      setBasEditable(n);
+      showToast('Sayaç otomatik alınamadı, manuel girin', 'warn');
+    }
+  }, timeoutMs);
 
   window[cb] = function(json) {
     clearTimeout(_t);
@@ -102,10 +115,7 @@ function fetchLastCounter(n, enjNo) {
     }
     if (json.kasaAtanan) {
       var kasaSel = document.getElementById('kasa' + n);
-      if (kasaSel) {
-        kasaSel.value = json.kasaAtanan;
-        calcUretim(n);
-      }
+      if (kasaSel) { kasaSel.value = json.kasaAtanan; calcUretim(n); }
       showKasaAtandiBox(n, json.kasaAtanan);
     } else {
       hideKasaAtandiBox(n);
@@ -114,14 +124,20 @@ function fetchLastCounter(n, enjNo) {
 
   var s = document.createElement('script');
   s.id  = 'lcs' + n;
-  s.src = SCRIPT_URL + '?action=getLastCounter&enj_no=' + encodeURIComponent(enjNo) + '&callback=' + cb;
+  // Cache-bust ile her denemede taze istek
+  s.src = SCRIPT_URL + '?action=getLastCounter&enj_no=' + encodeURIComponent(enjNo)
+        + '&callback=' + cb + '&_r=' + Date.now();
   s.onerror = function() {
     clearTimeout(_t);
     delete window[cb];
-    setBasEditable(n);  // hata durumunda alanı serbest bırak
+    if (attempt < MAX_ATTEMPTS) {
+      setTimeout(function() { fetchLastCounter(n, enjNo, attempt + 1); }, 400 * attempt);
+    } else {
+      setBasEditable(n);
+    }
   };
-  // iOS PWA uyumluluğu: script body'e append edilmeli, setTimeout ile dokunuş olayından sonra yükle
-  setTimeout(function() { document.body.appendChild(s); }, 10);
+  // iOS PWA: dokunuş olayından bağımsız olarak script yüklensin
+  setTimeout(function() { document.body.appendChild(s); }, 10 + (attempt - 1) * 200);
 }
 
 /**
