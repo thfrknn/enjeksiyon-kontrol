@@ -80,6 +80,13 @@ function doGet(e) {
       }
     }
 
+    // Kasa ağırlık min/max limitlerini de gönder (operatör formundaki uyarılar için)
+    let kasaMinMaxL = {};
+    const kasaMinMaxStrL = _propsL.getProperty('kasaMinMax');
+    if (kasaMinMaxStrL) {
+      try { kasaMinMaxL = JSON.parse(kasaMinMaxStrL); } catch(ex) {}
+    }
+
     return jsonp(cb, {
       kasaEbatlari: kasaEbatlariS,
       kullanicilar,
@@ -89,6 +96,7 @@ function doGet(e) {
       atananKasalar,
       vardiyaTolerans,
       otoVardiya,
+      kasaMinMax: kasaMinMaxL,
       serverTime: new Date().getTime(),
       lockedMachines
     });
@@ -437,7 +445,7 @@ function doGet(e) {
 
     // 1) Makine durumları
     const statuses = {};
-    for (let i = 1; i <= 12; i++) statuses['Enjeksiyon ' + i] = { durum: 'Aktif', sonAriza: null };
+    for (let i = 1; i <= 13; i++) statuses['Enjeksiyon ' + i] = { durum: 'Aktif', sonAriza: null };
     const durSheet = ss.getSheetByName('Makine Durumları');
     if (durSheet && durSheet.getLastRow() > 1) {
       const dv = durSheet.getRange(2, 1, durSheet.getLastRow() - 1, 5).getValues();
@@ -452,17 +460,17 @@ function doGet(e) {
       }
     }
 
-    // 2) Canlı İzleme verisi — 3-bölüm yapı (SABAH/AKSAM/GECE × 12 makine)
+    // 2) Canlı İzleme verisi — 3-bölüm yapı (SABAH/AKSAM/GECE × 13 makine)
     // Web monitör için: her makine'nin son 24s içindeki en güncel kaydı
     const canliData = {};
     const canliSheet = ss.getSheetByName('Canlı İzleme');
     if (canliSheet && canliSheet.getLastRow() >= 3) {
-      const readRows = Math.min(canliSheet.getLastRow(), 40);
+      const readRows = Math.min(canliSheet.getLastRow(), 44);
       const allCanli = canliSheet.getRange(1, 1, readRows, 12).getValues();
-      const _BASES_MON = { SABAH: 2, AKSAM: 15, GECE: 28 };
+      const _BASES_MON = { SABAH: 2, AKSAM: 16, GECE: 30 };
       const nowMs = new Date().getTime();
 
-      for (let enjIdx = 1; enjIdx <= 12; enjIdx++) {
+      for (let enjIdx = 1; enjIdx <= 13; enjIdx++) {
         const makineNo = 'Enjeksiyon ' + enjIdx;
         canliData[makineNo] = {};
         let bestEntry = null, bestTs = 0;
@@ -615,9 +623,9 @@ function doGet(e) {
       arizaTipleri = ['Makine Kaynaklı', 'Kalıp Kaynaklı', 'Diğer'];
     }
 
-    // 12 makinenin durumu
+    // 13 makinenin durumu
     const statuses = {};
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= 13; i++) {
       statuses['Enjeksiyon ' + i] = { durum: 'Aktif', sonAriza: null };
     }
 
@@ -642,12 +650,12 @@ function doGet(e) {
     const canliSheetM = ss.getSheetByName('Canlı İzleme');
     const machineData = {};
     if (canliSheetM && canliSheetM.getLastRow() >= 3) {
-      const readRowsM = Math.min(canliSheetM.getLastRow(), 40);
+      const readRowsM = Math.min(canliSheetM.getLastRow(), 44);
       const allCanliM = canliSheetM.getRange(1, 1, readRowsM, 12).getValues();
-      const _BASES_M = { SABAH: 2, AKSAM: 15, GECE: 28 };
+      const _BASES_M = { SABAH: 2, AKSAM: 16, GECE: 30 };
       const nowMsM = new Date().getTime();
 
-      for (let i = 1; i <= 12; i++) {
+      for (let i = 1; i <= 13; i++) {
         const makineNo = 'Enjeksiyon ' + i;
         let bestEntry = null, bestTs = 0;
 
@@ -1099,7 +1107,7 @@ function doGet(e) {
     }
 
     // Devir sekmesini güncelle — makine varsa üzerine yaz, yoksa ekle
-    for (let mn = 1; mn <= 12; mn++) {
+    for (let mn = 1; mn <= 13; mn++) {
       const mKey = 'Enjeksiyon ' + mn;
       if (lastSayac[mKey] === undefined) continue;
       const dLastRow = devirSheet.getLastRow();
@@ -1131,8 +1139,8 @@ function doGet(e) {
     // Canlı İzleme veri hücrelerini temizle (başlık + bölüm satırları korunur)
     const ciSheet = ss.getSheetByName('Canlı İzleme');
     if (ciSheet) {
-      // Veri satırları: 3-14 (SABAH), 16-27 (AKSAM), 29-40 (GECE) — B:L sütunları
-      const dataRanges = ['B3:L14', 'B16:L27', 'B29:L40'];
+      // Veri satırları: 3-15 (SABAH), 17-29 (AKSAM), 31-43 (GECE) — B:L sütunları
+      const dataRanges = ['B3:L15', 'B17:L29', 'B31:L43'];
       for (const r of dataRanges) {
         try { ciSheet.getRange(r).clearContent(); } catch(_) {}
       }
@@ -1238,7 +1246,8 @@ function yazBaslik(sheet) {
 // ================================================================
 
 // Vardiya → bölüm başlangıç satırı (section header satırı)
-var _VARDIYA_BASE = { 'SABAH': 2, 'AKSAM': 15, 'GECE': 28 };
+// 13 makine × 3 vardiya: header(2) + 13 + header(16) + 13 + header(30) + 13 = 43 satır
+var _VARDIYA_BASE = { 'SABAH': 2, 'AKSAM': 16, 'GECE': 30 };
 
 // Vardiya renkleri (makine satırı arkaplanı)
 var _VARDIYA_BG = { 'SABAH': '#fef9c3', 'AKSAM': '#dbeafe', 'GECE': '#f3e8ff' };
@@ -1265,7 +1274,7 @@ function updateCanliIzleme(enjNo, kasa, cevrim, agirlik, sayacBas, sayacBit, ure
   const m = String(enjNo).match(/(\d+)\s*$/);
   if (!m) return;
   const enjIdx = parseInt(m[1]);
-  if (enjIdx < 1 || enjIdx > 12) return;
+  if (enjIdx < 1 || enjIdx > 13) return;
 
   const base = _VARDIYA_BASE[vardiya];
   if (!base) return;
@@ -1327,8 +1336,8 @@ function _setupCanlıBaslik(sheet) {
 
   const sections = [
     { name: 'SABAH', base: 2,  bg: '#f59e0b', rowBg: '#fef9c3' },
-    { name: 'AKSAM', base: 15, bg: '#3b82f6', rowBg: '#dbeafe' },
-    { name: 'GECE',  base: 28, bg: '#7c3aed', rowBg: '#f3e8ff' },
+    { name: 'AKSAM', base: 16, bg: '#3b82f6', rowBg: '#dbeafe' },
+    { name: 'GECE',  base: 30, bg: '#7c3aed', rowBg: '#f3e8ff' },
   ];
 
   for (const sec of sections) {
@@ -1339,8 +1348,8 @@ function _setupCanlıBaslik(sheet) {
     hdrRange.setBackground(sec.bg).setFontColor('#ffffff')
             .setFontWeight('bold').setHorizontalAlignment('center').setFontSize(12);
 
-    // 12 makine satırı
-    for (let i = 1; i <= 12; i++) {
+    // 13 makine satırı
+    for (let i = 1; i <= 13; i++) {
       const r = sec.base + i;
       sheet.getRange(r, 1, 1, COLS).setBackground(sec.rowBg);
       sheet.getRange(r, 1).setValue('Enjeksiyon ' + i)
@@ -1637,7 +1646,7 @@ function setMachineDurum(ss, makineNo, durum, tip, sorun) {
     const h = sheet.getRange('A1:E1');
     h.setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff');
     sheet.setFrozenRows(1);
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= 13; i++) {
       sheet.appendRow(['Enjeksiyon ' + i, 'Aktif', '', '', '']);
     }
   }

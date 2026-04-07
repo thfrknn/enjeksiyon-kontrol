@@ -21,6 +21,7 @@ function loadLists() {
       kullanicilar  = json.kullanicilar  || {};
       uretimLimiti  = parseInt(json.uretimLimiti)  || 0;
       kasaLimitlari = json.kasaLimitlari || {};
+      kasaMinMax    = json.kasaMinMax    || {};
       maxFireLimit  = parseInt(json.maxFireLimit)  || 50;
       atananKasalar = json.atananKasalar || {};
 

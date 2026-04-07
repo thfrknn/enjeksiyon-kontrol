@@ -113,7 +113,7 @@ function renderCanli() {
   const kasalar   = _mData.kasalar   || {};
 
   let html = '';
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= 13; i++) {
     const makineNo   = 'Enjeksiyon ' + i;
     const status     = statuses[makineNo] || { durum: 'Aktif' };
     const isArizali  = status.durum === 'Arızalı';

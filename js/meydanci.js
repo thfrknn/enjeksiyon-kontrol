@@ -72,13 +72,13 @@ function renderMachines() {
 
   // Açık kartları koru
   const openCards = new Set();
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= 13; i++) {
     const b = document.getElementById('mcard-body-' + i);
     if (b && b.style.display !== 'none') openCards.add(i);
   }
 
   container.innerHTML = '';
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= 13; i++) {
     const makineNo = 'Enjeksiyon ' + i;
     const status   = _statuses[makineNo] || { durum: 'Aktif', sonAriza: null };
     container.appendChild(buildCard(i, makineNo, status));

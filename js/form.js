@@ -219,6 +219,17 @@ function getKasaBounds(n) {
     : document.getElementById('kasa' + n).value;
   if (!kasa) return null;
   var key = kasa.trim().toLowerCase().replace(/\s+/g, '');
+
+  // Önce sunucudan gelen dinamik limitler (kasaMinMax) → monitör Ayarlar'dan güncellenir
+  var dynKeys = Object.keys(kasaMinMax || {});
+  for (var di = 0; di < dynKeys.length; di++) {
+    if (dynKeys[di].toLowerCase().replace(/\s+/g, '') === key) {
+      var d = kasaMinMax[dynKeys[di]];
+      if (d && (d.min > 0 || d.max > 0)) return d;
+    }
+  }
+
+  // Fallback: statik KASA_AGIRLIK (config.js)
   var keys = Object.keys(KASA_AGIRLIK);
   for (var i = 0; i < keys.length; i++) {
     if (keys[i].toLowerCase() === key) return KASA_AGIRLIK[keys[i]];
