@@ -128,7 +128,7 @@ function renderCanli() {
   const kasalar   = _mData.kasalar   || {};
 
   let html = '';
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= 13; i++) {
     const makineNo   = 'Enjeksiyon ' + i;
     const status     = statuses[makineNo] || { durum: 'Aktif' };
     const isArizali  = status.durum === 'Arızalı';
@@ -634,6 +634,48 @@ function renderIndir() {
         ⏰ <strong>Günlük otomatik yedek</strong> için Google Apps Script editöründe<br>
         <code style="background:#fef3c7;padding:2px 6px;border-radius:4px;font-size:11px">setupDailyExport()</code> fonksiyonunu bir kez çalıştırın.
       </div>
+
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--text2);margin:24px 0 12px">Ay Sonu Temizliği</div>
+
+      <div style="background:#fff1f2;border:1.5px solid #fda4af;border-radius:14px;padding:14px;margin-bottom:12px;font-size:13px;font-weight:600;color:#9f1239">
+        ⚠️ Bu işlem <strong>geri alınamaz</strong>. Son sayaçlar Devir sekmesine kaydedildikten sonra:<br>
+        Veriler · Fire Log · Arıza Log · Günlük Özet · Üretim Kaydı · Makine Kilitleri · Kasa Atamaları temizlenir.<br>
+        <span style="color:var(--text2);font-weight:700">Personel listesi ve Makine Durumları değişmez.</span>
+      </div>
+
+      <button onclick="openAySonuModal()"
+              style="width:100%;padding:15px;background:#dc2626;color:white;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer">
+        🗑 Ay Sonu Temizliği Yap
+      </button>
+    </div>
+
+    <!-- Ay Sonu Modal -->
+    <div id="ay-sonu-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center">
+      <div style="background:white;border-radius:20px;padding:24px;width:calc(100% - 40px);max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="font-size:18px;font-weight:800;color:#b91c1c;margin-bottom:8px">🗑 Ay Sonu Temizliği</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Devam etmek için <strong>Meydancı / Admin</strong> şifrenizi girin.</div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Kullanıcı ID</label>
+          <input id="ay-sonu-id" type="text" inputmode="numeric" maxlength="6"
+                 style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:16px;font-family:'Nunito',sans-serif;font-weight:700" placeholder="Örn: 101">
+        </div>
+        <div style="margin-bottom:18px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Şifre</label>
+          <input id="ay-sonu-sifre" type="password" inputmode="numeric"
+                 style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:16px;font-family:'Nunito',sans-serif;font-weight:700" placeholder="Şifreniz">
+        </div>
+        <div id="ay-sonu-err" style="display:none;color:#dc2626;font-size:13px;font-weight:700;margin-bottom:12px;padding:8px;background:#fff1f2;border-radius:8px"></div>
+        <div style="display:flex;gap:10px">
+          <button onclick="closeAySonuModal()"
+                  style="flex:1;padding:13px;background:#f1f5f9;color:var(--text);border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer">
+            İptal
+          </button>
+          <button id="ay-sonu-ok-btn" onclick="doAySonuTemizlik()"
+                  style="flex:1;padding:13px;background:#dc2626;color:white;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer">
+            Temizle
+          </button>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -662,6 +704,70 @@ function exportNow() {
     delete window[cb];
     if (btn) { btn.disabled = false; btn.textContent = '🗂 Şimdi Drive\'a Yedekle'; }
     showMonToast('Bağlantı hatası', 'err');
+  };
+  document.head.appendChild(s);
+}
+
+/* ---------- Ay Sonu Temizliği ---------- */
+
+function openAySonuModal() {
+  document.getElementById('ay-sonu-id').value    = '';
+  document.getElementById('ay-sonu-sifre').value = '';
+  document.getElementById('ay-sonu-err').style.display = 'none';
+  const modal = document.getElementById('ay-sonu-modal');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('ay-sonu-id').focus(), 100);
+}
+
+function closeAySonuModal() {
+  document.getElementById('ay-sonu-modal').style.display = 'none';
+}
+
+function doAySonuTemizlik() {
+  const adminId    = (document.getElementById('ay-sonu-id').value    || '').trim();
+  const adminSifre = (document.getElementById('ay-sonu-sifre').value || '').trim();
+  const errEl      = document.getElementById('ay-sonu-err');
+  const btn        = document.getElementById('ay-sonu-ok-btn');
+
+  if (!adminId || !adminSifre) {
+    errEl.textContent = 'ID ve şifre zorunlu';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Temizleniyor...';
+  errEl.style.display = 'none';
+
+  const cb = 'cbAySonu_' + Date.now();
+  window[cb] = function(json) {
+    delete window[cb];
+    document.getElementById('jsonp-ay-sonu')?.remove();
+    btn.disabled = false;
+    btn.textContent = 'Temizle';
+
+    if (json && json.result === 'ok') {
+      closeAySonuModal();
+      showMonToast('✅ Ay sonu temizliği tamamlandı. ' + (json.devirKaydedilen || 0) + ' makine devir kaydedildi.', 'ok');
+    } else {
+      errEl.textContent = json && json.error ? json.error : 'Hata oluştu, tekrar dene';
+      errEl.style.display = 'block';
+    }
+  };
+
+  const s = document.createElement('script');
+  s.id  = 'jsonp-ay-sonu';
+  s.src = SCRIPT_URL
+    + '?action=monthlyBackupAndCleanup'
+    + '&admin_id=' + encodeURIComponent(adminId)
+    + '&sifre='    + encodeURIComponent(adminSifre)
+    + '&callback=' + cb;
+  s.onerror = function() {
+    delete window[cb];
+    btn.disabled = false;
+    btn.textContent = 'Temizle';
+    errEl.textContent = 'Bağlantı hatası';
+    errEl.style.display = 'block';
   };
   document.head.appendChild(s);
 }
