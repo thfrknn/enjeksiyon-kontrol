@@ -330,14 +330,30 @@ function submitForm(cb, e) {
   if (!sheet) sheet = ss.insertSheet('Veriler');
   if (sheet.getLastRow() === 0) yazBaslik(sheet);
 
-  const enjSayisi = parseInt(e.parameter.enjSayisi) || 1;
-  const tarih     = e.parameter.tarih       || '';
-  const saat      = e.parameter.olcum_saat  || '';
-  const vardiya   = e.parameter.vardiya     || '';
-  const close     = e.parameter.close === 'true';
-  const olcumNo   = parseInt(e.parameter.olcumNo) || 1;
-  const onaylandi = e.parameter.onaylandi === 'true';
-  const adSoyad   = e.parameter.adsoyad || '';
+  const enjSayisi   = parseInt(e.parameter.enjSayisi) || 1;
+  const tarih       = e.parameter.tarih       || '';
+  const saat        = e.parameter.olcum_saat  || '';
+  const vardiya     = e.parameter.vardiya     || '';
+  const close       = e.parameter.close === 'true';
+  const olcumNo     = parseInt(e.parameter.olcumNo) || 1;
+  const onaylandi   = e.parameter.onaylandi === 'true';
+  const adSoyad     = e.parameter.adsoyad || '';
+  const submitToken = String(e.parameter.submitToken || '').trim();
+
+  // ── Duplicate token kontrolü ───────────────────────
+  // Aynı token daha önce kaydedildiyse tekrar kaydetme, başarı dön
+  if (submitToken) {
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      const checkStart = Math.max(2, lastRow - 499);
+      const tokenCol   = sheet.getRange(checkStart, 25, lastRow - checkStart + 1, 1).getValues();
+      for (let i = 0; i < tokenCol.length; i++) {
+        if (String(tokenCol[i][0]).trim() === submitToken) {
+          return jsonp(cb, { result: 'ok', olcum: olcumNo, duplicate: true });
+        }
+      }
+    }
+  }
 
   const vardiyaTarih = vardiyaBaslangicTarih(tarih, saat, vardiya);
 
@@ -367,7 +383,8 @@ function submitForm(cb, e) {
     e.parameter.uretim1    || '',
     e.parameter.fire1      || '0',
     enj2No, kasa2, cevrim2, agirlik2, bas2, bit2, uretim2, fire2,
-    olcumNo === 3 ? (onaylandi ? 'ONAYLANDI' : 'BEKLİYOR') : ''
+    olcumNo === 3 ? (onaylandi ? 'ONAYLANDI' : 'BEKLİYOR') : '',
+    submitToken
   ]);
 
   // Canlı izleme güncelle
