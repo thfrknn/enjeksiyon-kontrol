@@ -275,39 +275,87 @@ function _saatToSec(s) {
   return parseInt(p[0]) * 3600 + parseInt(p[1]) * 60;
 }
 
+// ── Filtre barı render (monitor.html'deki #uretim-filter-bar'a) ──
+function renderUretimFiltrebar() {
+  const el = document.getElementById('uretim-filter-bar');
+  if (!el) return;
+  const V_ICON = { SABAH:'☀️', AKSAM:'🌆', GECE:'🌙' };
+  const isAktif = _uretimFiltTarih || _uretimFiltVardiya !== 'TÜMÜ' || _uretimFiltEnj !== 'TÜMÜ';
+
+  el.innerHTML = `
+    <!-- Tarih satırı -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:800;color:var(--text2)">📅</span>
+      <input id="uf-tarih-inp" type="date" value="${_uretimFiltTarih}"
+        onchange="uretimFiltreTarih(this.value)"
+        style="border:2px solid var(--border);border-radius:10px;padding:5px 10px;
+               font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text);outline:none">
+      <button onclick="uretimBugün()"
+        style="padding:5px 12px;border:2px solid var(--accent);border-radius:20px;background:white;
+               color:var(--accent);font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer">
+        Bugün</button>
+      ${isAktif ? `<button onclick="uretimTemizle()"
+        style="padding:5px 12px;border:2px solid #dc2626;border-radius:20px;background:white;
+               color:#dc2626;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer">
+        ✕ Temizle</button>` : ''}
+    </div>
+    <!-- Vardiya satırı -->
+    <div style="display:flex;gap:6px;margin-bottom:7px;flex-wrap:wrap">
+      ${['TÜMÜ','SABAH','AKSAM','GECE'].map(v => {
+        const act = _uretimFiltVardiya === v;
+        return `<button class="uf-vbtn" data-v="${v}" onclick="uretimFiltreVardiya('${v}')"
+          style="padding:5px 11px;border:2px solid ${act ? 'var(--accent)' : 'var(--border)'};
+                 border-radius:20px;background:${act ? 'var(--accent)' : 'white'};
+                 color:${act ? 'white' : 'var(--text2)'};font-family:'Nunito',sans-serif;
+                 font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">
+          ${V_ICON[v] || ''} ${v}</button>`;
+      }).join('')}
+    </div>
+    <!-- Makine satırı -->
+    <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:11px;font-weight:800;color:var(--text2);white-space:nowrap">Makine:</span>
+      ${['TÜMÜ',...[1,2,3,4,5,6,7,8,9,10,11,12].map(n => 'Enjeksiyon ' + n)].map(e => {
+        const act = _uretimFiltEnj === e;
+        const lbl = e === 'TÜMÜ' ? 'Tümü' : e.replace('Enjeksiyon ','');
+        return `<button class="uf-ebtn" data-e="${e}" onclick="uretimFiltreEnj('${e}')"
+          style="padding:4px 10px;border:2px solid ${act ? '#7c3aed' : 'var(--border)'};
+                 border-radius:16px;background:${act ? '#7c3aed' : 'white'};
+                 color:${act ? 'white' : 'var(--text2)'};font-family:'Nunito',sans-serif;
+                 font-size:12px;font-weight:800;cursor:pointer">
+          ${lbl}</button>`;
+      }).join('')}
+    </div>`;
+}
+
 // ── Filtre event handler'ları ─────────────────────────
 function uretimFiltreTarih(val) {
   _uretimFiltTarih = val || '';
+  renderUretimFiltrebar();
   renderUretim();
 }
 function uretimFiltreVardiya(v) {
   _uretimFiltVardiya = v;
-  document.querySelectorAll('.uf-vbtn').forEach(b => b.classList.toggle('uf-active', b.dataset.v === v));
+  renderUretimFiltrebar();
   renderUretim();
 }
 function uretimFiltreEnj(v) {
   _uretimFiltEnj = v;
-  document.querySelectorAll('.uf-ebtn').forEach(b => b.classList.toggle('uf-active', b.dataset.e === v));
+  renderUretimFiltrebar();
   renderUretim();
 }
 function uretimBugün() {
   const today = new Date();
-  const iso = today.getFullYear() + '-' +
+  _uretimFiltTarih = today.getFullYear() + '-' +
     String(today.getMonth() + 1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
-  _uretimFiltTarih = iso;
-  const inp = document.getElementById('uf-tarih-inp');
-  if (inp) inp.value = iso;
+  renderUretimFiltrebar();
   renderUretim();
 }
 function uretimTemizle() {
   _uretimFiltTarih   = '';
   _uretimFiltVardiya = 'TÜMÜ';
   _uretimFiltEnj     = 'TÜMÜ';
-  const inp = document.getElementById('uf-tarih-inp');
-  if (inp) inp.value = '';
-  document.querySelectorAll('.uf-vbtn').forEach(b => b.classList.toggle('uf-active', b.dataset.v === 'TÜMÜ'));
-  document.querySelectorAll('.uf-ebtn').forEach(b => b.classList.toggle('uf-active', b.dataset.e === 'TÜMÜ'));
+  renderUretimFiltrebar();
   renderUretim();
 }
 
@@ -315,53 +363,6 @@ function uretimTemizle() {
 function renderUretim() {
   const rows = _mData.uretimGecmisi || [];
   const V_ICON = { SABAH: '☀️', AKSAM: '🌆', GECE: '🌙' };
-
-  // ── Filtre barı HTML ──────────────────────────────
-  const enjNumlari = [1,2,3,4,5,6,7,8,9,10,11,12];
-  const vBtnStyle  = v => `
-    padding:6px 12px;border:2px solid var(--border);border-radius:20px;
-    background:${_uretimFiltVardiya === v ? 'var(--accent)' : 'white'};
-    color:${_uretimFiltVardiya === v ? 'white' : 'var(--text2)'};
-    font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;
-    white-space:nowrap;`;
-  const eBtnStyle  = e => `
-    padding:5px 10px;border:2px solid var(--border);border-radius:16px;
-    background:${_uretimFiltEnj === e ? '#7c3aed' : 'white'};
-    color:${_uretimFiltEnj === e ? 'white' : 'var(--text2)'};
-    font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;`;
-
-  const filtrebar = `
-    <div style="background:white;border-bottom:2px solid var(--border);padding:12px 14px 10px;position:sticky;top:0;z-index:50">
-      <!-- Tarih -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <span style="font-size:12px;font-weight:800;color:var(--text2);white-space:nowrap">📅 Tarih</span>
-        <input id="uf-tarih-inp" type="date" value="${_uretimFiltTarih}"
-          onchange="uretimFiltreTarih(this.value)"
-          style="border:2px solid var(--border);border-radius:10px;padding:5px 10px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text);outline:none;cursor:pointer">
-        <button onclick="uretimBugün()"
-          style="padding:6px 12px;border:2px solid var(--accent);border-radius:20px;background:white;color:var(--accent);font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer">Bugün</button>
-        ${_uretimFiltTarih || _uretimFiltVardiya !== 'TÜMÜ' || _uretimFiltEnj !== 'TÜMÜ' ?
-          `<button onclick="uretimTemizle()"
-            style="padding:6px 12px;border:2px solid #dc2626;border-radius:20px;background:white;color:#dc2626;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer">✕ Temizle</button>` : ''}
-      </div>
-      <!-- Vardiya -->
-      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-        ${['TÜMÜ','SABAH','AKSAM','GECE'].map(v =>
-          `<button class="uf-vbtn" data-v="${v}" onclick="uretimFiltreVardiya('${v}')"
-            style="${vBtnStyle(v)}">${V_ICON[v] || '🔍'} ${v}</button>`
-        ).join('')}
-      </div>
-      <!-- Makine -->
-      <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-        <span style="font-size:11px;font-weight:800;color:var(--text2)">Makine:</span>
-        <button class="uf-ebtn" data-e="TÜMÜ" onclick="uretimFiltreEnj('TÜMÜ')"
-          style="${eBtnStyle('TÜMÜ')}">Tümü</button>
-        ${enjNumlari.map(n =>
-          `<button class="uf-ebtn" data-e="Enjeksiyon ${n}" onclick="uretimFiltreEnj('Enjeksiyon ${n}')"
-            style="${eBtnStyle('Enjeksiyon ' + n)}">${n}</button>`
-        ).join('')}
-      </div>
-    </div>`;
 
   // ── Veriyi grupla (tarih+vardiya+makine) ─────────
   const groups = {};
