@@ -630,13 +630,13 @@ function getCurrentVardiya() {
 }
 
 // ── Veri Yükle ───────────────────────────────────────
-function loadData() {
-  showLoading('Makineler yükleniyor...');
+function loadData(silent) {
+  if (!silent) showLoading('Makineler yükleniyor...');
   var listsLoaded = false, statusesLoaded = false;
 
   function check() {
     if (listsLoaded && statusesLoaded) {
-      hideLoading();
+      if (!silent) hideLoading();
       renderAll();
       var now = new Date();
       var vardiyaLabel = { SABAH: '☀️ Sabah', AKSAM: '🌆 Akşam', GECE: '🌙 Gece' };
@@ -665,7 +665,7 @@ function refreshData() {
 
 function startAutoRefresh() {
   stopAutoRefresh();
-  MS.refreshTimer = setInterval(function() { loadData(); }, 45000);
+  MS.refreshTimer = setInterval(function() { loadData(true); }, 45000);
 }
 
 function stopAutoRefresh() {
@@ -1251,7 +1251,7 @@ function renderTeyitList(records) {
     html += '  <strong>' + (r.enj1No || '—') + '</strong> — ' + (r.enj1Kasa || '') + ' — Üretim: <strong>' + teyitFmt(r.enj1Uretim) + '</strong> adet' + enj2Info;
     html += '</div>';
     if (!isOnaylandi) {
-      html += '<button onclick="approveTeyitRecord(' + r.rowIdx + ',' + idx + ')" '
+      html += '<button data-approve="' + r.rowIdx + '" onclick="approveTeyitRecord(' + r.rowIdx + ',' + idx + ')" '
            + 'style="width:100%;background:var(--success);color:white;border:none;border-radius:10px;'
            + 'padding:10px;font-family:-apple-system,\'Segoe UI\',sans-serif;font-size:14px;font-weight:800;cursor:pointer">'
            + '✓ Onayla</button>';
@@ -1268,15 +1268,17 @@ function approveTeyitRecord(rowIdx, listIdx) {
   var user = MS.user;
   if (!user || !user.sifre) { showToast('Oturum hatası — lütfen tekrar giriş yapın'); return; }
 
-  showLoading('Onaylanıyor...');
+  // Butonu geçici olarak devre dışı bırak, loading overlay açma
+  var btn = document.querySelector('[data-approve="' + rowIdx + '"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Onaylanıyor...'; }
+
   apiCall({
     action:  'approveRecord',
     user_id: user.id,
     sifre:   user.sifre,
     row_idx: rowIdx,
   }, function(data) {
-    hideLoading();
-    if (data.error) { showToast('❌ ' + data.error); return; }
+    if (data.error) { showToast('❌ ' + data.error); if (btn) { btn.disabled = false; btn.textContent = '✓ Onayla'; } return; }
     showToast('✅ Kayıt onaylandı');
     if (MS._teyitRecords && MS._teyitRecords[listIdx]) {
       MS._teyitRecords[listIdx].onay = data.onay || 'ONAYLANDI';
