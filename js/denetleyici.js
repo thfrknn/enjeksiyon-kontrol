@@ -166,6 +166,11 @@ function renderRecords() {
       '<td style="text-align:right">' + (hasEnj2 ? fmt(r.enj2SayacBit) : '—') + '</td>' +
       uretim2Cell +
       '<td style="text-align:right;color:#ea580c">' + (hasEnj2 ? fmt(r.enj2Fire) : '—') + '</td>' +
+      (function() {
+        if (!r.onay) return '<td style="color:var(--text2);font-size:11px">—</td>';
+        var isOnay = r.onay.indexOf('ONAYLANDI') === 0;
+        return '<td style="white-space:nowrap"><span style="background:' + (isOnay ? '#dcfce7;color:#16a34a' : '#fef9c3;color:#92400e') + ';border-radius:5px;padding:2px 6px;font-size:11px;font-weight:800">' + (isOnay ? '✓ Onaylı' : '⏳ Bekliyor') + '</span></td>';
+      })() +
       '<td style="white-space:nowrap">' +
         '<button class="action-btn edit"   onclick="openEditModal(' + idx + ')">✏️ Düzenle</button> ' +
         '<button class="action-btn delete" onclick="openDeleteModal(' + idx + ')">🗑️</button>' +

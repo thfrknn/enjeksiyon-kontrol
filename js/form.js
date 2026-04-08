@@ -385,7 +385,8 @@ function goNext(from) {
 
     // ID prefix her zaman önceliklidir: 1xx → meydancı, 3xx → yönetici
     if (id.charAt(0) === '1') {
-      localStorage.setItem('meydanci_session', JSON.stringify({ id: id, ad: _adSoyad, rol: 'Meydancı' }));
+      var _mSifre = si ? si.value : (localStorage.getItem('sifre_' + id) || '');
+      localStorage.setItem('meydanci_session', JSON.stringify({ id: id, ad: _adSoyad, rol: 'Meydancı', sifre: _mSifre }));
       window.location.href = 'meydanci.html';
       return;
     }

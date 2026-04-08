@@ -480,6 +480,7 @@
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-btn-atama"  onclick="setTab('atama')">📋 Atamalar</button>
     <button class="tab-btn"        id="tab-btn-ariza"  onclick="setTab('ariza')">⚠️ Arıza &amp; Durum</button>
+    <button class="tab-btn"        id="tab-btn-teyit"  onclick="setTab('teyit')">✅ Teyit</button>
   </div>
 
   <!-- Üst bar -->
@@ -498,6 +499,16 @@
     <div id="ariza-cards"></div>
     <div class="log-section-title">📋 Son Arıza Kayıtları</div>
     <div id="ariza-log-list"></div>
+  </div>
+
+  <!-- ── TAB 3: TEYİT ──────────────────────────────── -->
+  <div class="tab-pane" id="tab-teyit">
+    <div style="font-size:12px;color:var(--text2);font-weight:600;padding:4px 0 12px;line-height:1.5">
+      Son 8 saatte girilen operatör kayıtları. Verinin ulaştığını teyit etmek için <strong>Onayla</strong> butonuna basın.
+    </div>
+    <div id="teyit-list">
+      <div style="text-align:center;color:var(--text2);padding:30px;font-size:13px">Yükleniyor...</div>
+    </div>
   </div>
 
 </div>
@@ -675,6 +686,7 @@ function setTab(tab) {
   document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
   document.getElementById('tab-btn-' + tab).classList.add('active');
   document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'teyit') loadTeyitRecords();
 }
 
 // ================================================================
@@ -1170,6 +1182,112 @@ function doSayacSifirla() {
     if (data.error) { showToast('❌ ' + data.error); return; }
     showToast('✅ ' + _sayacMakineNo + ' sayacı → ' + yeniSayac + ' olarak güncellendi');
   });
+}
+
+// ================================================================
+// TAB 3: TEYİT
+// ================================================================
+
+function loadTeyitRecords() {
+  var user = MS.user;
+  // Sifre yoksa localStorage'dan dene
+  if (user && !user.sifre) {
+    var sf = localStorage.getItem('sifre_' + user.id);
+    if (sf) { MS.user.sifre = sf; user = MS.user; }
+  }
+  if (!user || !user.sifre) {
+    document.getElementById('teyit-list').innerHTML =
+      '<div style="text-align:center;color:var(--warn);padding:20px;font-weight:700">⚠️ Oturum bilgisi eksik. Lütfen çıkış yapıp tekrar giriş yapın.</div>';
+    return;
+  }
+
+  document.getElementById('teyit-list').innerHTML =
+    '<div style="text-align:center;color:var(--text2);padding:30px;font-size:13px">Yükleniyor...</div>';
+
+  apiCall({
+    action:  'getRecentRecords',
+    user_id: user.id,
+    sifre:   user.sifre,
+  }, function(data) {
+    if (data.error) {
+      document.getElementById('teyit-list').innerHTML =
+        '<div style="color:var(--warn);padding:20px;font-weight:700">❌ ' + data.error + '</div>';
+      return;
+    }
+    renderTeyitList(data.records || []);
+  });
+}
+
+function renderTeyitList(records) {
+  var container = document.getElementById('teyit-list');
+  MS._teyitRecords = records;
+
+  if (!records.length) {
+    container.innerHTML =
+      '<div style="text-align:center;color:var(--text2);padding:40px;font-size:14px;font-weight:600">Son 8 saatte kayıt bulunmadı</div>';
+    return;
+  }
+
+  var html = '';
+  records.forEach(function(r, idx) {
+    var isOnaylandi = r.onay && r.onay.indexOf('ONAYLANDI') === 0;
+    var onayBadge = isOnaylandi
+      ? '<span style="background:#dcfce7;color:#16a34a;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:800">✓ Onaylı</span>'
+      : '<span style="background:#fef9c3;color:#92400e;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:800">⏳ Bekliyor</span>';
+
+    var enj2Info = (r.enj2No && r.enj2No !== '00' && r.enj2No !== '')
+      ? ' + ' + r.enj2No + ' (' + teyitFmt(r.enj2Uretim) + ' adet)'
+      : '';
+
+    html += '<div style="background:white;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow)">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
+    html += '  <div>';
+    html += '    <div style="font-weight:800;font-size:15px">' + (r.adSoyad || '—') + '</div>';
+    html += '    <div style="font-size:11px;color:var(--text2);margin-top:2px">' + (r.kayitZamani || '') + ' &bull; ' + (r.vardiya || '') + '</div>';
+    html += '  </div>';
+    html += '  ' + onayBadge;
+    html += '</div>';
+    html += '<div style="font-size:13px;color:var(--text);margin-bottom:8px">';
+    html += '  <strong>' + (r.enj1No || '—') + '</strong> — ' + (r.enj1Kasa || '') + ' — Üretim: <strong>' + teyitFmt(r.enj1Uretim) + '</strong> adet' + enj2Info;
+    html += '</div>';
+    if (!isOnaylandi) {
+      html += '<button onclick="approveTeyitRecord(' + r.rowIdx + ',' + idx + ')" '
+           + 'style="width:100%;background:var(--success);color:white;border:none;border-radius:10px;'
+           + 'padding:10px;font-family:-apple-system,\'Segoe UI\',sans-serif;font-size:14px;font-weight:800;cursor:pointer">'
+           + '✓ Onayla</button>';
+    } else {
+      html += '<div style="font-size:11px;color:var(--text2);padding:2px 0">' + r.onay + '</div>';
+    }
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+function approveTeyitRecord(rowIdx, listIdx) {
+  var user = MS.user;
+  if (!user || !user.sifre) { showToast('Oturum hatası — lütfen tekrar giriş yapın'); return; }
+
+  showLoading('Onaylanıyor...');
+  apiCall({
+    action:  'approveRecord',
+    user_id: user.id,
+    sifre:   user.sifre,
+    row_idx: rowIdx,
+  }, function(data) {
+    hideLoading();
+    if (data.error) { showToast('❌ ' + data.error); return; }
+    showToast('✅ Kayıt onaylandı');
+    if (MS._teyitRecords && MS._teyitRecords[listIdx]) {
+      MS._teyitRecords[listIdx].onay = data.onay || 'ONAYLANDI';
+    }
+    renderTeyitList(MS._teyitRecords || []);
+  });
+}
+
+function teyitFmt(n) {
+  if (n === '' || n === null || n === undefined) return '—';
+  return Number(n).toLocaleString('tr-TR');
 }
 
 // ================================================================

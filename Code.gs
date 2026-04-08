@@ -41,6 +41,8 @@ function doGet(e) {
       case 'updateRecord':        return updateRecord(cb, e);
       case 'deleteRecord':        return deleteRecord(cb, e);
       case 'manualAddRecord':     return manualAddRecord(cb, e);
+      case 'getRecentRecords':    return getRecentRecords(cb, e);
+      case 'approveRecord':       return approveRecord(cb, e);
       default:                     return jsonp(cb, { error: 'Geçersiz istek' });
     }
   } catch (err) {
@@ -1857,6 +1859,93 @@ function _denetleyiciAuth(e) {
   return null;
 }
 
+// Auth: Meydancı, Denetleyici, Yönetici, Admin
+function _meydanciAuth(e) {
+  const ss       = SpreadsheetApp.getActiveSpreadsheet();
+  const reqId    = String(e.parameter.user_id || e.parameter.admin_id || '').trim();
+  const reqSifre = String(e.parameter.sifre   || '').trim();
+  if (!reqId || !reqSifre) return null;
+  const pSheet = _getOrCreatePersonelSheet(ss);
+  if (pSheet.getLastRow() < 2) return null;
+  const rows = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, 5).getDisplayValues();
+  for (const r of rows) {
+    const rol = String(r[3]).trim();
+    if (String(r[0]).trim() === reqId && String(r[2]).trim() === reqSifre &&
+        (rol === 'Meydancı' || rol === 'Denetleyici' || rol === 'Yönetici' || rol === 'Admin')) {
+      return { id: reqId, ad: String(r[1]).trim(), rol };
+    }
+  }
+  return null;
+}
+
+// ACTION: getRecentRecords — Son 8 saatin kayıtlarını getir
+function getRecentRecords(cb, e) {
+  const user = _meydanciAuth(e);
+  if (!user) return jsonp(cb, { error: 'Yetkisiz erişim' });
+
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Veriler');
+  if (!sheet || sheet.getLastRow() < 2) return jsonp(cb, { records: [] });
+
+  const nowMs  = Date.now();
+  const cutMs  = nowMs - 8 * 60 * 60 * 1000;
+  const tz     = ss.getSpreadsheetTimeZone();
+  const rows   = sheet.getRange(2, 1, sheet.getLastRow() - 1, 24).getValues();
+  const records = [];
+
+  rows.forEach((row, i) => {
+    const zaman   = row[0];
+    const zamanMs = zaman instanceof Date ? zaman.getTime() : new Date(String(zaman)).getTime();
+    if (isNaN(zamanMs) || zamanMs < cutMs) return;
+
+    const zamanStr = zaman instanceof Date
+      ? Utilities.formatDate(zaman, tz, 'dd.MM.yyyy HH:mm')
+      : String(zaman || '').trim();
+
+    records.push({
+      rowIdx:      i + 2,
+      kayitZamani: zamanStr,
+      vardiyaTarihi: String(row[1] instanceof Date
+        ? Utilities.formatDate(row[1], tz, 'yyyy-MM-dd')
+        : row[1] || '').trim(),
+      adSoyad:    String(row[2]  || '').trim(),
+      vardiya:    String(row[3]  || '').trim(),
+      enjSayisi:  Number(row[5]) || 1,
+      olcumSaat:  String(row[6]  || '').trim(),
+      enj1No:     String(row[7]  || '').trim(),
+      enj1Kasa:   String(row[8]  || '').trim(),
+      enj1Uretim: Number(row[13]) || '',
+      enj1Fire:   Number(row[14]) || '',
+      enj2No:     String(row[15] || '').trim(),
+      enj2Uretim: Number(row[21]) || '',
+      onay:       String(row[23] || '').trim(),
+    });
+  });
+
+  return jsonp(cb, { records });
+}
+
+// ACTION: approveRecord — Kaydı onayla (Meydancı / Denetleyici / Yönetici)
+function approveRecord(cb, e) {
+  const user = _meydanciAuth(e);
+  if (!user) return jsonp(cb, { error: 'Yetkisiz erişim' });
+
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Veriler');
+  if (!sheet) return jsonp(cb, { error: 'Veriler sekmesi bulunamadı' });
+
+  const rowIdx = parseInt(e.parameter.row_idx);
+  if (!rowIdx || rowIdx < 2) return jsonp(cb, { error: 'Geçersiz satır' });
+  if (rowIdx > sheet.getLastRow()) return jsonp(cb, { error: 'Satır bulunamadı' });
+
+  const tz  = ss.getSpreadsheetTimeZone();
+  const now = Utilities.formatDate(new Date(), tz, 'dd.MM.yyyy HH:mm');
+  const onayStr = 'ONAYLANDI [' + user.ad + ' ' + now + ']';
+
+  sheet.getRange(rowIdx, 24).setValue(onayStr);
+  return jsonp(cb, { result: 'ok', onay: onayStr });
+}
+
 function _parseDateTime(tarihStr, saatStr) {
   // tarih: 'yyyy-MM-dd', saat: 'HH:mm' → ms timestamp
   try {
@@ -1924,6 +2013,7 @@ function getRecords(cb, e) {
       enj2SayacBit: Number(row[20]) || '',
       enj2Uretim:  Number(row[21]) || '',
       enj2Fire:    Number(row[22]) || '',
+      onay:      String(row[23] || '').trim(),
     });
   });
 
