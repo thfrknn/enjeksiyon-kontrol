@@ -249,7 +249,6 @@ function openAddModal() {
   // Varsayılan tarih: bugün
   document.getElementById('edit-vardiya-tarihi').value =
     new Date().toISOString().split('T')[0];
-  document.getElementById('edit-olcum-no').value = '1';
 
   toggleEnj2Section();
   calcPreview();

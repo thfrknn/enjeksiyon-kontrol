@@ -33,6 +33,7 @@ function doGet(e) {
       case 'getPersonel':          return getPersonel(cb);
       case 'addPersonel':          return addPersonel(cb, e);
       case 'updatePersonel':       return updatePersonel(cb, e);
+      case 'deletePersonel':       return deletePersonel(cb, e);
       case 'changePassword':       return changePassword(cb, e);
       case 'resetSayac':          return resetSayac(cb, e);
       case 'resetMachineCounter': return resetMachineCounter(cb, e);
@@ -1029,17 +1030,20 @@ function addPersonel(cb, e) {
   const idMin  = rolMin[rol] || 200;
   const idMax  = rolMax[rol] || 299;
 
-  let maxId = idMin - 1;
+  const existingIds = new Set();
   if (sheet.getLastRow() > 1) {
-    const ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues()
-      .flat().map(v => parseInt(v) || 0)
-      .filter(v => v >= idMin && v <= idMax);
-    if (ids.length) maxId = Math.max(maxId, ...ids);
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues()
+      .flat().forEach(v => { const n = parseInt(v); if (n >= idMin && n <= idMax) existingIds.add(n); });
   }
 
-  if (maxId >= idMax) return jsonp(cb, { error: rol + ' için ID aralığı dolu (' + idMin + '-' + idMax + ')' });
+  // Aralıktaki ilk boş ID'yi bul (silinmiş ID'ler yeniden kullanılır)
+  let freeId = null;
+  for (let c = idMin; c <= idMax; c++) {
+    if (!existingIds.has(c)) { freeId = c; break; }
+  }
+  if (!freeId) return jsonp(cb, { error: rol + ' için ID aralığı dolu (' + idMin + '-' + idMax + ')' });
 
-  const yeniId = String(maxId + 1);
+  const yeniId = String(freeId);
   const row    = sheet.getLastRow() + 1;
   sheet.getRange(row, 1).setNumberFormat('@').setValue(yeniId);
   sheet.getRange(row, 2).setValue(ad);
@@ -1069,6 +1073,23 @@ function updatePersonel(cb, e) {
     }
   }
 
+  return jsonp(cb, { error: 'Bulunamadı: ' + hedefId });
+}
+
+function deletePersonel(cb, e) {
+  const ss      = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet   = _getOrCreatePersonelSheet(ss);
+  const hedefId = String(e.parameter.hedef_id || '').trim();
+  if (!hedefId) return jsonp(cb, { error: 'Hedef ID gerekli' });
+  if (sheet.getLastRow() < 2) return jsonp(cb, { error: 'Personel bulunamadı' });
+
+  const disp = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues();
+  for (let i = 0; i < disp.length; i++) {
+    if (String(disp[i][0]).trim() === hedefId) {
+      sheet.deleteRow(i + 2);
+      return jsonp(cb, { result: 'ok' });
+    }
+  }
   return jsonp(cb, { error: 'Bulunamadı: ' + hedefId });
 }
 

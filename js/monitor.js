@@ -862,6 +862,10 @@ function renderPersonel() {
                   Aktif Et
                  </button>`
             }
+            <button onclick="deletePersonelItem('${p.id}','${p.ad.replace(/'/g,"\\'")}')"
+              style="padding:6px 12px;background:#1e293b;color:white;border:none;border-radius:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer">
+              🗑️ Sil
+            </button>
           </div>
         </div>`;
     }).join('');
@@ -946,6 +950,17 @@ function updateDurum(id, durum) {
     const p = (_personelData || []).find(x => x.id === id);
     if (p) p.durum = durum;
     renderPersonel();
+  });
+}
+
+function deletePersonelItem(id, ad) {
+  if (!confirm('⚠️ ' + ad + ' (' + id + ') silinecek.\nBu işlem geri alınamaz. Devam edilsin mi?')) return;
+  _jsonpCall({ action: 'deletePersonel', hedef_id: id }, () => {
+    showMonToast('✅ ' + ad + ' silindi — ID ' + id + ' yeniden kullanılabilir', 'ok');
+    _personelData = (_personelData || []).filter(p => p.id !== id);
+    renderPersonel();
+  }, err => {
+    showMonToast('❌ ' + err, 'err');
   });
 }
 
