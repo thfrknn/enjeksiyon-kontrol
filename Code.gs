@@ -487,6 +487,7 @@ function submitForm(cb, e) {
 
 function getMonitorData(cb) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tz = ss.getSpreadsheetTimeZone();
 
   const statuses = buildMachineStatuses(ss);
   const canliData = buildCanliData(ss);
@@ -505,7 +506,6 @@ function getMonitorData(cb) {
   if (arizaSheet && arizaSheet.getLastRow() > 1) {
     const lastRow  = arizaSheet.getLastRow();
     const startRow = Math.max(2, lastRow - 99);
-    const tz = ss.getSpreadsheetTimeZone();
     const av = arizaSheet.getRange(startRow, 1, lastRow - startRow + 1, 10).getValues();
     for (let i = av.length - 1; i >= 0; i--) {
       const r = av[i];
@@ -524,81 +524,54 @@ function getMonitorData(cb) {
     }
   }
 
-    return jsonp(cb, { result: 'ok', olcum: olcumNo });
-  }
-
-  // ============================================================
-  // getMonitorData: Yönetici izleme sayfası için kapsamlı veri
-  // ============================================================
-  if (e.parameter.action === 'getMonitorData') {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-    // 1) Makine durumları
-    const statuses = {};
-    for (let i = 1; i <= 13; i++) statuses['Enjeksiyon ' + i] = { durum: 'Aktif', sonAriza: null };
-    const durSheet = ss.getSheetByName('Makine Durumları');
-    if (durSheet && durSheet.getLastRow() > 1) {
-      const dv = durSheet.getRange(2, 1, durSheet.getLastRow() - 1, 5).getValues();
-      for (const row of dv) {
-        const m = String(row[0]).trim();
-        if (!statuses[m]) continue;
-        statuses[m].durum          = String(row[1]).trim();
-        statuses[m].sonGuncelleme  = String(row[2]).trim();
-        if (statuses[m].durum === 'Arızalı') {
-          statuses[m].sonAriza = { tip: String(row[4]).trim(), sorun: String(row[3]).trim() };
-        }
-      }
+  // Üretim geçmişi (son 500 kayıt) — tarih filtresi client'ta yapılır
+  const uretimGecmisi = [];
+  const verilerSheet = ss.getSheetByName('Veriler');
+  if (verilerSheet && verilerSheet.getLastRow() > 1) {
+    const lastRow  = verilerSheet.getLastRow();
+    const startRow = Math.max(2, lastRow - 499);
+    const vv = verilerSheet.getRange(startRow, 1, lastRow - startRow + 1, 24).getValues();
+    for (let i = vv.length - 1; i >= 0; i--) {
+      const row   = vv[i];
+      const tarih = row[1] instanceof Date
+        ? Utilities.formatDate(row[1], tz, 'yyyy-MM-dd')
+        : String(row[1] || '').trim();
+      if (!tarih) continue;
+      uretimGecmisi.push({
+        satir:     startRow + i,
+        tarih,
+        adsoyad:   String(row[2]  || '').trim(),
+        vardiya:   String(row[3]  || '').trim(),
+        olcumNo:   parseInt(row[4])  || 0,
+        enjSayisi: parseInt(row[5])  || 1,
+        saat:      row[6] instanceof Date ? Utilities.formatDate(row[6], tz, 'HH:mm') : String(row[6] || '').trim(),
+        enj1:      String(row[7]  || '').trim(),
+        kasa1:     String(row[8]  || '').trim(),
+        cevrim1:   parseFloat(row[9])  || 0,
+        sayacBas1: parseInt(row[11]) || 0,
+        sayacBit1: parseInt(row[12]) || 0,
+        uretim1:   parseInt(row[13]) || 0,
+        fire1:     parseInt(row[14]) || 0,
+        enj2:      String(row[15] || '').trim(),
+        kasa2:     String(row[16] || '').trim(),
+        cevrim2:   parseFloat(row[17]) || 0,
+        sayacBas2: parseInt(row[19]) || 0,
+        sayacBit2: parseInt(row[20]) || 0,
+        uretim2:   parseInt(row[21]) || 0,
+        fire2:     parseInt(row[22]) || 0,
+      });
     }
   }
 
-    // 2) Canlı İzleme verisi — 3-bölüm yapı (SABAH/AKSAM/GECE × 13 makine)
-    // Web monitör için: her makine'nin son 24s içindeki en güncel kaydı
-    const canliData = {};
-    const canliSheet = ss.getSheetByName('Canlı İzleme');
-    if (canliSheet && canliSheet.getLastRow() >= 3) {
-      const readRows = Math.min(canliSheet.getLastRow(), 44);
-      const allCanli = canliSheet.getRange(1, 1, readRows, 12).getValues();
-      const _BASES_MON = { SABAH: 2, AKSAM: 16, GECE: 30 };
-      const nowMs = new Date().getTime();
-
-      for (let enjIdx = 1; enjIdx <= 13; enjIdx++) {
-        const makineNo = 'Enjeksiyon ' + enjIdx;
-        canliData[makineNo] = {};
-        let bestEntry = null, bestTs = 0;
-
-        for (const [vard, base] of Object.entries(_BASES_MON)) {
-          const ri = base + enjIdx - 1;   // 0-indexed
-          if (ri >= allCanli.length) continue;
-          const row = allCanli[ri];
-          const rowTarih = String(row[2] || '').trim();
-          const rowSaat  = String(row[10] || '').trim();
-          if (!rowTarih) continue;
-
-          let ts = 0;
-          try {
-            const p = rowTarih.split('-'), hm = (rowSaat || '00:00').split(':');
-            ts = new Date(+p[0], +p[1]-1, +p[2], +hm[0]||0, +hm[1]||0).getTime();
-          } catch(ex) {}
-
-          if (ts > 0 && (nowMs - ts) < 86400000 && ts > bestTs) {
-            bestTs = ts;
-            bestEntry = {
-              operatör:     String(row[1] || '').trim(),
-              tarih:        rowTarih,
-              kasa:         String(row[3] || '').trim(),
-              cevrim:       String(row[4] || '').trim(),
-              agirlik:      String(row[5] || '').trim(),
-              uretim:       String(row[8] || '').trim(),
-              fire:         String(row[9] || '').trim(),
-              vardiya:      vard,
-              saat:         rowSaat,
-              gercekCevrim: String(row[11] || '').trim(),
-            };
-          }
-        }
-        if (bestEntry) canliData[makineNo] = bestEntry;
-      }
-    }
+  return jsonp(cb, {
+    statuses,
+    canliData,
+    kasalar,
+    arizaLog,
+    uretimGecmisi,
+    serverTime: new Date().getTime()
+  });
+}
 
 // ================================================================
 // ACTION: getMachineStatuses — Meydancı paneli için
@@ -1104,7 +1077,7 @@ function changePassword(cb, e) {
 
 function buildMachineStatuses(ss) {
   const statuses = {};
-  for (let i = 1; i <= 12; i++) statuses['Enjeksiyon ' + i] = { durum: 'Aktif', sonAriza: null };
+  for (let i = 1; i <= 13; i++) statuses['Enjeksiyon ' + i] = { durum: 'Aktif', sonAriza: null };
 
   const durSheet = ss.getSheetByName('Makine Durumları');
   if (durSheet && durSheet.getLastRow() > 1) {
@@ -1132,12 +1105,12 @@ function buildCanliData(ss) {
   const canliSheet = ss.getSheetByName('Canlı İzleme');
   if (!canliSheet || canliSheet.getLastRow() < 3) return canliData;
 
-  const readRows  = Math.min(canliSheet.getLastRow(), 40);
+  const readRows  = Math.min(canliSheet.getLastRow(), 44);
   const allCanli  = canliSheet.getRange(1, 1, readRows, 12).getValues();
-  const _BASES    = { SABAH: 2, AKSAM: 15, GECE: 28 };
+  const _BASES    = { SABAH: 2, AKSAM: 16, GECE: 30 };
   const nowMs     = new Date().getTime();
 
-  for (let enjIdx = 1; enjIdx <= 12; enjIdx++) {
+  for (let enjIdx = 1; enjIdx <= 13; enjIdx++) {
     const makineNo = 'Enjeksiyon ' + enjIdx;
     canliData[makineNo] = {};
     let bestEntry = null, bestTs = 0;
@@ -1187,12 +1160,12 @@ function buildCanliDataForMachineStatus(ss) {
   const canliSheet  = ss.getSheetByName('Canlı İzleme');
   if (!canliSheet || canliSheet.getLastRow() < 3) return machineData;
 
-  const readRows = Math.min(canliSheet.getLastRow(), 40);
+  const readRows = Math.min(canliSheet.getLastRow(), 44);
   const allCanli = canliSheet.getRange(1, 1, readRows, 12).getValues();
-  const _BASES   = { SABAH: 2, AKSAM: 15, GECE: 28 };
+  const _BASES   = { SABAH: 2, AKSAM: 16, GECE: 30 };
   const nowMs    = new Date().getTime();
 
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= 13; i++) {
     const makineNo  = 'Enjeksiyon ' + i;
     let bestEntry = null, bestTs = 0;
 
