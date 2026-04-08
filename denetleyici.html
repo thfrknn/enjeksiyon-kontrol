@@ -306,7 +306,6 @@
             <th>V. Tarihi</th>
             <th>Ad Soyad</th>
             <th>Vardiya</th>
-            <th>Ölçüm</th>
             <th>Enj1</th>
             <th>Kasa1</th>
             <th>SayBaş1</th>
@@ -361,10 +360,6 @@
         <input type="text" id="edit-ad-soyad" placeholder="Operatör adı">
       </div>
       <div class="field">
-        <label>Ölçüm No</label>
-        <input type="number" id="edit-olcum-no" min="1" max="5">
-      </div>
-      <div class="field">
         <label>Ölçüm Saati</label>
         <input type="time" id="edit-olcum-saat">
       </div>
@@ -401,7 +396,7 @@
       </div>
       <div class="field">
         <label>Kasa Ebatı</label>
-        <input type="text" id="edit-enj1-kasa">
+        <select id="edit-enj1-kasa"><option value="">— Seçin —</option></select>
       </div>
       <div class="field">
         <label>Çevrim (sn)</label>
@@ -452,7 +447,7 @@
         </div>
         <div class="field">
           <label>Kasa Ebatı</label>
-          <input type="text" id="edit-enj2-kasa">
+          <select id="edit-enj2-kasa"><option value="">— Seçin —</option></select>
         </div>
         <div class="field">
           <label>Çevrim (sn)</label>

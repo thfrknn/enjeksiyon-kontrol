@@ -1,9 +1,11 @@
 /* ── Denetleyici Paneli ───────────────────────────────── */
 
-var _session    = JSON.parse(localStorage.getItem('denetleyici_session') || 'null');
-var _records    = [];          // son yüklenen kayıtlar
-var _deleteRow  = null;        // silinecek satır idx
-var _isEditMode = false;       // true = edit, false = yeni kayıt
+var _session       = JSON.parse(localStorage.getItem('denetleyici_session') || 'null');
+var _records       = [];
+var _deleteRow     = null;
+var _isEditMode    = false;
+var _kasaEbatlari  = [];
+var _uretimLimiti  = 2700;
 
 /* ================================================================
    Init
@@ -28,7 +30,41 @@ window.onload = function () {
   var today = new Date().toISOString().split('T')[0];
   document.getElementById('bas-tarih').value = today;
   document.getElementById('bit-tarih').value = today;
+
+  // Kasa listesi ve üretim limitini yükle
+  loadLists();
 };
+
+function loadLists() {
+  var cb = 'cbDenLists_' + Date.now();
+  window[cb] = function (json) {
+    delete window[cb];
+    removeScript('jsonp-den-lists');
+    _kasaEbatlari = json.kasaEbatlari || [];
+    _uretimLimiti = parseInt(json.uretimLimiti) || 2700;
+    fillKasaDropdowns();
+  };
+  var s = document.createElement('script');
+  s.id  = 'jsonp-den-lists';
+  s.src = SCRIPT_URL + '?action=getLists&callback=' + cb;
+  s.onerror = function () { delete window[cb]; };
+  document.head.appendChild(s);
+}
+
+function fillKasaDropdowns() {
+  ['edit-enj1-kasa', 'edit-enj2-kasa'].forEach(function (id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">— Seçin —</option>';
+    _kasaEbatlari.forEach(function (k) {
+      var o = document.createElement('option');
+      o.value = k; o.textContent = k;
+      sel.appendChild(o);
+    });
+    if (cur) sel.value = cur;
+  });
+}
 
 /* ================================================================
    Veri Yükleme
@@ -94,26 +130,42 @@ function renderRecords() {
   summary.textContent   = _records.length + ' kayıt bulundu';
 
   _records.forEach(function (r, idx) {
+    var u1   = Number(r.enj1Uretim) || 0;
+    var u2   = Number(r.enj2Uretim) || 0;
+    var warn = u1 > _uretimLimiti || u2 > _uretimLimiti;
+    var hasEnj2 = r.enj2No && r.enj2No !== '00';
+
+    var uretim1Cell = warn && u1 > _uretimLimiti
+      ? '<td style="text-align:right;font-weight:800;color:#dc2626">⚠️ ' + fmt(u1) + '</td>'
+      : '<td style="text-align:right;font-weight:800;color:var(--success)">' + fmt(u1) + '</td>';
+
+    var uretim2Cell = hasEnj2
+      ? (warn && u2 > _uretimLimiti
+          ? '<td style="text-align:right;font-weight:800;color:#dc2626">⚠️ ' + fmt(u2) + '</td>'
+          : '<td style="text-align:right;font-weight:800;color:var(--success)">' + fmt(u2) + '</td>')
+      : '<td>—</td>';
+
     var tr = document.createElement('tr');
+    if (warn) tr.style.background = '#fff1f2';
+
     tr.innerHTML =
       '<td style="color:var(--text2);font-size:11px">' + r.rowIdx + '</td>' +
       '<td style="font-size:11px;color:var(--text2)">' + (r.kayitZamani || '') + '</td>' +
       '<td>' + (r.vardiyaTarihi || '') + '</td>' +
       '<td style="font-weight:800">' + (r.adSoyad || '') + '</td>' +
       '<td><span style="background:var(--den-light);color:var(--den);border-radius:6px;padding:2px 7px;font-size:12px;font-weight:800">' + (r.vardiya || '') + '</span></td>' +
-      '<td style="text-align:center">' + (r.olcumNo || '') + '</td>' +
       '<td style="font-weight:700">' + (r.enj1No || '') + '</td>' +
       '<td>' + (r.enj1Kasa || '') + '</td>' +
       '<td style="text-align:right">' + fmt(r.enj1SayacBas) + '</td>' +
       '<td style="text-align:right">' + fmt(r.enj1SayacBit) + '</td>' +
-      '<td style="text-align:right;font-weight:800;color:var(--success)">' + fmt(r.enj1Uretim) + '</td>' +
+      uretim1Cell +
       '<td style="text-align:right;color:#ea580c">' + fmt(r.enj1Fire) + '</td>' +
-      '<td style="font-weight:700;color:var(--text2)">' + (r.enj2No && r.enj2No !== '00' ? r.enj2No : '—') + '</td>' +
-      '<td>' + (r.enj2Kasa || '—') + '</td>' +
-      '<td style="text-align:right">' + (r.enj2No && r.enj2No !== '00' ? fmt(r.enj2SayacBas) : '—') + '</td>' +
-      '<td style="text-align:right">' + (r.enj2No && r.enj2No !== '00' ? fmt(r.enj2SayacBit) : '—') + '</td>' +
-      '<td style="text-align:right;font-weight:800;color:var(--success)">' + (r.enj2No && r.enj2No !== '00' ? fmt(r.enj2Uretim) : '—') + '</td>' +
-      '<td style="text-align:right;color:#ea580c">' + (r.enj2No && r.enj2No !== '00' ? fmt(r.enj2Fire) : '—') + '</td>' +
+      '<td style="font-weight:700;color:var(--text2)">' + (hasEnj2 ? r.enj2No : '—') + '</td>' +
+      '<td>' + (hasEnj2 ? (r.enj2Kasa || '') : '—') + '</td>' +
+      '<td style="text-align:right">' + (hasEnj2 ? fmt(r.enj2SayacBas) : '—') + '</td>' +
+      '<td style="text-align:right">' + (hasEnj2 ? fmt(r.enj2SayacBit) : '—') + '</td>' +
+      uretim2Cell +
+      '<td style="text-align:right;color:#ea580c">' + (hasEnj2 ? fmt(r.enj2Fire) : '—') + '</td>' +
       '<td style="white-space:nowrap">' +
         '<button class="action-btn edit"   onclick="openEditModal(' + idx + ')">✏️ Düzenle</button> ' +
         '<button class="action-btn delete" onclick="openDeleteModal(' + idx + ')">🗑️</button>' +
@@ -142,7 +194,6 @@ function openEditModal(idx) {
   document.getElementById('edit-vardiya-tarihi').value  = r.vardiyaTarihi || '';
   document.getElementById('edit-vardiya').value         = r.vardiya || 'SABAH';
   document.getElementById('edit-ad-soyad').value        = r.adSoyad || '';
-  document.getElementById('edit-olcum-no').value        = r.olcumNo || '';
   document.getElementById('edit-olcum-saat').value      = r.olcumSaat || '';
   document.getElementById('edit-enj-sayisi').value      = String(r.enjSayisi || 1);
   document.getElementById('edit-enj1-no').value         = r.enj1No || '';
@@ -160,6 +211,11 @@ function openEditModal(idx) {
   document.getElementById('edit-enj2-sayac-bit').value  = r.enj2SayacBit || '';
   document.getElementById('edit-enj2-fire').value       = r.enj2Fire || 0;
 
+  fillKasaDropdowns();
+  // Kasa değerini dropdown'da seç
+  document.getElementById('edit-enj1-kasa').value = r.enj1Kasa || '';
+  document.getElementById('edit-enj2-kasa').value = r.enj2Kasa || '';
+
   toggleEnj2Section();
   calcPreview();
   document.getElementById('edit-modal').style.display = 'flex';
@@ -173,7 +229,7 @@ function openAddModal() {
 
   // Clear all fields
   var ids = ['edit-row-idx','edit-vardiya-tarihi','edit-ad-soyad',
-    'edit-olcum-no','edit-olcum-saat',
+    'edit-olcum-saat',
     'edit-enj1-no','edit-enj1-kasa','edit-enj1-cevrim','edit-enj1-agirlik',
     'edit-enj1-sayac-bas','edit-enj1-sayac-bit','edit-enj1-fire',
     'edit-enj2-no','edit-enj2-kasa','edit-enj2-cevrim','edit-enj2-agirlik',
@@ -241,7 +297,6 @@ function saveRecord() {
     vardiya_tarihi: document.getElementById('edit-vardiya-tarihi').value,
     vardiya:        document.getElementById('edit-vardiya').value,
     ad_soyad:       document.getElementById('edit-ad-soyad').value.trim(),
-    olcum_no:       document.getElementById('edit-olcum-no').value,
     olcum_saat:     document.getElementById('edit-olcum-saat').value,
     enj_sayisi:     document.getElementById('edit-enj-sayisi').value,
     enj1_no:        document.getElementById('edit-enj1-no').value.trim(),
