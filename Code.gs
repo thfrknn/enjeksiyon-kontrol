@@ -220,52 +220,62 @@ function getStatus(cb, e) {
 // ================================================================
 
 function getLastCounter(cb, e) {
-  const enjNo = e.parameter.enj_no;
+  const enjNo = String(e.parameter.enj_no || '').trim();
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Veriler');
 
   let sayacBit  = null;
-  let lastTime  = 0;   // En son Veriler kaydının zamanı (bu makine için)
+  let lastVeriMs = 0;
 
+  // Veriler'den en son kaydı bul — son satırdan geriye tara, ilk eşleşmede dur
+  const sheet = ss.getSheetByName('Veriler');
   if (sheet && sheet.getLastRow() >= 2) {
-    const vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 24).getValues();
-    for (const row of vals) {
-      const ts = row[0] instanceof Date ? row[0].getTime() : 0;
-      if (String(row[7]).trim() === String(enjNo).trim()) {
-        const b = parseInt(row[12]);
-        if (!isNaN(b)) { sayacBit = b; if (ts > lastTime) lastTime = ts; }
+    const vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 21).getValues();
+    for (let i = vals.length - 1; i >= 0; i--) {
+      const row = vals[i];
+      let bit = null;
+      if (String(row[7]).trim() === enjNo)  bit = parseInt(row[12]); // enj1 sayacBit
+      else if (String(row[15]).trim() === enjNo) bit = parseInt(row[20]); // enj2 sayacBit
+      else continue;
+      if (isNaN(bit)) continue;
+
+      sayacBit = bit;
+
+      // Sayaç sıfırlama karşılaştırması için bu satırın zamanını parse et
+      // row[0] genellikle "dd.MM.yyyy HH:mm:ss" veya Date objesi
+      const raw = row[0];
+      if (raw instanceof Date) {
+        lastVeriMs = raw.getTime();
+      } else {
+        const m = String(raw).match(/(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})\D+(\d{1,2}):(\d{2})/);
+        if (m) lastVeriMs = new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]).getTime();
       }
-      if (String(row[15]).trim() === String(enjNo).trim()) {
-        const b = parseInt(row[20]);
-        if (!isNaN(b)) { sayacBit = b; if (ts > lastTime) lastTime = ts; }
-      }
+      break; // İlk eşleşmede dur — bu en yeni kayıt
     }
   }
 
-  // Daha yeni bir sayaç sıfırlama kaydı varsa onu kullan
+  // SayacLogları'nda Veriler'den DAHA YENİ bir sıfırlama varsa onu kullan
   const logSheet = ss.getSheetByName('SayacLogları');
   if (logSheet && logSheet.getLastRow() > 1) {
     const logVals = logSheet.getRange(2, 1, logSheet.getLastRow() - 1, 3).getValues();
     for (const row of logVals) {
-      if (String(row[1]).trim() !== String(enjNo).trim()) continue;
+      if (String(row[1]).trim() !== enjNo) continue;
       const ts = row[0] instanceof Date ? row[0].getTime() : 0;
-      if (ts > lastTime) {
-        lastTime = ts;
-        sayacBit = parseInt(row[2]) || 0;
+      if (ts > lastVeriMs) {
+        lastVeriMs = ts;
+        sayacBit   = parseInt(row[2]) || 0;
       }
     }
   }
 
+  // Makine kasası
   let kasaAtanan = null;
   const kasaSheet = ss.getSheetByName('Makine Kasa');
   if (kasaSheet && kasaSheet.getLastRow() > 1) {
-    const kv = kasaSheet.getRange(2, 1, kasaSheet.getLastRow() - 1, 2).getValues();
-    for (const row of kv) {
-      if (String(row[0]).trim() === String(enjNo).trim()) {
+    kasaSheet.getRange(2, 1, kasaSheet.getLastRow() - 1, 2).getValues().forEach(row => {
+      if (!kasaAtanan && String(row[0]).trim() === enjNo) {
         kasaAtanan = String(row[1]).trim() || null;
-        break;
       }
-    }
+    });
   }
 
   return jsonp(cb, { sayacBit, kasaAtanan });
@@ -555,20 +565,31 @@ function getMonitorData(cb) {
   if (verilerSheet2 && verilerSheet2.getLastRow() > 1) {
     const lastRow  = verilerSheet2.getLastRow();
     const startRow = Math.max(2, lastRow - 499);
+    const tz2 = ss.getSpreadsheetTimeZone();
     const vv = verilerSheet2.getRange(startRow, 1, lastRow - startRow + 1, 24).getValues();
     for (const row of vv) {
       uretimGecmisi.push({
-        tarih:   String(row[1]  || '').trim(),
-        adsoyad: String(row[2]  || '').trim(),
-        vardiya: String(row[3]  || '').trim(),
-        enj1:    String(row[7]  || '').trim(),
-        kasa1:   String(row[8]  || '').trim(),
-        uretim1: Number(row[13]) || 0,
-        fire1:   Number(row[14]) || 0,
-        enj2:    String(row[15] || '').trim(),
-        kasa2:   String(row[16] || '').trim(),
-        uretim2: Number(row[21]) || 0,
-        fire2:   Number(row[22]) || 0,
+        tarih:    row[1] instanceof Date
+          ? Utilities.formatDate(row[1], tz2, 'yyyy-MM-dd')
+          : String(row[1] || '').trim(),
+        adsoyad:  String(row[2]  || '').trim(),
+        vardiya:  String(row[3]  || '').trim(),
+        olcumNo:  Number(row[4]) || 0,
+        saat:     String(row[6]  || '').trim(),
+        enj1:     String(row[7]  || '').trim(),
+        kasa1:    String(row[8]  || '').trim(),
+        cevrim1:  Number(row[9]) || 0,
+        sayacBas1: Number(row[11]) || 0,
+        sayacBit1: Number(row[12]) || 0,
+        uretim1:  Number(row[13]) || 0,
+        fire1:    Number(row[14]) || 0,
+        enj2:     String(row[15] || '').trim(),
+        kasa2:    String(row[16] || '').trim(),
+        cevrim2:  Number(row[17]) || 0,
+        sayacBas2: Number(row[19]) || 0,
+        sayacBit2: Number(row[20]) || 0,
+        uretim2:  Number(row[21]) || 0,
+        fire2:    Number(row[22]) || 0,
       });
     }
   }
@@ -1153,6 +1174,7 @@ function buildCanliData(ss) {
   const allCanli  = canliSheet.getRange(1, 1, readRows, 12).getValues();
   const _BASES    = { SABAH: 2, AKSAM: 16, GECE: 30 };
   const nowMs     = new Date().getTime();
+  const tz        = ss.getSpreadsheetTimeZone();
 
   for (let enjIdx = 1; enjIdx <= 13; enjIdx++) {
     const makineNo = 'Enjeksiyon ' + enjIdx;
@@ -1163,7 +1185,9 @@ function buildCanliData(ss) {
       const ri = base + enjIdx - 1;
       if (ri >= allCanli.length) continue;
       const row      = allCanli[ri];
-      const rowTarih = String(row[2] || '').trim();
+      const rowTarih = row[2] instanceof Date
+        ? Utilities.formatDate(row[2], tz, 'yyyy-MM-dd')
+        : String(row[2] || '').trim();
       const rowSaat  = String(row[10] || '').trim();
       if (!rowTarih) continue;
 
@@ -1208,6 +1232,7 @@ function buildCanliDataForMachineStatus(ss) {
   const allCanli = canliSheet.getRange(1, 1, readRows, 12).getValues();
   const _BASES   = { SABAH: 2, AKSAM: 16, GECE: 30 };
   const nowMs    = new Date().getTime();
+  const tz       = ss.getSpreadsheetTimeZone();
 
   for (let i = 1; i <= 13; i++) {
     const makineNo  = 'Enjeksiyon ' + i;
@@ -1218,7 +1243,9 @@ function buildCanliDataForMachineStatus(ss) {
       if (ri >= allCanli.length) continue;
       const row     = allCanli[ri];
       const opAd    = String(row[1] || '').trim();
-      const rowTarih = String(row[2] || '').trim();
+      const rowTarih = row[2] instanceof Date
+        ? Utilities.formatDate(row[2], tz, 'yyyy-MM-dd')
+        : String(row[2] || '').trim();
       const rowSaat  = String(row[10] || '').trim();
       if (!opAd || !rowTarih) continue;
 

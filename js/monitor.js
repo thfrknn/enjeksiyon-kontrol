@@ -314,7 +314,7 @@ function renderUretimFiltrebar() {
     <!-- Makine satırı -->
     <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
       <span style="font-size:11px;font-weight:800;color:var(--text2);white-space:nowrap">Makine:</span>
-      ${['TÜMÜ',...[1,2,3,4,5,6,7,8,9,10,11,12].map(n => 'Enjeksiyon ' + n)].map(e => {
+      ${['TÜMÜ',...[1,2,3,4,5,6,7,8,9,10,11,12,13].map(n => 'Enjeksiyon ' + n)].map(e => {
         const act = _uretimFiltEnj === e;
         const lbl = e === 'TÜMÜ' ? 'Tümü' : e.replace('Enjeksiyon ','');
         return `<button class="uf-ebtn" data-e="${e}" onclick="uretimFiltreEnj('${e}')"
