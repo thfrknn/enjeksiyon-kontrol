@@ -171,11 +171,11 @@ function checkStatus() {
 
     if (json.sayacBit1 != null) {
       document.getElementById('sayac_bas1').value = json.sayacBit1;
-      setBasReadonly(1); calcUretim(1);
+      calcUretim(1);
     }
     if (json.sayacBit2 != null) {
       document.getElementById('sayac_bas2').value = json.sayacBit2;
-      setBasReadonly(2); calcUretim(2);
+      calcUretim(2);
     }
   };
 
