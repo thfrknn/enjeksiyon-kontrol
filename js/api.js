@@ -96,7 +96,6 @@ function fetchLastCounter(n, enjNo, _attempt) {
   var bas = document.getElementById('sayac_bas' + n);
 
   if (attempt === 1) {
-    bas.value = '';
     setBasEditable(n);
     calcUretim(n);
   }
@@ -124,7 +123,6 @@ function fetchLastCounter(n, enjNo, _attempt) {
     document.getElementById('lcs' + n)?.remove();
     if (json.sayacBit !== null && json.sayacBit !== undefined) {
       bas.value = json.sayacBit;
-      setBasReadonly(n);
       calcUretim(n);
     }
     if (json.kasaAtanan) {
