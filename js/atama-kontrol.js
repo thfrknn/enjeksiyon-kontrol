@@ -6,13 +6,14 @@
   'use strict';
 
   var AK = {
-    atananMakineler: {},   // { "101": ["Enjeksiyon 3"] }
+    atananMakineler: {},
     kullaniciId:     null,
     oncekiAtama:     null,
     pollTimer:       null,
+    applyTimer:      null,   // debounce — observer'ın sık tetiklenmesini önler
     bildirimVerildi: false,
     initialized:     false,
-    lockedMachines:  [null, null],  // [enj1, enj2] — atama tarafından kilitlenmiş
+    lockedMachines:  [null, null],
   };
 
   // ── Yardımcı: JSONP çağrısı ────────────────────────
@@ -40,6 +41,9 @@
 
   // ── Makineyi kilitle: text display göster, sayaç çek ──
   function lockMachineDisplay(n, makineNo) {
+    // Zaten aynı makineye kilitliyse tekrar işlem yapma (observer loop önleme)
+    if (AK.lockedMachines[n - 1] === makineNo) return;
+
     var secEl   = document.getElementById('enj' + n + '-sec');
     var roEl    = document.getElementById('enj' + n + '-ro');
     var roVal   = document.getElementById('enj' + n + '-ro-val');
@@ -257,7 +261,11 @@
           if (AK.pollTimer) clearInterval(AK.pollTimer);
           AK.pollTimer = setInterval(pollMachineStatuses, 30000);
         }
-        if (uid) applyGridRestriction();
+        // Debounce: sık tetiklenmeyi önle (style/class değişimleri loop'a neden olur)
+        if (uid) {
+          clearTimeout(AK.applyTimer);
+          AK.applyTimer = setTimeout(applyGridRestriction, 150);
+        }
       }
     });
 
