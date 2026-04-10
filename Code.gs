@@ -223,59 +223,68 @@ function getLastCounter(cb, e) {
   const enjNo = String(e.parameter.enj_no || '').trim();
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
 
-  let sayacBit  = null;
-  let lastVeriMs = 0;
-
-  // Veriler'den en son kaydı bul — son satırdan geriye tara, ilk eşleşmede dur
-  const sheet = ss.getSheetByName('Veriler');
-  if (sheet && sheet.getLastRow() >= 2) {
-    const vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 21).getValues();
-    for (let i = vals.length - 1; i >= 0; i--) {
-      const row = vals[i];
-      let bit = null;
-      if (String(row[7]).trim() === enjNo)  bit = parseInt(row[12]); // enj1 sayacBit
-      else if (String(row[15]).trim() === enjNo) bit = parseInt(row[20]); // enj2 sayacBit
-      else continue;
-      if (isNaN(bit)) continue;
-
-      sayacBit = bit;
-
-      // Sayaç sıfırlama karşılaştırması için bu satırın zamanını parse et
-      // row[0] genellikle "dd.MM.yyyy HH:mm:ss" veya Date objesi
-      const raw = row[0];
-      if (raw instanceof Date) {
-        lastVeriMs = raw.getTime();
-      } else {
-        const m = String(raw).match(/(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})\D+(\d{1,2}):(\d{2})/);
-        if (m) lastVeriMs = new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]).getTime();
-      }
-      break; // İlk eşleşmede dur — bu en yeni kayıt
-    }
-  }
-
-  // SayacLogları'nda Veriler'den DAHA YENİ bir sıfırlama varsa onu kullan
-  const logSheet = ss.getSheetByName('SayacLogları');
-  if (logSheet && logSheet.getLastRow() > 1) {
-    const logVals = logSheet.getRange(2, 1, logSheet.getLastRow() - 1, 3).getValues();
-    for (const row of logVals) {
-      if (String(row[1]).trim() !== enjNo) continue;
-      const ts = row[0] instanceof Date ? row[0].getTime() : 0;
-      if (ts > lastVeriMs) {
-        lastVeriMs = ts;
-        sayacBit   = parseInt(row[2]) || 0;
-      }
-    }
-  }
-
-  // Makine kasası
+  let sayacBit   = null;
   let kasaAtanan = null;
+
+  // ── Hızlı yol: Son Sayaçlar lookup tablosu ──────────────────────
+  // submitForm ve resetSayac her yazımda bu tabloyu günceller.
+  // 13 satırlık tabloda arama: anlık döner, tam Veriler taraması gerekmez.
+  const sonSheet = ss.getSheetByName('Son Sayaçlar');
+  if (sonSheet && sonSheet.getLastRow() > 1) {
+    const data = sonSheet.getRange(2, 1, sonSheet.getLastRow() - 1, 2).getValues();
+    for (const row of data) {
+      if (String(row[0]).trim() === enjNo) {
+        const bit = parseInt(row[1]);
+        if (!isNaN(bit)) sayacBit = bit;
+        break;
+      }
+    }
+  }
+
+  // ── Yedek yol: Son Sayaçlar'da yoksa Veriler'i tara ─────────────
+  // Yeni kurulumda veya makine henüz kayıt yapmamışsa devreye girer.
+  if (sayacBit === null) {
+    const vSheet = ss.getSheetByName('Veriler');
+    let lastVeriMs = 0;
+    if (vSheet && vSheet.getLastRow() >= 2) {
+      const vals = vSheet.getRange(2, 1, vSheet.getLastRow() - 1, 21).getValues();
+      for (let i = vals.length - 1; i >= 0; i--) {
+        const row = vals[i];
+        let bit = null;
+        if (String(row[7]).trim() === enjNo)       bit = parseInt(row[12]);
+        else if (String(row[15]).trim() === enjNo) bit = parseInt(row[20]);
+        else continue;
+        if (isNaN(bit)) continue;
+        sayacBit = bit;
+        const raw = row[0];
+        if (raw instanceof Date) {
+          lastVeriMs = raw.getTime();
+        } else {
+          const m = String(raw).match(/(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})\D+(\d{1,2}):(\d{2})/);
+          if (m) lastVeriMs = new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]).getTime();
+        }
+        break;
+      }
+    }
+    // Veriler'den sonra yapılmış sıfırlama varsa onu kullan
+    const logSheet = ss.getSheetByName('SayacLogları');
+    if (logSheet && logSheet.getLastRow() > 1) {
+      const logVals = logSheet.getRange(2, 1, logSheet.getLastRow() - 1, 3).getValues();
+      for (const row of logVals) {
+        if (String(row[1]).trim() !== enjNo) continue;
+        const ts = row[0] instanceof Date ? row[0].getTime() : 0;
+        if (ts > lastVeriMs) { lastVeriMs = ts; sayacBit = parseInt(row[2]) || 0; }
+      }
+    }
+  }
+
+  // ── Makine kasası (küçük tablo, direkt arama) ────────────────────
   const kasaSheet = ss.getSheetByName('Makine Kasa');
   if (kasaSheet && kasaSheet.getLastRow() > 1) {
-    kasaSheet.getRange(2, 1, kasaSheet.getLastRow() - 1, 2).getValues().forEach(row => {
-      if (!kasaAtanan && String(row[0]).trim() === enjNo) {
-        kasaAtanan = String(row[1]).trim() || null;
-      }
-    });
+    const kv = kasaSheet.getRange(2, 1, kasaSheet.getLastRow() - 1, 2).getValues();
+    for (const row of kv) {
+      if (String(row[0]).trim() === enjNo) { kasaAtanan = String(row[1]).trim() || null; break; }
+    }
   }
 
   return jsonp(cb, { sayacBit, kasaAtanan });
@@ -304,6 +313,9 @@ function resetSayac(cb, e) {
   }
 
   sheet.appendRow([new Date(), makineNo, yeniSayac, meydanciId, meydanciAd]);
+
+  // Lookup tablosunu güncelle — bir sonraki getLastCounter anında dönsün
+  _updateSonSayaclar(ss, makineNo, yeniSayac);
 
   return jsonp(cb, { result: 'ok', makineNo, yeniSayac });
 }
@@ -453,6 +465,12 @@ function submitForm(cb, e) {
     '',
     submitToken
   ]);
+
+  // Son Sayaçlar lookup tablosunu güncelle — getLastCounter hızlı yolu
+  _updateSonSayaclar(ss, e.parameter.enj1_no, parseInt(e.parameter.sayac_bit1) || 0);
+  if (enjSayisi === 2 && enj2No !== '00') {
+    _updateSonSayaclar(ss, enj2No, parseInt(bit2) || 0);
+  }
 
   // Canlı izleme güncelle
   updateCanliIzleme(
@@ -1467,6 +1485,38 @@ function jsonp(callback, obj) {
   const body = callback ? callback + '(' + JSON.stringify(obj) + ')' : JSON.stringify(obj);
   return ContentService.createTextOutput(body)
     .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+}
+
+// ================================================================
+// HELPER: _updateSonSayaclar
+// Her makinenin son sayaçBit değerini küçük bir lookup tablosunda tutar.
+// submitForm ve resetSayac her yazımda bunu günceller.
+// getLastCounter bu tabloyu okur → tam Veriler taraması gerekmez.
+// ================================================================
+function _updateSonSayaclar(ss, enjNo, sayacBit) {
+  if (!enjNo || enjNo === '00') return;
+
+  let sheet = ss.getSheetByName('Son Sayaçlar');
+  if (!sheet) {
+    sheet = ss.insertSheet('Son Sayaçlar');
+    sheet.appendRow(['Makine No', 'Sayaç Bit', 'Son Güncelleme']);
+    sheet.getRange('A1:C1').setFontWeight('bold').setBackground('#0f766e').setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+    [100, 100, 160].forEach((w, i) => sheet.setColumnWidth(i + 1, w));
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    const keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (let i = 0; i < keys.length; i++) {
+      if (String(keys[i][0]).trim() === enjNo) {
+        sheet.getRange(i + 2, 2, 1, 2).setValues([[sayacBit, new Date()]]);
+        return;
+      }
+    }
+  }
+
+  sheet.appendRow([enjNo, sayacBit, new Date()]);
 }
 
 function getLockedMachines(ss) {
