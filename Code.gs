@@ -394,8 +394,6 @@ function submitForm(cb, e) {
   const saat        = e.parameter.olcum_saat  || '';
   const vardiya     = e.parameter.vardiya     || '';
   const close       = e.parameter.close === 'true';
-  const olcumNo     = parseInt(e.parameter.olcumNo) || 1;
-  const onaylandi   = e.parameter.onaylandi === 'true';
   const adSoyad     = e.parameter.adsoyad || '';
   const submitToken = String(e.parameter.submitToken || '').trim();
 
@@ -408,7 +406,7 @@ function submitForm(cb, e) {
       const tokenCol   = sheet.getRange(checkStart, 25, lastRow - checkStart + 1, 1).getValues();
       for (let i = 0; i < tokenCol.length; i++) {
         if (String(tokenCol[i][0]).trim() === submitToken) {
-          return jsonp(cb, { result: 'ok', olcum: olcumNo, duplicate: true });
+          return jsonp(cb, { result: 'ok', duplicate: true });
         }
       }
     }
@@ -430,7 +428,7 @@ function submitForm(cb, e) {
     vardiyaTarih,
     adSoyad,
     vardiya,
-    olcumNo,
+    '',
     enjSayisi,
     saat,
     e.parameter.enj1_no    || '',
@@ -442,7 +440,7 @@ function submitForm(cb, e) {
     e.parameter.uretim1    || '',
     e.parameter.fire1      || '0',
     enj2No, kasa2, cevrim2, agirlik2, bas2, bit2, uretim2, fire2,
-    olcumNo === 3 ? (onaylandi ? 'ONAYLANDI' : 'BEKLİYOR') : '',
+    '',
     submitToken
   ]);
 
@@ -491,7 +489,7 @@ function submitForm(cb, e) {
 
   // Üretim kaydı
   appendUretimKaydi(ss, {
-    tarih: vardiyaTarih, vardiya, saat, adsoyad: adSoyad, olcumNo,
+    tarih: vardiyaTarih, vardiya, saat, adsoyad: adSoyad,
     makineNo: e.parameter.enj1_no || '', kasa: e.parameter.kasa1 || '',
     cevrim:   close ? '0' : (e.parameter.cevrim1 || ''),
     agirlik:  e.parameter.agirlik1 || '',
@@ -500,13 +498,13 @@ function submitForm(cb, e) {
   });
   if (enjSayisi === 2) {
     appendUretimKaydi(ss, {
-      tarih: vardiyaTarih, vardiya, saat, adsoyad: adSoyad, olcumNo,
+      tarih: vardiyaTarih, vardiya, saat, adsoyad: adSoyad,
       makineNo: enj2No, kasa: kasa2, cevrim: cevrim2, agirlik: agirlik2,
       sayacBas: bas2, sayacBit: bit2, uretim: uretim2, fire: fire2,
     });
   }
 
-  return jsonp(cb, { result: 'ok', olcum: olcumNo });
+  return jsonp(cb, { result: 'ok' });
 }
 
 // ================================================================

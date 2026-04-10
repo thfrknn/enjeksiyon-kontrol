@@ -10,9 +10,6 @@ function saveDraft() {
     tarih:        document.getElementById('tarih').value,
     enjSayisi:    enjSayisi,
     step:         currentStep,
-    olcumNo:      olcumNo,
-    enj1Kilitli:  enj1Kilitli,
-    enj2Kilitli:  enj2Kilitli,
     enj1_no:      document.getElementById('enj1_no').value,
     kasa1:        document.getElementById('kasa1').value,
     enj2_no:      document.getElementById('enj2_no').value,
@@ -82,11 +79,6 @@ function restoreDraft() {
     if (d.tarih)   document.getElementById('tarih').value = d.tarih;
     setEnjSayisi(d.enjSayisi || 1);
 
-    // Kilitleme durumunu ve ölçüm numarasını geri yükle
-    if (d.olcumNo)     olcumNo     = d.olcumNo;
-    if (d.enj1Kilitli) enj1Kilitli = true;
-    if (d.enj2Kilitli) enj2Kilitli = true;
-
     ['enj1_no','kasa1','enj2_no','kasa2',
      'cevrim1','agirlik1','sayac_bas1','sayac_bit1',
      'cevrim2','agirlik2','sayac_bas2','sayac_bit2',
@@ -94,10 +86,6 @@ function restoreDraft() {
       var el = document.getElementById(id);
       if (el && d[id] !== undefined) el.value = d[id];
     });
-
-    // Sayaç başlama kilidini geri uygula (sunucu yanıtı beklenmeden)
-    if (enj1Kilitli) setBasReadonly(1);
-    if (enj2Kilitli) setBasReadonly(2);
 
     [1, 2].forEach(function(n) {
       var val = d['enj' + n + '_no'];

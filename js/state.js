@@ -2,11 +2,7 @@
 
 var vardiya      = null;
 var currentStep  = 1;
-var olcumNo      = 1;
 var enjSayisi    = 1;
-
-var enj1Kilitli  = false;
-var enj2Kilitli  = false;
 
 var kullanicilar  = {};
 var uretimLimiti  = 0;

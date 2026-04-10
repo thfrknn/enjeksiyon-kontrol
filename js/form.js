@@ -83,9 +83,6 @@ function setEnjSayisi(n) {
   document.getElementById('olcum-enj2-section').style.display  = n === 2 ? 'block' : 'none';
   document.getElementById('enj1-title').textContent        = n === 2 ? '1. Enjeksiyon Bilgileri' : 'Enjeksiyon Bilgileri';
   document.getElementById('olcum-enj1-title').textContent  = n === 2 ? 'Enjeksiyon 1 — Ölçümler' : 'Ölçümler';
-  var row = document.getElementById('enj-toggle-row');
-  row.style.opacity       = enj1Kilitli ? '0.5' : '1';
-  row.style.pointerEvents = enj1Kilitli ? 'none' : 'auto';
   syncEnjDisabled();
 }
 
@@ -239,48 +236,10 @@ function hideKasaAtandiBox(n) {
   if (box) box.style.display = 'none';
 }
 
-// ── Durum kutusu ve enjeksiyon kilidi gösterimi ─────
-function showStatusBox(json) {
-  var box = document.getElementById('status-box');
-  if (json.olcumNo <= 1) { box.style.display = 'none'; return; }
-  var cfg = {
-    2: { cls: 'orange', icon: '🕛', msg: '2. ölçüm zamanı' },
-    3: { cls: 'green',  icon: '🏁', msg: '3. ölçüm — Vardiya sonu' },
-  };
-  var c = cfg[json.olcumNo] || { cls: 'blue', icon: '📊', msg: json.olcumNo + '. ölçüm' };
-  box.className = 'ibox ' + c.cls;
-  box.innerHTML = '<span style="font-size:18px">' + c.icon + '</span><span><strong>' + c.msg + '</strong></span>';
-  box.style.display = 'flex';
-  box.style.marginBottom = '14px';
-}
-
-function showEnjSection(json) {
-  document.getElementById('enj1-sec').style.display  = enj1Kilitli ? 'none'  : 'block';
-  document.getElementById('enj1-ro').style.display   = enj1Kilitli ? 'block' : 'none';
-  document.getElementById('kasa1-sec').style.display = enj1Kilitli ? 'none'  : 'block';
-  document.getElementById('kasa1-ro').style.display  = enj1Kilitli ? 'block' : 'none';
-  if (enj1Kilitli) {
-    document.getElementById('enj1-ro-val').textContent  = json.enj1;
-    document.getElementById('kasa1-ro-val').textContent = json.kasa1;
-    loadAccumulatedFire(1, json.enj1);
-  }
-  document.getElementById('enj2-sec').style.display  = enj2Kilitli ? 'none'  : 'block';
-  document.getElementById('enj2-ro').style.display   = enj2Kilitli ? 'block' : 'none';
-  document.getElementById('kasa2-sec').style.display = enj2Kilitli ? 'none'  : 'block';
-  document.getElementById('kasa2-ro').style.display  = enj2Kilitli ? 'block' : 'none';
-  if (enj2Kilitli) {
-    document.getElementById('enj2-ro-val').textContent  = json.enj2;
-    document.getElementById('kasa2-ro-val').textContent = json.kasa2;
-    loadAccumulatedFire(2, json.enj2);
-  }
-}
 
 // ── Kasa ağırlık kontrolü ───────────────────────────
 function getKasaBounds(n) {
-  var locked = n === 1 ? enj1Kilitli : enj2Kilitli;
-  var kasa   = locked
-    ? document.getElementById('kasa' + n + '-ro-val').textContent
-    : document.getElementById('kasa' + n).value;
+  var kasa = document.getElementById('kasa' + n).value;
   if (!kasa) return null;
   var key = kasa.trim().toLowerCase().replace(/\s+/g, '');
 
@@ -481,17 +440,15 @@ function validate2() {
     else           { el.classList.remove('error'); document.getElementById(errId).classList.remove('show'); }
   }
 
-  if (!enj1Kilitli) {
-    var e1 = document.getElementById('enj1_no');
-    var g1 = document.getElementById('enj1-grid');
-    if (!e1.value) { g1.classList.add('error'); document.getElementById('err-enj1').classList.add('show'); ok = false; }
-    else           { g1.classList.remove('error'); document.getElementById('err-enj1').classList.remove('show'); }
-    var k1 = document.getElementById('kasa1');
-    if (!k1.value) { k1.classList.add('error'); document.getElementById('err-kasa1').classList.add('show'); ok = false; }
-    else           { k1.classList.remove('error'); document.getElementById('err-kasa1').classList.remove('show'); }
-  }
+  var e1 = document.getElementById('enj1_no');
+  var g1 = document.getElementById('enj1-grid');
+  if (!e1.value) { g1.classList.add('error'); document.getElementById('err-enj1').classList.add('show'); ok = false; }
+  else           { g1.classList.remove('error'); document.getElementById('err-enj1').classList.remove('show'); }
+  var k1 = document.getElementById('kasa1');
+  if (!k1.value) { k1.classList.add('error'); document.getElementById('err-kasa1').classList.add('show'); ok = false; }
+  else           { k1.classList.remove('error'); document.getElementById('err-kasa1').classList.remove('show'); }
 
-  if (enjSayisi === 2 && !enj2Kilitli) {
+  if (enjSayisi === 2) {
     var e2 = document.getElementById('enj2_no');
     var g2 = document.getElementById('enj2-grid');
     if (!e2.value) { g2.classList.add('error'); document.getElementById('err-enj2').classList.add('show'); ok = false; }
@@ -573,7 +530,6 @@ function buildSummary() {
   var rows = [
     ['Ad Soyad', d.adsoyad],
     ['Vardiya', vl],
-    ['Ölçüm No', olcumNo + '. Ölçüm'],
     ['Ölçüm Saati', d.olcum_saat],
     { type: 'div', text: 'Enjeksiyon 1' },
     ['Enjeksiyon', d.enj1_no],
@@ -603,25 +559,16 @@ function buildSummary() {
     return '<div class="sitem"><span class="skey">' + r[0] + '</span><span class="sval">' + r[1] + '</span></div>';
   }).join('');
 
-  if (olcumNo === 3) {
-    document.getElementById('normal-ozet').style.display = 'none';
-    document.getElementById('onay-ozet').style.display   = 'block';
-    document.getElementById('onay-uretim1').textContent  = u1.toLocaleString('tr-TR');
-    document.getElementById('onay-uretim2').textContent  = enjSayisi === 2 ? u2.toLocaleString('tr-TR') : '—';
-    document.getElementById('onay-summary-body').innerHTML = html;
-  } else {
-    document.getElementById('normal-ozet').style.display = 'block';
-    document.getElementById('onay-ozet').style.display   = 'none';
-    document.getElementById('summary-body').innerHTML    = html;
-  }
+  document.getElementById('normal-ozet').style.display = 'block';
+  document.getElementById('summary-body').innerHTML    = html;
 }
 
 // ── Veri toplama ─────────────────────────────────────
 function getData() {
-  var enj1 = enj1Kilitli ? document.getElementById('enj1-ro-val').textContent : document.getElementById('enj1_no').value;
-  var k1   = enj1Kilitli ? document.getElementById('kasa1-ro-val').textContent : document.getElementById('kasa1').value;
-  var enj2 = enj2Kilitli ? document.getElementById('enj2-ro-val').textContent : document.getElementById('enj2_no').value;
-  var k2   = enj2Kilitli ? document.getElementById('kasa2-ro-val').textContent : document.getElementById('kasa2').value;
+  var enj1 = document.getElementById('enj1_no').value;
+  var k1   = document.getElementById('kasa1').value;
+  var enj2 = document.getElementById('enj2_no').value;
+  var k2   = document.getElementById('kasa2').value;
   var b1   = parseInt(document.getElementById('sayac_bas1').value) || 0;
   var e1   = parseInt(document.getElementById('sayac_bit1').value) || 0;
   var b2   = parseInt(document.getElementById('sayac_bas2').value) || 0;
@@ -634,7 +581,6 @@ function getData() {
   return {
     adsoyad:    _adSoyad || document.getElementById('kullanici_id').value,
     vardiya:    vardiya,
-    olcumNo:    olcumNo,
     enjSayisi:  enjSayisi,
     tarih:      document.getElementById('tarih').value,
     olcum_saat: document.getElementById('olcum_saat').value,
@@ -656,8 +602,7 @@ function getData() {
 // ── Form sıfırlama ───────────────────────────────────
 function resetForm() {
   clearDraft();
-  vardiya = null; currentStep = 1; olcumNo = 1; enjSayisi = 1;
-  enj1Kilitli = false; enj2Kilitli = false;
+  vardiya = null; currentStep = 1; enjSayisi = 1;
 
   var hatirla = document.getElementById('hatirla');
   var sifreEl = document.getElementById('sifre');
@@ -704,20 +649,11 @@ function resetForm() {
   });
 
   var sb = document.getElementById('submit-btn'); if (sb) sb.disabled = false;
-  var ob = document.getElementById('onay-btn');   if (ob) ob.disabled = false;
 
   ['v-sabah','v-aksam','v-gece'].forEach(function(id) { document.getElementById(id).className = 'vbtn'; });
   updateVardiyaButtons();
 
-  document.getElementById('status-box').style.display  = 'none';
-  document.getElementById('enj1-sec').style.display    = 'block'; document.getElementById('enj1-ro').style.display   = 'none';
-  document.getElementById('kasa1-sec').style.display   = 'block'; document.getElementById('kasa1-ro').style.display  = 'none';
-  document.getElementById('enj2-sec').style.display    = 'block'; document.getElementById('enj2-ro').style.display   = 'none';
-  document.getElementById('kasa2-sec').style.display   = 'block'; document.getElementById('kasa2-ro').style.display  = 'none';
-  document.getElementById('enj-toggle-row').style.opacity       = '1';
-  document.getElementById('enj-toggle-row').style.pointerEvents = 'auto';
   document.getElementById('normal-ozet').style.display = 'block';
-  document.getElementById('onay-ozet').style.display   = 'none';
 
   setEnjSayisi(1);
   setBasEditable(1); setBasEditable(2);
@@ -727,8 +663,8 @@ function resetForm() {
 }
 
 // ── Gönder ───────────────────────────────────────────
-function onGonderClick(onaylandi) {
-  submitForm(onaylandi);
+function onGonderClick() {
+  submitForm();
 }
 
 // ── Toast bildirimi ──────────────────────────────────
