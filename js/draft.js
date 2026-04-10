@@ -10,6 +10,7 @@ function saveDraft() {
     tarih:        document.getElementById('tarih').value,
     enjSayisi:    enjSayisi,
     step:         currentStep,
+    olcumNo:      olcumNo,
     enj1_no:      document.getElementById('enj1_no').value,
     kasa1:        document.getElementById('kasa1').value,
     enj2_no:      document.getElementById('enj2_no').value,
@@ -78,6 +79,9 @@ function restoreDraft() {
     if (d.vardiya) setVardiya(d.vardiya);
     if (d.tarih)   document.getElementById('tarih').value = d.tarih;
     setEnjSayisi(d.enjSayisi || 1);
+
+    // Ölçüm numarasını geri yükle
+    if (d.olcumNo) olcumNo = d.olcumNo;
 
     ['enj1_no','kasa1','enj2_no','kasa2',
      'cevrim1','agirlik1','sayac_bas1','sayac_bit1',

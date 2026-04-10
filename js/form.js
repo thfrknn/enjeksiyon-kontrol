@@ -83,6 +83,9 @@ function setEnjSayisi(n) {
   document.getElementById('olcum-enj2-section').style.display  = n === 2 ? 'block' : 'none';
   document.getElementById('enj1-title').textContent        = n === 2 ? '1. Enjeksiyon Bilgileri' : 'Enjeksiyon Bilgileri';
   document.getElementById('olcum-enj1-title').textContent  = n === 2 ? 'Enjeksiyon 1 — Ölçümler' : 'Ölçümler';
+  var row = document.getElementById('enj-toggle-row');
+  row.style.opacity       = '1';
+  row.style.pointerEvents = 'auto';
   syncEnjDisabled();
 }
 
@@ -236,6 +239,22 @@ function hideKasaAtandiBox(n) {
   if (box) box.style.display = 'none';
 }
 
+// ── Durum kutusu ve enjeksiyon kilidi gösterimi ─────
+function showStatusBox(json) {
+  var box = document.getElementById('status-box');
+  if (json.olcumNo <= 1) { box.style.display = 'none'; return; }
+  var cfg = {
+    2: { cls: 'orange', icon: '🕛', msg: '2. ölçüm zamanı' },
+    3: { cls: 'green',  icon: '🏁', msg: '3. ölçüm — Vardiya sonu' },
+  };
+  var c = cfg[json.olcumNo] || { cls: 'blue', icon: '📊', msg: json.olcumNo + '. ölçüm' };
+  box.className = 'ibox ' + c.cls;
+  box.innerHTML = '<span style="font-size:18px">' + c.icon + '</span><span><strong>' + c.msg + '</strong></span>';
+  box.style.display = 'flex';
+  box.style.marginBottom = '14px';
+}
+
+// showEnjSection kaldırıldı — atama-kontrol.js yönetiyor
 
 // ── Kasa ağırlık kontrolü ───────────────────────────
 function getKasaBounds(n) {
@@ -602,7 +621,7 @@ function getData() {
 // ── Form sıfırlama ───────────────────────────────────
 function resetForm() {
   clearDraft();
-  vardiya = null; currentStep = 1; enjSayisi = 1;
+  vardiya = null; currentStep = 1; olcumNo = 1; enjSayisi = 1;
 
   var hatirla = document.getElementById('hatirla');
   var sifreEl = document.getElementById('sifre');

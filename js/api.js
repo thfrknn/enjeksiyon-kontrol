@@ -167,14 +167,8 @@ function checkStatus() {
     delete window[cb];
     document.getElementById('st-s')?.remove();
 
-    if (json.sayacBit1 != null) {
-      document.getElementById('sayac_bas1').value = json.sayacBit1;
-      calcUretim(1);
-    }
-    if (json.sayacBit2 != null) {
-      document.getElementById('sayac_bas2').value = json.sayacBit2;
-      calcUretim(2);
-    }
+    olcumNo = json.olcumNo || 1;
+    showStatusBox(json);
   };
 
   var s = document.createElement('script');

@@ -541,6 +541,7 @@ function submitForm(cb, e) {
 
 function getMonitorData(cb) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tz = ss.getSpreadsheetTimeZone();
 
   const statuses = buildMachineStatuses(ss);
   const canliData = buildCanliData(ss);
@@ -559,7 +560,6 @@ function getMonitorData(cb) {
   if (arizaSheet && arizaSheet.getLastRow() > 1) {
     const lastRow  = arizaSheet.getLastRow();
     const startRow = Math.max(2, lastRow - 99);
-    const tz = ss.getSpreadsheetTimeZone();
     const av = arizaSheet.getRange(startRow, 1, lastRow - startRow + 1, 10).getValues();
     for (let i = av.length - 1; i >= 0; i--) {
       const r = av[i];
@@ -578,51 +578,52 @@ function getMonitorData(cb) {
     }
   }
 
+  // Üretim geçmişi (son 500 kayıt) — tarih filtresi client'ta yapılır
   const uretimGecmisi = [];
-  const verilerSheet2 = ss.getSheetByName('Veriler');
-  if (verilerSheet2 && verilerSheet2.getLastRow() > 1) {
-    const lastRow  = verilerSheet2.getLastRow();
+  const verilerSheet = ss.getSheetByName('Veriler');
+  if (verilerSheet && verilerSheet.getLastRow() > 1) {
+    const lastRow  = verilerSheet.getLastRow();
     const startRow = Math.max(2, lastRow - 499);
-    const tz2 = ss.getSpreadsheetTimeZone();
-    const vv = verilerSheet2.getRange(startRow, 1, lastRow - startRow + 1, 24).getValues();
-    for (const row of vv) {
+    const vv = verilerSheet.getRange(startRow, 1, lastRow - startRow + 1, 24).getValues();
+    for (let i = vv.length - 1; i >= 0; i--) {
+      const row   = vv[i];
+      const tarih = row[1] instanceof Date
+        ? Utilities.formatDate(row[1], tz, 'yyyy-MM-dd')
+        : String(row[1] || '').trim();
+      if (!tarih) continue;
       uretimGecmisi.push({
-        tarih:    row[1] instanceof Date
-          ? Utilities.formatDate(row[1], tz2, 'yyyy-MM-dd')
-          : String(row[1] || '').trim(),
-        adsoyad:  String(row[2]  || '').trim(),
-        vardiya:  String(row[3]  || '').trim(),
-        olcumNo:  Number(row[4]) || 0,
-        saat:     String(row[6]  || '').trim(),
-        enj1:     String(row[7]  || '').trim(),
-        kasa1:    String(row[8]  || '').trim(),
-        cevrim1:  Number(row[9]) || 0,
-        sayacBas1: Number(row[11]) || 0,
-        sayacBit1: Number(row[12]) || 0,
-        uretim1:  Number(row[13]) || 0,
-        fire1:    Number(row[14]) || 0,
-        enj2:     String(row[15] || '').trim(),
-        kasa2:    String(row[16] || '').trim(),
-        cevrim2:  Number(row[17]) || 0,
-        sayacBas2: Number(row[19]) || 0,
-        sayacBit2: Number(row[20]) || 0,
-        uretim2:  Number(row[21]) || 0,
-        fire2:    Number(row[22]) || 0,
+        satir:     startRow + i,
+        tarih,
+        adsoyad:   String(row[2]  || '').trim(),
+        vardiya:   String(row[3]  || '').trim(),
+        olcumNo:   parseInt(row[4])  || 0,
+        enjSayisi: parseInt(row[5])  || 1,
+        saat:      row[6] instanceof Date ? Utilities.formatDate(row[6], tz, 'HH:mm') : String(row[6] || '').trim(),
+        enj1:      String(row[7]  || '').trim(),
+        kasa1:     String(row[8]  || '').trim(),
+        cevrim1:   parseFloat(row[9])  || 0,
+        sayacBas1: parseInt(row[11]) || 0,
+        sayacBit1: parseInt(row[12]) || 0,
+        uretim1:   parseInt(row[13]) || 0,
+        fire1:     parseInt(row[14]) || 0,
+        enj2:      String(row[15] || '').trim(),
+        kasa2:     String(row[16] || '').trim(),
+        cevrim2:   parseFloat(row[17]) || 0,
+        sayacBas2: parseInt(row[19]) || 0,
+        sayacBit2: parseInt(row[20]) || 0,
+        uretim2:   parseInt(row[21]) || 0,
+        fire2:     parseInt(row[22]) || 0,
       });
     }
   }
 
-  const aktif   = Object.values(statuses).filter(s => s.durum === 'Aktif').length;
-  const arizali = Object.values(statuses).filter(s => s.durum !== 'Aktif').length;
-  const ssId    = ss.getId();
-  const _gid    = name => { const sh = ss.getSheetByName(name); return sh ? sh.getSheetId() : null; };
-  const sheetGids = { veriler: _gid('Veriler'), uretimKaydi: _gid('Üretim Kaydı'), arizaLog: _gid('Arıza Log') };
-  const sonYedek  = PropertiesService.getScriptProperties().getProperty('lastExport') || '';
-
   return jsonp(cb, {
-    statuses, canliData, kasalar, arizaLog, uretimGecmisi,
-    ozet: { aktif, arizali }, ssId, sheetGids, sonYedek,
-    serverTime: new Date().getTime(),
+    statuses,
+    canliData,
+    kasalar,
+    arizaLog,
+    uretimGecmisi,
+    serverTime: new Date().getTime()
   });
 }
 
