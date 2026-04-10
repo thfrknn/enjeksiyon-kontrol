@@ -37,41 +37,21 @@
     return el ? (el.value || '').trim() : '';
   }
 
-  // ── Makine gridini kısıtla ─────────────────────────
+  // ── Makine gridini bilgilendir (kilitleme yok) ────────
   function applyGridRestriction() {
     var uid = AK.kullaniciId || getCurrentUserId();
     if (!uid) return;
 
     var atanan = AK.atananMakineler[uid] || [];
     if (!atanan.length) {
-      // Atama yok — tüm kısıtlamaları kaldır
       clearGridRestriction();
       hideAtamaBanner();
       return;
     }
 
-    // Atama var — banner göster
+    // Atama var — sadece bilgi banner'ı göster, hiçbir butonu kilitleme
     showAtamaBanner(atanan);
-
-    // Her iki grid için de uygula
-    [1, 2].forEach(function (gridIdx) {
-      var grid = document.getElementById('enj' + gridIdx + '-grid');
-      if (!grid) return;
-
-      grid.querySelectorAll('.enj-gbtn').forEach(function (btn) {
-        // Butonun hangi makineye ait olduğunu metninden çıkar
-        var btnText  = btn.textContent.trim();              // "Enj 3"
-        var enjNum   = btnText.replace(/[^0-9]/g, '');      // "3"
-        var makineNo = 'Enjeksiyon ' + enjNum;
-        var isAtanan = atanan.indexOf(makineNo) !== -1;
-
-        btn.disabled          = !isAtanan;
-        btn.style.opacity     = isAtanan ? '' : '0.3';
-        btn.style.cursor      = isAtanan ? '' : 'not-allowed';
-        btn.style.boxShadow   = isAtanan ? '' : 'none';
-        btn.title             = isAtanan ? '' : 'Bu makine size atanmadı';
-      });
-    });
+    clearGridRestriction(); // tüm butonlar serbest kalır
   }
 
   function clearGridRestriction() {
@@ -79,7 +59,7 @@
       var grid = document.getElementById('enj' + gridIdx + '-grid');
       if (!grid) return;
       grid.querySelectorAll('.enj-gbtn').forEach(function (btn) {
-        if (!btn.classList.contains('locked')) {   // kilitli (arızalı) butonlara dokunma
+        if (!btn.classList.contains('locked')) {
           btn.disabled      = false;
           btn.style.opacity = '';
           btn.style.cursor  = '';
