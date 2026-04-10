@@ -161,25 +161,8 @@ function checkStatus() {
     delete window[cb];
     document.getElementById('st-s')?.remove();
 
-    olcumNo     = json.olcumNo || 1;
-    enj1Kilitli = olcumNo > 1 && !!json.enj1;
-    enj2Kilitli = olcumNo > 1 && !!json.enj2 && json.enj2 !== '00';
-
-    if (enj1Kilitli) {
-      enjSayisi = json.enjSayisi || 1;
-      setEnjSayisi(enjSayisi);
-    }
+    olcumNo = json.olcumNo || 1;
     showStatusBox(json);
-    showEnjSection(json);
-
-    if (enj1Kilitli && json.sayacBit1 != null) {
-      document.getElementById('sayac_bas1').value = json.sayacBit1;
-      setBasReadonly(1); calcUretim(1);
-    }
-    if (enj2Kilitli && json.sayacBit2 != null) {
-      document.getElementById('sayac_bas2').value = json.sayacBit2;
-      setBasReadonly(2); calcUretim(2);
-    }
   };
 
   var s = document.createElement('script');
