@@ -198,17 +198,17 @@ function checkStatus() {
  */
 function submitForm(_retryCount) {
   _retryCount = _retryCount || 0;
-  // Token'ı bir kez üret; hata/timeout retry'larında aynı token kullanılır.
-  // Böylece sunucu duplicate detection ile çift kayıt önlenir.
   if (!_pendingToken) _pendingToken = _genToken();
 
   var sb = document.getElementById('submit-btn');
-  document.getElementById('load-text').textContent = _retryCount > 0 ? 'Tekrar deneniyor...' : 'Kaydediliyor...';
-  document.getElementById('loading').classList.add('show');
-  if (sb) sb.disabled = true;
 
-  // Önceki JSONP script varsa temizle (timeout sonrası retry durumu)
-  document.getElementById('jsonp-submit')?.remove();
+  // UI sadece ilk denemede kurulur; retry'larda sessizce çalışır
+  if (_retryCount === 0) {
+    document.getElementById('load-text').textContent = 'Kaydediliyor...';
+    document.getElementById('loading').classList.add('show');
+    if (sb) sb.disabled = true;
+    document.getElementById('jsonp-submit')?.remove();
+  }
 
   var data = getData();
 
@@ -218,17 +218,14 @@ function submitForm(_retryCount) {
       delete window[cb];
       document.getElementById('jsonp-submit')?.remove();
       if (_retryCount < 2) {
-        document.getElementById('load-text').textContent = 'Bağlanıyor...';
-        setTimeout(function() {
-          submitForm(_retryCount + 1).then(resolve);
-        }, 4000 * (_retryCount + 1));
+        setTimeout(function() { submitForm(_retryCount + 1).then(resolve); }, 2000);
       } else {
         document.getElementById('loading').classList.remove('show');
         if (sb) sb.disabled = false;
         showToast('❌ Bağlantı zaman aşımı, tekrar dene', 'err');
         resolve();
       }
-    }, 15000);
+    }, 12000);
 
     window[cb] = function(json) {
       clearTimeout(timerOut);
@@ -239,13 +236,11 @@ function submitForm(_retryCount) {
         _pendingToken = null;
         clearDraft();
         document.getElementById('loading').classList.remove('show');
-        showToast(json.duplicate ? '✅ Kayıt zaten tamamlanmıştı' : '✅ Kaydedildi!', 'ok');
+        showToast('✅ Kaydedildi!', 'ok');
         setTimeout(resetForm, 2200);
       } else if (_retryCount < 2) {
-        document.getElementById('load-text').textContent = 'Tekrar deneniyor...';
-        setTimeout(function() {
-          submitForm(_retryCount + 1).then(resolve);
-        }, 4000 * (_retryCount + 1));
+        // Sessiz retry — kullanıcıya hiçbir şey gösterilmez
+        setTimeout(function() { submitForm(_retryCount + 1).then(resolve); }, 2000);
         return;
       } else {
         document.getElementById('loading').classList.remove('show');
@@ -291,10 +286,7 @@ function submitForm(_retryCount) {
       delete window[cb];
       document.getElementById('jsonp-submit')?.remove();
       if (_retryCount < 2) {
-        document.getElementById('load-text').textContent = 'Tekrar deneniyor...';
-        setTimeout(function() {
-          submitForm(_retryCount + 1).then(resolve);
-        }, 4000 * (_retryCount + 1));
+        setTimeout(function() { submitForm(_retryCount + 1).then(resolve); }, 2000);
       } else {
         document.getElementById('loading').classList.remove('show');
         if (sb) sb.disabled = false;
