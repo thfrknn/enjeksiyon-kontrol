@@ -48,8 +48,6 @@
     </div>
   </div>
 
-  <div id="status-box" style="display:none"></div>
-
   <div class="section">
     <div class="stitle"><span>👤</span> Kimlik Doğrulama</div>
 
@@ -152,10 +150,6 @@
       </div>
       <div class="err-msg" id="err-enj1">Lütfen Enjeksiyon seçin</div>
     </div>
-    <div id="enj1-ro" style="display:none" class="field">
-      <span class="ro-label">Makine</span>
-      <div class="ro-field">🏭 <span id="enj1-ro-val"></span></div>
-    </div>
 
     <div id="kasa1-sec" class="field">
       <label>Kasa Boyutu <span class="req">*</span></label>
@@ -166,10 +160,6 @@
       <div id="skel-kasa1" class="skeleton"></div>
       <select id="kasa1" style="display:none"><option value="">— Kasa boyutunu seçin —</option></select>
       <div class="err-msg" id="err-kasa1">Lütfen kasa boyutu seçin</div>
-    </div>
-    <div id="kasa1-ro" style="display:none" class="field">
-      <span class="ro-label">Kasa Boyutu</span>
-      <div class="ro-field">📦 <span id="kasa1-ro-val"></span></div>
     </div>
   </div>
 
@@ -271,10 +261,6 @@
       </div>
       <div class="err-msg" id="err-enj2">Lütfen makine seçin</div>
     </div>
-    <div id="enj2-ro" style="display:none" class="field">
-      <span class="ro-label">Makine</span>
-      <div class="ro-field">🏭 <span id="enj2-ro-val"></span></div>
-    </div>
 
     <div id="kasa2-sec" class="field">
       <label>Kasa Boyutu <span class="req">*</span></label>
@@ -284,10 +270,6 @@
       </div>
       <select id="kasa2"><option value="">— Kasa boyutunu seçin —</option></select>
       <div class="err-msg" id="err-kasa2">Lütfen kasa boyutu seçin</div>
-    </div>
-    <div id="kasa2-ro" style="display:none" class="field">
-      <span class="ro-label">Kasa Boyutu</span>
-      <div class="ro-field">📦 <span id="kasa2-ro-val"></span></div>
     </div>
   </div>
 
@@ -384,27 +366,10 @@
     </div>
     <div class="nav-row">
       <button class="btn btn-back"   onclick="goStep(2)">← Geri</button>
-      <button class="btn btn-submit" id="submit-btn" onclick="onGonderClick(false)">✅ Kaydet & Gönder</button>
+      <button class="btn btn-submit" id="submit-btn" onclick="onGonderClick()">✅ Kaydet & Gönder</button>
     </div>
   </div>
 
-  <!-- Onay özeti (3. ölçüm — vardiya sonu) -->
-  <div id="onay-ozet" style="display:none">
-    <div class="onay-card">
-      <div class="onay-icon">🏁</div>
-      <div class="onay-title">Vardiya Tamamlanıyor</div>
-      <div class="onay-sub">Son ölçüm. Üretim bilgilerini onaylıyor musunuz?</div>
-      <div class="onay-stats">
-        <div class="ostat"><div class="ostat-val" id="onay-uretim1">—</div><div class="ostat-lbl">Enj1 Üretim</div></div>
-        <div class="ostat"><div class="ostat-val" id="onay-uretim2">—</div><div class="ostat-lbl">Enj2 Üretim</div></div>
-      </div>
-      <div id="onay-summary-body"></div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn btn-submit" id="onay-btn" onclick="onGonderClick(true)">✅ Onaylıyorum — Gönder</button>
-      <button class="btn" style="background:var(--border);color:var(--text2);padding:14px" onclick="goStep(2)">← Düzelt</button>
-    </div>
-  </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
