@@ -19,7 +19,7 @@ function doGet(e) {
       case 'getFireTotal':         return getFireTotal(cb, e);
       case 'logFire':              return logFire(cb, e);
       case 'exportNow':            return exportNow(cb);
-      case 'runMonthlyMaintenance':return jsonp(cb, { result: monthlyBackupAndCleanup() });
+      case 'runMonthlyMaintenance':return jsonp(cb, monthlyBackupAndCleanup());
       case 'submitForm':           return submitForm(cb, e);
       case 'getMonitorData':       return getMonitorData(cb);
       case 'getMachineStatuses':   return getMachineStatuses(cb, e);
@@ -33,7 +33,17 @@ function doGet(e) {
       case 'getPersonel':          return getPersonel(cb);
       case 'addPersonel':          return addPersonel(cb, e);
       case 'updatePersonel':       return updatePersonel(cb, e);
+      case 'deletePersonel':       return deletePersonel(cb, e);
       case 'changePassword':       return changePassword(cb, e);
+      case 'resetSayac':          return resetSayac(cb, e);
+      case 'resetMachineCounter': return resetMachineCounter(cb, e);
+      case 'monthlyBackupAndCleanup': return monthlyBackupAndCleanupAPI(cb, e);
+      case 'getRecords':          return getRecords(cb, e);
+      case 'updateRecord':        return updateRecord(cb, e);
+      case 'deleteRecord':        return deleteRecord(cb, e);
+      case 'manualAddRecord':     return manualAddRecord(cb, e);
+      case 'getRecentRecords':    return getRecentRecords(cb, e);
+      case 'approveRecord':       return approveRecord(cb, e);
       default:                     return jsonp(cb, { error: 'Geçersiz istek' });
     }
   } catch (err) {
@@ -99,9 +109,10 @@ function getLists(cb, e) {
       const durum = String(pv[i][4] || '').trim();
       // Rol: sütundan oku; boş veya belirsizse ID prefix'e göre belirle
       let rol = String(pv[i][3] || '').trim();
-      if (!rol || rol === 'Operatör') {
+      if (!rol) {
         if      (id.charAt(0) === '1') rol = 'Meydancı';
         else if (id.charAt(0) === '3') rol = 'Yönetici';
+        else if (id.charAt(0) === '4') rol = 'Denetleyici';
         else                            rol = 'Operatör';
       }
       if (id && ad && durum !== 'Pasif') kullanicilar[id] = { name: ad, sifre, rol };
@@ -122,6 +133,10 @@ function getLists(cb, e) {
   // Atamalar sheet'inden operatör → makine listesini oku (mevcut vardiyaya göre)
   const atananMakineler = readAtananMakineler(ss, _getCurrentVardiya());
 
+  let kasaMinMax = {};
+  const kasaMinMaxStr = props.getProperty('kasaMinMax');
+  if (kasaMinMaxStr) { try { kasaMinMax = JSON.parse(kasaMinMaxStr); } catch(ex) {} }
+
   return jsonp(cb, {
     kasaEbatlari: kasaEbatlariS,
     kullanicilar,
@@ -129,9 +144,10 @@ function getLists(cb, e) {
     kasaLimitlari,
     maxFireLimit,
     atananKasalar,
-    atananMakineler,        // YENİ: { "101": ["Enjeksiyon 3"], "102": ["Enjeksiyon 7"] }
+    atananMakineler,
     vardiyaTolerans,
     otoVardiya,
+    kasaMinMax,
     serverTime: new Date().getTime(),
     lockedMachines
   });
@@ -146,27 +162,14 @@ function getStatus(cb, e) {
   const tarih       = e.parameter.tarih;
   const vardiya     = e.parameter.vardiya;
   const saat        = e.parameter.saat || '';
-  const kullaniciId = e.parameter.kullanici_id || '';   // YENİ
+  const kullaniciId = e.parameter.kullanici_id || '';
 
-    // Kasa ağırlık min/max limitlerini de gönder (operatör formundaki uyarılar için)
-    let kasaMinMaxL = {};
-    const kasaMinMaxStrL = _propsL.getProperty('kasaMinMax');
-    if (kasaMinMaxStrL) {
-      try { kasaMinMaxL = JSON.parse(kasaMinMaxStrL); } catch(ex) {}
-    }
-
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Veriler');
+  if (!sheet || sheet.getLastRow() < 2) {
     return jsonp(cb, {
-      kasaEbatlari: kasaEbatlariS,
-      kullanicilar,
-      uretimLimiti,
-      kasaLimitlari,
-      maxFireLimit,
-      atananKasalar,
-      vardiyaTolerans,
-      otoVardiya,
-      kasaMinMax: kasaMinMaxL,
-      serverTime: new Date().getTime(),
-      lockedMachines
+      olcumNo: 1, enj1: null, kasa1: null, enj2: null, kasa2: null, enjSayisi: 1,
+      atananMakineler: kullaniciId ? readAtananMakinelerForUser(ss, kullaniciId, vardiya) : []
     });
   }
 
@@ -201,73 +204,120 @@ function getStatus(cb, e) {
       const f2 = parseInt(row[22]); if (!isNaN(f2)) fireToplam2 += f2;
     }
   }
-  if (e.parameter.action === 'getLastCounter') {
-    const enjNo = e.parameter.enj_no;
-    const ss    = SpreadsheetApp.getActiveSpreadsheet();
 
-    // Sayaç sıfırlama bayrağını kontrol et
-    const props = PropertiesService.getScriptProperties();
-    const resetList = (props.getProperty('counterResetList') || '').split(',').filter(Boolean);
-    if (resetList.indexOf(String(enjNo).trim()) !== -1) {
-      // Sıfırlanmış makine — null döndür, operatör manuel girsin
-      let kasaAtanan2 = null;
-      const kasaSheet2 = ss.getSheetByName('Makine Kasa');
-      if (kasaSheet2 && kasaSheet2.getLastRow() > 1) {
-        const kv2 = kasaSheet2.getRange(2, 1, kasaSheet2.getLastRow() - 1, 2).getValues();
-        for (const row of kv2) {
-          if (String(row[0]).trim() === String(enjNo).trim()) { kasaAtanan2 = String(row[1]).trim() || null; break; }
-        }
-      }
-      return jsonp(cb, { sayacBit: null, kasaAtanan: kasaAtanan2, manuelGerekli: true });
-    }
+  const kullaniciAtamalar = kullaniciId ? readAtananMakinelerForUser(ss, kullaniciId, vardiya) : [];
 
-    const sheet = ss.getSheetByName('Veriler');
-    let sayacBit = null;
+  return jsonp(cb, {
+    olcumNo, enj1, kasa1, enj2, kasa2, enjSayisi,
+    sayacBit1, sayacBit2, fireToplam1, fireToplam2,
+    lockedMachines: getLockedMachines(ss),
+    atananMakineler: kullaniciAtamalar
+  });
+}
 
-    if (sheet && sheet.getLastRow() > 1) {
-      const lastRow = sheet.getLastRow();
-      const vals = sheet.getRange(2, 1, lastRow - 1, 24).getValues();
-      for (let i = 0; i < vals.length; i++) {
-        if (String(vals[i][7]).trim() === String(enjNo).trim()) {
-          const b = parseInt(vals[i][12]);
-          if (!isNaN(b)) sayacBit = b;
-        }
-        if (String(vals[i][15]).trim() === String(enjNo).trim()) {
-          const b = parseInt(vals[i][20]);
-          if (!isNaN(b)) sayacBit = b;
-        }
-      }
-    }
+// ================================================================
+// ACTION: getLastCounter
+// ================================================================
 
-    // Veriler'de bulunamadıysa Devir sekmesinden devir sayacını al (ay sonu temizliği sonrası)
-    if (sayacBit === null) {
-      const devirSheet = ss.getSheetByName('Devir');
-      if (devirSheet && devirSheet.getLastRow() > 1) {
-        const dv = devirSheet.getRange(2, 1, devirSheet.getLastRow() - 1, 2).getValues();
-        for (const row of dv) {
-          if (String(row[0]).trim() === String(enjNo).trim()) {
-            const b = parseInt(row[1]);
-            if (!isNaN(b) && b > 0) sayacBit = b;
-            break;
-          }
-        }
-      }
-    }
-  }
+function getLastCounter(cb, e) {
+  const enjNo = String(e.parameter.enj_no || '').trim();
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
 
+  let sayacBit   = null;
   let kasaAtanan = null;
-  const kasaSheet = ss.getSheetByName('Makine Kasa');
-  if (kasaSheet && kasaSheet.getLastRow() > 1) {
-    const kv = kasaSheet.getRange(2, 1, kasaSheet.getLastRow() - 1, 2).getValues();
-    for (const row of kv) {
-      if (String(row[0]).trim() === String(enjNo).trim()) {
-        kasaAtanan = String(row[1]).trim() || null;
+
+  // ── Hızlı yol: Son Sayaçlar lookup tablosu ──────────────────────
+  // submitForm ve resetSayac her yazımda bu tabloyu günceller.
+  // 13 satırlık tabloda arama: anlık döner, tam Veriler taraması gerekmez.
+  const sonSheet = ss.getSheetByName('Son Sayaçlar');
+  if (sonSheet && sonSheet.getLastRow() > 1) {
+    const data = sonSheet.getRange(2, 1, sonSheet.getLastRow() - 1, 2).getValues();
+    for (const row of data) {
+      if (String(row[0]).trim() === enjNo) {
+        const bit = parseInt(row[1]);
+        if (!isNaN(bit)) sayacBit = bit;
         break;
       }
     }
   }
 
+  // ── Yedek yol: Son Sayaçlar'da yoksa Veriler'i tara ─────────────
+  // Yeni kurulumda veya makine henüz kayıt yapmamışsa devreye girer.
+  if (sayacBit === null) {
+    const vSheet = ss.getSheetByName('Veriler');
+    let lastVeriMs = 0;
+    if (vSheet && vSheet.getLastRow() >= 2) {
+      const vals = vSheet.getRange(2, 1, vSheet.getLastRow() - 1, 21).getValues();
+      for (let i = vals.length - 1; i >= 0; i--) {
+        const row = vals[i];
+        let bit = null;
+        if (String(row[7]).trim() === enjNo)       bit = parseInt(row[12]);
+        else if (String(row[15]).trim() === enjNo) bit = parseInt(row[20]);
+        else continue;
+        if (isNaN(bit)) continue;
+        sayacBit = bit;
+        const raw = row[0];
+        if (raw instanceof Date) {
+          lastVeriMs = raw.getTime();
+        } else {
+          const m = String(raw).match(/(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})\D+(\d{1,2}):(\d{2})/);
+          if (m) lastVeriMs = new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]).getTime();
+        }
+        break;
+      }
+    }
+    // Veriler'den sonra yapılmış sıfırlama varsa onu kullan
+    const logSheet = ss.getSheetByName('SayacLogları');
+    if (logSheet && logSheet.getLastRow() > 1) {
+      const logVals = logSheet.getRange(2, 1, logSheet.getLastRow() - 1, 3).getValues();
+      for (const row of logVals) {
+        if (String(row[1]).trim() !== enjNo) continue;
+        const ts = row[0] instanceof Date ? row[0].getTime() : 0;
+        if (ts > lastVeriMs) { lastVeriMs = ts; sayacBit = parseInt(row[2]) || 0; }
+      }
+    }
+  }
+
+  // ── Makine kasası (küçük tablo, direkt arama) ────────────────────
+  const kasaSheet = ss.getSheetByName('Makine Kasa');
+  if (kasaSheet && kasaSheet.getLastRow() > 1) {
+    const kv = kasaSheet.getRange(2, 1, kasaSheet.getLastRow() - 1, 2).getValues();
+    for (const row of kv) {
+      if (String(row[0]).trim() === enjNo) { kasaAtanan = String(row[1]).trim() || null; break; }
+    }
+  }
+
   return jsonp(cb, { sayacBit, kasaAtanan });
+}
+
+// ================================================================
+// ACTION: resetSayac — Makine sayacı sıfırlandığında meydancı kaydeder
+// ================================================================
+
+function resetSayac(cb, e) {
+  const ss         = SpreadsheetApp.getActiveSpreadsheet();
+  const makineNo   = String(e.parameter.makine_no   || '').trim();
+  const yeniSayac  = parseInt(e.parameter.yeni_sayac) || 0;
+  const meydanciId = String(e.parameter.meydanci_id  || '').trim();
+  const meydanciAd = String(e.parameter.meydanci_ad  || '').trim();
+
+  if (!makineNo) return jsonp(cb, { error: 'Makine no belirtilmedi' });
+
+  let sheet = ss.getSheetByName('SayacLogları');
+  if (!sheet) {
+    sheet = ss.insertSheet('SayacLogları');
+    sheet.appendRow(['Zaman', 'Makine No', 'Yeni Sayaç', 'Meydancı ID', 'Meydancı Ad']);
+    sheet.getRange('A1:E1').setFontWeight('bold').setBackground('#7c3aed').setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+    [160, 140, 120, 100, 140].forEach((w, i) => sheet.setColumnWidth(i + 1, w));
+  }
+
+  sheet.appendRow([new Date(), makineNo, yeniSayac, meydanciId, meydanciAd]);
+
+  // Lookup tablosunu güncelle — bir sonraki getLastCounter anında dönsün
+  _updateSonSayaclar(ss, makineNo, yeniSayac);
+
+  return jsonp(cb, { result: 'ok', makineNo, yeniSayac });
 }
 
 // ================================================================
@@ -366,8 +416,6 @@ function submitForm(cb, e) {
   const saat        = e.parameter.olcum_saat  || '';
   const vardiya     = e.parameter.vardiya     || '';
   const close       = e.parameter.close === 'true';
-  const olcumNo     = parseInt(e.parameter.olcumNo) || 1;
-  const onaylandi   = e.parameter.onaylandi === 'true';
   const adSoyad     = e.parameter.adsoyad || '';
   const submitToken = String(e.parameter.submitToken || '').trim();
 
@@ -380,7 +428,7 @@ function submitForm(cb, e) {
       const tokenCol   = sheet.getRange(checkStart, 25, lastRow - checkStart + 1, 1).getValues();
       for (let i = 0; i < tokenCol.length; i++) {
         if (String(tokenCol[i][0]).trim() === submitToken) {
-          return jsonp(cb, { result: 'ok', olcum: olcumNo, duplicate: true });
+          return jsonp(cb, { result: 'ok', duplicate: true });
         }
       }
     }
@@ -402,7 +450,7 @@ function submitForm(cb, e) {
     vardiyaTarih,
     adSoyad,
     vardiya,
-    olcumNo,
+    '',
     enjSayisi,
     saat,
     e.parameter.enj1_no    || '',
@@ -414,9 +462,15 @@ function submitForm(cb, e) {
     e.parameter.uretim1    || '',
     e.parameter.fire1      || '0',
     enj2No, kasa2, cevrim2, agirlik2, bas2, bit2, uretim2, fire2,
-    olcumNo === 3 ? (onaylandi ? 'ONAYLANDI' : 'BEKLİYOR') : '',
+    '',
     submitToken
   ]);
+
+  // Son Sayaçlar lookup tablosunu güncelle — getLastCounter hızlı yolu
+  _updateSonSayaclar(ss, e.parameter.enj1_no, parseInt(e.parameter.sayac_bit1) || 0);
+  if (enjSayisi === 2 && enj2No !== '00') {
+    _updateSonSayaclar(ss, enj2No, parseInt(bit2) || 0);
+  }
 
   // Canlı izleme güncelle
   updateCanliIzleme(
@@ -463,7 +517,7 @@ function submitForm(cb, e) {
 
   // Üretim kaydı
   appendUretimKaydi(ss, {
-    tarih: vardiyaTarih, vardiya, saat, adsoyad: adSoyad, olcumNo,
+    tarih: vardiyaTarih, vardiya, saat, adsoyad: adSoyad,
     makineNo: e.parameter.enj1_no || '', kasa: e.parameter.kasa1 || '',
     cevrim:   close ? '0' : (e.parameter.cevrim1 || ''),
     agirlik:  e.parameter.agirlik1 || '',
@@ -472,13 +526,13 @@ function submitForm(cb, e) {
   });
   if (enjSayisi === 2) {
     appendUretimKaydi(ss, {
-      tarih: vardiyaTarih, vardiya, saat, adsoyad: adSoyad, olcumNo,
+      tarih: vardiyaTarih, vardiya, saat, adsoyad: adSoyad,
       makineNo: enj2No, kasa: kasa2, cevrim: cevrim2, agirlik: agirlik2,
       sayacBas: bas2, sayacBit: bit2, uretim: uretim2, fire: fire2,
     });
   }
 
-  return jsonp(cb, { result: 'ok', olcum: olcumNo });
+  return jsonp(cb, { result: 'ok' });
 }
 
 // ================================================================
@@ -1008,13 +1062,26 @@ function addPersonel(cb, e) {
 
   if (!ad || !sifre) return jsonp(cb, { error: 'Ad ve şifre zorunlu' });
 
-  let maxId = 100;
+  // Rol'e göre ID aralığı: Meydancı=1xx, Operatör=2xx, Yönetici=3xx, Denetleyici=4xx
+  const rolMin = { 'Meydancı': 100, 'Operatör': 200, 'Yönetici': 300, 'Denetleyici': 400 };
+  const rolMax = { 'Meydancı': 199, 'Operatör': 299, 'Yönetici': 399, 'Denetleyici': 499 };
+  const idMin  = rolMin[rol] || 200;
+  const idMax  = rolMax[rol] || 299;
+
+  const existingIds = new Set();
   if (sheet.getLastRow() > 1) {
-    const ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues().flat().map(v => parseInt(v) || 0);
-    maxId = Math.max(maxId, ...ids);
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues()
+      .flat().forEach(v => { const n = parseInt(v); if (n >= idMin && n <= idMax) existingIds.add(n); });
   }
 
-  const yeniId = String(maxId + 1);
+  // Aralıktaki ilk boş ID'yi bul (silinmiş ID'ler yeniden kullanılır)
+  let freeId = null;
+  for (let c = idMin; c <= idMax; c++) {
+    if (!existingIds.has(c)) { freeId = c; break; }
+  }
+  if (!freeId) return jsonp(cb, { error: rol + ' için ID aralığı dolu (' + idMin + '-' + idMax + ')' });
+
+  const yeniId = String(freeId);
   const row    = sheet.getLastRow() + 1;
   sheet.getRange(row, 1).setNumberFormat('@').setValue(yeniId);
   sheet.getRange(row, 2).setValue(ad);
@@ -1044,6 +1111,23 @@ function updatePersonel(cb, e) {
     }
   }
 
+  return jsonp(cb, { error: 'Bulunamadı: ' + hedefId });
+}
+
+function deletePersonel(cb, e) {
+  const ss      = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet   = _getOrCreatePersonelSheet(ss);
+  const hedefId = String(e.parameter.hedef_id || '').trim();
+  if (!hedefId) return jsonp(cb, { error: 'Hedef ID gerekli' });
+  if (sheet.getLastRow() < 2) return jsonp(cb, { error: 'Personel bulunamadı' });
+
+  const disp = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues();
+  for (let i = 0; i < disp.length; i++) {
+    if (String(disp[i][0]).trim() === hedefId) {
+      sheet.deleteRow(i + 2);
+      return jsonp(cb, { result: 'ok' });
+    }
+  }
   return jsonp(cb, { error: 'Bulunamadı: ' + hedefId });
 }
 
@@ -1109,6 +1193,7 @@ function buildCanliData(ss) {
   const allCanli  = canliSheet.getRange(1, 1, readRows, 12).getValues();
   const _BASES    = { SABAH: 2, AKSAM: 16, GECE: 30 };
   const nowMs     = new Date().getTime();
+  const tz        = ss.getSpreadsheetTimeZone();
 
   for (let enjIdx = 1; enjIdx <= 13; enjIdx++) {
     const makineNo = 'Enjeksiyon ' + enjIdx;
@@ -1119,7 +1204,9 @@ function buildCanliData(ss) {
       const ri = base + enjIdx - 1;
       if (ri >= allCanli.length) continue;
       const row      = allCanli[ri];
-      const rowTarih = String(row[2] || '').trim();
+      const rowTarih = row[2] instanceof Date
+        ? Utilities.formatDate(row[2], tz, 'yyyy-MM-dd')
+        : String(row[2] || '').trim();
       const rowSaat  = String(row[10] || '').trim();
       if (!rowTarih) continue;
 
@@ -1164,6 +1251,7 @@ function buildCanliDataForMachineStatus(ss) {
   const allCanli = canliSheet.getRange(1, 1, readRows, 12).getValues();
   const _BASES   = { SABAH: 2, AKSAM: 16, GECE: 30 };
   const nowMs    = new Date().getTime();
+  const tz       = ss.getSpreadsheetTimeZone();
 
   for (let i = 1; i <= 13; i++) {
     const makineNo  = 'Enjeksiyon ' + i;
@@ -1174,7 +1262,9 @@ function buildCanliDataForMachineStatus(ss) {
       if (ri >= allCanli.length) continue;
       const row     = allCanli[ri];
       const opAd    = String(row[1] || '').trim();
-      const rowTarih = String(row[2] || '').trim();
+      const rowTarih = row[2] instanceof Date
+        ? Utilities.formatDate(row[2], tz, 'yyyy-MM-dd')
+        : String(row[2] || '').trim();
       const rowSaat  = String(row[10] || '').trim();
       if (!opAd || !rowTarih) continue;
 
@@ -1294,150 +1384,66 @@ function _updateMakineKasa(ss, makineNo, kasa, tekniker) {
     }
   }
 
-  // ============================================================
-  // resetMachineCounter: Meydancı — sayaç sıfırlama (şifre onaylı)
-  // Makineyi ScriptProperties sıfırlama listesine ekler.
-  // Sonraki getLastCounter çağrısı null dönerek manuel girişe zorlar.
-  // ============================================================
-  if (e.parameter.action === 'resetMachineCounter') {
-    const ss      = SpreadsheetApp.getActiveSpreadsheet();
-    const makino  = String(e.parameter.makine_no  || '').trim();
-    const reqId   = String(e.parameter.tekniker_id || '').trim();
-    const reqSifre = String(e.parameter.sifre      || '').trim();
+  sheet.appendRow([makineNo, kasa, now, tekniker]);
+}
 
-    if (!makino || !reqId || !reqSifre) return jsonp(cb, { error: 'Eksik parametre' });
+// ================================================================
+// ACTION: resetMachineCounter — Sayaç sıfırlama listesine ekle
+// ================================================================
 
-    // Şifre doğrulama — Personel sekmesinden kontrol
-    const pSheet = _getOrCreatePersonelSheet(ss);
-    const pLastRow = pSheet.getLastRow();
-    let dogruSifre = false;
-    if (pLastRow > 1) {
-      const pDisp = pSheet.getRange(2, 1, pLastRow - 1, 3).getDisplayValues();
-      for (let i = 0; i < pDisp.length; i++) {
-        if (String(pDisp[i][0]).trim() === reqId && String(pDisp[i][2]).trim() === reqSifre) {
-          dogruSifre = true;
-          break;
-        }
+function resetMachineCounter(cb, e) {
+  const makino   = String(e.parameter.makine_no   || '').trim();
+  const reqId    = String(e.parameter.tekniker_id || '').trim();
+  const reqSifre = String(e.parameter.sifre       || '').trim();
+
+  if (!makino || !reqId || !reqSifre) return jsonp(cb, { error: 'Eksik parametre' });
+
+  const ss     = SpreadsheetApp.getActiveSpreadsheet();
+  const pSheet = _getOrCreatePersonelSheet(ss);
+  let dogruSifre = false;
+  if (pSheet.getLastRow() > 1) {
+    const pDisp = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, 3).getDisplayValues();
+    for (let i = 0; i < pDisp.length; i++) {
+      if (String(pDisp[i][0]).trim() === reqId && String(pDisp[i][2]).trim() === reqSifre) {
+        dogruSifre = true; break;
       }
     }
-    if (!dogruSifre) return jsonp(cb, { error: 'Şifre hatalı' });
-
-    // Makineyi sıfırlama listesine ekle
-    const props2 = PropertiesService.getScriptProperties();
-    const cur = (props2.getProperty('counterResetList') || '').split(',').filter(Boolean);
-    if (cur.indexOf(makino) === -1) cur.push(makino);
-    props2.setProperty('counterResetList', cur.join(','));
-
-    return jsonp(cb, { result: 'ok' });
   }
+  if (!dogruSifre) return jsonp(cb, { error: 'Şifre hatalı' });
 
-  // ============================================================
-  // monthlyBackupAndCleanup: Ay sonu temizliği
-  // Son sayaçları Devir sekmesine kaydeder, log sekmelerini temizler.
-  // Personel sekmesi ve Makine Durumları dokunulmaz.
-  // ============================================================
-  if (e.parameter.action === 'monthlyBackupAndCleanup') {
-    const ss     = SpreadsheetApp.getActiveSpreadsheet();
-    const reqId2 = String(e.parameter.admin_id  || '').trim();
-    const reqSifre2 = String(e.parameter.sifre  || '').trim();
+  const props = PropertiesService.getScriptProperties();
+  const cur   = (props.getProperty('counterResetList') || '').split(',').filter(Boolean);
+  if (cur.indexOf(makino) === -1) cur.push(makino);
+  props.setProperty('counterResetList', cur.join(','));
 
-    // Şifre doğrulama — yetkili kullanıcı (Meydancı veya Admin rolü)
-    const pSheet2 = _getOrCreatePersonelSheet(ss);
-    const pLastRow2 = pSheet2.getLastRow();
-    let authorized = false;
-    if (pLastRow2 > 1) {
-      const pDisp2 = pSheet2.getRange(2, 1, pLastRow2 - 1, 5).getDisplayValues();
-      for (let i = 0; i < pDisp2.length; i++) {
-        const id2   = String(pDisp2[i][0]).trim();
-        const sifre2 = String(pDisp2[i][2]).trim();
-        const rol2  = String(pDisp2[i][3]).trim();
-        if (id2 === reqId2 && sifre2 === reqSifre2 && (rol2 === 'Meydancı' || rol2 === 'Admin')) {
-          authorized = true;
-          break;
-        }
+  return jsonp(cb, { result: 'ok' });
+}
+
+// ================================================================
+// ACTION: monthlyBackupAndCleanupAPI — Ay sonu (şifre onaylı, UI)
+// ================================================================
+
+function monthlyBackupAndCleanupAPI(cb, e) {
+  const ss       = SpreadsheetApp.getActiveSpreadsheet();
+  const reqId    = String(e.parameter.admin_id || '').trim();
+  const reqSifre = String(e.parameter.sifre    || '').trim();
+
+  const pSheet = _getOrCreatePersonelSheet(ss);
+  let authorized = false;
+  if (pSheet.getLastRow() > 1) {
+    const pDisp = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, 5).getDisplayValues();
+    for (let i = 0; i < pDisp.length; i++) {
+      const rol = String(pDisp[i][3]).trim();
+      if (String(pDisp[i][0]).trim() === reqId &&
+          String(pDisp[i][2]).trim() === reqSifre &&
+          (rol === 'Meydancı' || rol === 'Admin' || rol === 'Yönetici')) {
+        authorized = true; break;
       }
     }
-    if (!authorized) return jsonp(cb, { error: 'Yetkisiz erişim — Meydancı/Admin şifresi gerekli' });
-
-    const now2 = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
-
-    // ── 1. Son sayaçları Devir sekmesine kaydet ──────────────
-    let devirSheet = ss.getSheetByName('Devir');
-    if (!devirSheet) {
-      devirSheet = ss.insertSheet('Devir');
-      devirSheet.appendRow(['Makine No', 'Son Sayaç', 'Tarih', 'Yapan']);
-      const dh = devirSheet.getRange('A1:D1');
-      dh.setFontWeight('bold').setBackground('#7c3aed').setFontColor('#ffffff');
-      devirSheet.setFrozenRows(1);
-    }
-
-    const vSheet = ss.getSheetByName('Veriler');
-    const lastSayac = {};  // makineNo → son sayaç_bit
-    if (vSheet && vSheet.getLastRow() > 1) {
-      const vv = vSheet.getRange(2, 1, vSheet.getLastRow() - 1, 24).getValues();
-      for (const row of vv) {
-        const enj1 = String(row[7]).trim();
-        const bit1 = parseInt(row[12]);
-        if (enj1 && !isNaN(bit1)) lastSayac[enj1] = bit1;
-        const enj2 = String(row[15]).trim();
-        const bit2 = parseInt(row[20]);
-        if (enj2 && !isNaN(bit2) && enj2 !== '00') lastSayac[enj2] = bit2;
-      }
-    }
-
-    // Devir sekmesini güncelle — makine varsa üzerine yaz, yoksa ekle
-    for (let mn = 1; mn <= 13; mn++) {
-      const mKey = 'Enjeksiyon ' + mn;
-      if (lastSayac[mKey] === undefined) continue;
-      const dLastRow = devirSheet.getLastRow();
-      let found2 = false;
-      if (dLastRow > 1) {
-        const dv = devirSheet.getRange(2, 1, dLastRow - 1, 1).getValues();
-        for (let di = 0; di < dv.length; di++) {
-          if (String(dv[di][0]).trim() === mKey) {
-            devirSheet.getRange(di + 2, 2, 1, 3).setValues([[lastSayac[mKey], now2, reqId2]]);
-            found2 = true;
-            break;
-          }
-        }
-      }
-      if (!found2) devirSheet.appendRow([mKey, lastSayac[mKey], now2, reqId2]);
-    }
-
-    // ── 2. Log sekmelerini temizle (başlık satırı korunur) ───
-    const sheetsToClear = ['Veriler', 'Fire Log', 'Arıza Log', 'Günlük Özet', 'Üretim Kaydı', 'Machine Locks', 'Makine Kasa'];
-    const cleared = [];
-    for (const name of sheetsToClear) {
-      const sh = ss.getSheetByName(name);
-      if (sh && sh.getLastRow() > 1) {
-        sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).clearContent();
-        cleared.push(name);
-      }
-    }
-
-    // Canlı İzleme veri hücrelerini temizle (başlık + bölüm satırları korunur)
-    const ciSheet = ss.getSheetByName('Canlı İzleme');
-    if (ciSheet) {
-      // Veri satırları: 3-15 (SABAH), 17-29 (AKSAM), 31-43 (GECE) — B:L sütunları
-      const dataRanges = ['B3:L15', 'B17:L29', 'B31:L43'];
-      for (const r of dataRanges) {
-        try { ciSheet.getRange(r).clearContent(); } catch(_) {}
-      }
-      cleared.push('Canlı İzleme');
-    }
-
-    // ── 3. Sayaç sıfırlama listesini temizle ─────────────────
-    PropertiesService.getScriptProperties().setProperty('counterResetList', '');
-
-    return jsonp(cb, {
-      result: 'ok',
-      devirKaydedilen: Object.keys(lastSayac).length,
-      temizlenen: cleared,
-      zaman: now2
-    });
   }
+  if (!authorized) return jsonp(cb, { error: 'Yetkisiz erişim — Meydancı/Yönetici şifresi gerekli' });
 
-  return jsonp(cb, { error: 'Geçersiz istek' });
+  return jsonp(cb, monthlyBackupAndCleanup());
 }
 
 // ================================================================
@@ -1482,6 +1488,38 @@ function jsonp(callback, obj) {
     .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
 }
 
+// ================================================================
+// HELPER: _updateSonSayaclar
+// Her makinenin son sayaçBit değerini küçük bir lookup tablosunda tutar.
+// submitForm ve resetSayac her yazımda bunu günceller.
+// getLastCounter bu tabloyu okur → tam Veriler taraması gerekmez.
+// ================================================================
+function _updateSonSayaclar(ss, enjNo, sayacBit) {
+  if (!enjNo || enjNo === '00') return;
+
+  let sheet = ss.getSheetByName('Son Sayaçlar');
+  if (!sheet) {
+    sheet = ss.insertSheet('Son Sayaçlar');
+    sheet.appendRow(['Makine No', 'Sayaç Bit', 'Son Güncelleme']);
+    sheet.getRange('A1:C1').setFontWeight('bold').setBackground('#0f766e').setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+    [100, 100, 160].forEach((w, i) => sheet.setColumnWidth(i + 1, w));
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    const keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (let i = 0; i < keys.length; i++) {
+      if (String(keys[i][0]).trim() === enjNo) {
+        sheet.getRange(i + 2, 2, 1, 2).setValues([[sayacBit, new Date()]]);
+        return;
+      }
+    }
+  }
+
+  sheet.appendRow([enjNo, sayacBit, new Date()]);
+}
+
 function getLockedMachines(ss) {
   const locked = {};
 
@@ -1509,7 +1547,7 @@ function setMachineDurum(ss, makineNo, durum, tip, sorun) {
     sheet.appendRow(['Makine No', 'Durum', 'Son Güncelleme', 'Sorun', 'Arıza Tipi']);
     sheet.getRange('A1:E1').setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff');
     sheet.setFrozenRows(1);
-    for (let i = 1; i <= 12; i++) sheet.appendRow(['Enjeksiyon ' + i, 'Aktif', '', '', '']);
+    for (let i = 1; i <= 13; i++) sheet.appendRow(['Enjeksiyon ' + i, 'Aktif', '', '', '']);
   }
 
   const now     = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
@@ -1796,28 +1834,15 @@ function dailyExport() {
   PropertiesService.getScriptProperties().setProperty('lastExport', tarih);
 }
 
-// ============================================================
-// setMachineDurum: Makine Durumları sekmesinde ilgili satırı
-// günceller; yoksa yeni satır ekler.
-// ============================================================
-function setMachineDurum(ss, makineNo, durum, tip, sorun) {
-  let sheet = ss.getSheetByName('Makine Durumları');
-  if (!sheet) {
-    sheet = ss.insertSheet('Makine Durumları');
-    sheet.appendRow(['Makine No', 'Durum', 'Son Güncelleme', 'Sorun', 'Arıza Tipi']);
-    const h = sheet.getRange('A1:E1');
-    h.setFontWeight('bold').setBackground('#1e3a8a').setFontColor('#ffffff');
-    sheet.setFrozenRows(1);
-    for (let i = 1; i <= 13; i++) {
-      sheet.appendRow(['Enjeksiyon ' + i, 'Aktif', '', '', '']);
-    }
-  }
+// ================================================================
+// AY SONU TEMİZLİĞİ (Zamanlanmış tetikleyici + API)
+// ================================================================
 
 function monthlyBackupAndCleanup() {
-  const ss           = SpreadsheetApp.getActiveSpreadsheet();
-  const verilerSheet = ss.getSheetByName('Veriler');
-  if (!verilerSheet || verilerSheet.getLastRow() < 2) return 'Veri Yok';
+  const ss  = SpreadsheetApp.getActiveSpreadsheet();
+  const now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
 
+  // ── 0. XLSX yedeğini Drive'a kaydet ──────────────────────────
   const simdi    = new Date();
   const gecenAy  = new Date(simdi.getFullYear(), simdi.getMonth() - 1, 1);
   const ayAdlari = ['Ocak','Subat','Mart','Nisan','Mayis','Haziran','Temmuz','Agustos','Eylul','Ekim','Kasim','Aralik'];
@@ -1826,22 +1851,401 @@ function monthlyBackupAndCleanup() {
   const url   = 'https://docs.google.com/spreadsheets/d/' + ss.getId() + '/export?format=xlsx';
   const token = ScriptApp.getOAuthToken();
   const resp  = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
+  let xlsxOk  = false;
 
   if (resp.getResponseCode() === 200) {
     const it     = DriveApp.getFoldersByName('Ersan Plastik Arşivleri');
     const folder = it.hasNext() ? it.next() : DriveApp.createFolder('Ersan Plastik Arşivleri');
     folder.createFile(resp.getBlob().setName(dosyaAdi));
-
-    const headerRow = verilerSheet.getRange(1, 1, 1, verilerSheet.getLastColumn()).getValues()[0];
-    verilerSheet.clear();
-    verilerSheet.appendRow(headerRow);
-    verilerSheet.getRange(1, 1, 1, headerRow.length)
-      .setFontWeight('bold').setBackground('#2563eb').setFontColor('#ffffff');
-    verilerSheet.setFrozenRows(1);
-
-    return 'Yedeklendi ve Temizlendi: ' + dosyaAdi;
+    PropertiesService.getScriptProperties().setProperty('lastExport', dosyaAdi);
+    xlsxOk = true;
   }
-  return 'Hata Oluştu';
+
+  // ── 1. Son sayaçları Devir sekmesine kaydet ──────────────────
+  let devirSheet = ss.getSheetByName('Devir');
+  if (!devirSheet) {
+    devirSheet = ss.insertSheet('Devir');
+    devirSheet.appendRow(['Makine No', 'Son Sayaç', 'Tarih', 'Yapan']);
+    const dh = devirSheet.getRange('A1:D1');
+    dh.setFontWeight('bold').setBackground('#7c3aed').setFontColor('#ffffff');
+    devirSheet.setFrozenRows(1);
+  }
+
+  const vSheet   = ss.getSheetByName('Veriler');
+  const lastSayac = {};
+  if (vSheet && vSheet.getLastRow() > 1) {
+    const vv = vSheet.getRange(2, 1, vSheet.getLastRow() - 1, 24).getValues();
+    for (const row of vv) {
+      const enj1 = String(row[7]).trim();
+      const bit1 = parseInt(row[12]);
+      if (enj1 && !isNaN(bit1)) lastSayac[enj1] = bit1;
+      const enj2 = String(row[15]).trim();
+      const bit2 = parseInt(row[20]);
+      if (enj2 && !isNaN(bit2) && enj2 !== '00') lastSayac[enj2] = bit2;
+    }
+  }
+
+  for (let mn = 1; mn <= 13; mn++) {
+    const mKey = 'Enjeksiyon ' + mn;
+    if (lastSayac[mKey] === undefined) continue;
+    const dLastRow = devirSheet.getLastRow();
+    let found = false;
+    if (dLastRow > 1) {
+      const dv = devirSheet.getRange(2, 1, dLastRow - 1, 1).getValues();
+      for (let di = 0; di < dv.length; di++) {
+        if (String(dv[di][0]).trim() === mKey) {
+          devirSheet.getRange(di + 2, 2, 1, 3).setValues([[lastSayac[mKey], now, 'Sistem']]);
+          found = true; break;
+        }
+      }
+    }
+    if (!found) devirSheet.appendRow([mKey, lastSayac[mKey], now, 'Sistem']);
+  }
+
+  // ── 2. Log sekmelerini temizle (başlık satırı korunur) ───────
+  const sheetsToClear = ['Veriler', 'Fire Log', 'Arıza Log', 'Günlük Özet', 'Üretim Kaydı', 'Machine Locks', 'Makine Kasa'];
+  const cleared = [];
+  for (const name of sheetsToClear) {
+    const sh = ss.getSheetByName(name);
+    if (sh && sh.getLastRow() > 1) {
+      sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).clearContent();
+      cleared.push(name);
+    }
+  }
+
+  // Canlı İzleme veri hücrelerini temizle
+  const ciSheet = ss.getSheetByName('Canlı İzleme');
+  if (ciSheet) {
+    for (const r of ['B3:L15', 'B17:L29', 'B31:L43']) {
+      try { ciSheet.getRange(r).clearContent(); } catch(_) {}
+    }
+    cleared.push('Canlı İzleme');
+  }
+
+  // ── 3. Sayaç sıfırlama listesini temizle ─────────────────────
+  PropertiesService.getScriptProperties().setProperty('counterResetList', '');
+
+  return {
+    result: 'ok',
+    dosyaAdi: xlsxOk ? dosyaAdi : null,
+    devirKaydedilen: Object.keys(lastSayac).length,
+    temizlenen: cleared,
+    zaman: now,
+  };
+}
+
+// ================================================================
+// DENETLEYİCİ CRUD — Veriler sekmesi kayıt yönetimi
+// ================================================================
+
+function _denetleyiciAuth(e) {
+  const ss       = SpreadsheetApp.getActiveSpreadsheet();
+  const reqId    = String(e.parameter.admin_id || '').trim();
+  const reqSifre = String(e.parameter.sifre    || '').trim();
+  if (!reqId || !reqSifre) return null;
+  const pSheet = _getOrCreatePersonelSheet(ss);
+  if (pSheet.getLastRow() < 2) return null;
+  const rows = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, 5).getDisplayValues();
+  for (const r of rows) {
+    const rol = String(r[3]).trim();
+    if (String(r[0]).trim() === reqId && String(r[2]).trim() === reqSifre &&
+        (rol === 'Denetleyici' || rol === 'Yönetici' || rol === 'Admin')) {
+      return { id: reqId, ad: String(r[1]).trim(), rol };
+    }
+  }
+  return null;
+}
+
+// Auth: Meydancı, Denetleyici, Yönetici, Admin
+function _meydanciAuth(e) {
+  const ss       = SpreadsheetApp.getActiveSpreadsheet();
+  const reqId    = String(e.parameter.user_id || e.parameter.admin_id || '').trim();
+  const reqSifre = String(e.parameter.sifre   || '').trim();
+  if (!reqId || !reqSifre) return null;
+  const pSheet = _getOrCreatePersonelSheet(ss);
+  if (pSheet.getLastRow() < 2) return null;
+  const rows = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, 5).getDisplayValues();
+  for (const r of rows) {
+    const rol = String(r[3]).trim();
+    if (String(r[0]).trim() === reqId && String(r[2]).trim() === reqSifre &&
+        (rol === 'Meydancı' || rol === 'Denetleyici' || rol === 'Yönetici' || rol === 'Admin')) {
+      return { id: reqId, ad: String(r[1]).trim(), rol };
+    }
+  }
+  return null;
+}
+
+// ACTION: getRecentRecords — Son 8 saatin kayıtlarını getir
+function getRecentRecords(cb, e) {
+  const user = _meydanciAuth(e);
+  if (!user) return jsonp(cb, { error: 'Yetkisiz erişim' });
+
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Veriler');
+  if (!sheet || sheet.getLastRow() < 2) return jsonp(cb, { records: [] });
+
+  const nowMs  = Date.now();
+  const cutMs  = nowMs - 8 * 60 * 60 * 1000;
+  const tz     = ss.getSpreadsheetTimeZone();
+  const rows   = sheet.getRange(2, 1, sheet.getLastRow() - 1, 24).getValues();
+  const records = [];
+
+  rows.forEach((row, i) => {
+    const zaman   = row[0];
+    const zamanMs = zaman instanceof Date ? zaman.getTime() : new Date(String(zaman)).getTime();
+    if (isNaN(zamanMs) || zamanMs < cutMs) return;
+
+    const zamanStr = zaman instanceof Date
+      ? Utilities.formatDate(zaman, tz, 'dd.MM.yyyy HH:mm')
+      : String(zaman || '').trim();
+
+    records.push({
+      rowIdx:      i + 2,
+      kayitZamani: zamanStr,
+      vardiyaTarihi: String(row[1] instanceof Date
+        ? Utilities.formatDate(row[1], tz, 'yyyy-MM-dd')
+        : row[1] || '').trim(),
+      adSoyad:    String(row[2]  || '').trim(),
+      vardiya:    String(row[3]  || '').trim(),
+      enjSayisi:  Number(row[5]) || 1,
+      olcumSaat:  String(row[6]  || '').trim(),
+      enj1No:     String(row[7]  || '').trim(),
+      enj1Kasa:   String(row[8]  || '').trim(),
+      enj1Uretim: Number(row[13]) || '',
+      enj1Fire:   Number(row[14]) || '',
+      enj2No:     String(row[15] || '').trim(),
+      enj2Uretim: Number(row[21]) || '',
+      onay:       String(row[23] || '').trim(),
+    });
+  });
+
+  return jsonp(cb, { records });
+}
+
+// ACTION: approveRecord — Kaydı onayla (Meydancı / Denetleyici / Yönetici)
+function approveRecord(cb, e) {
+  const user = _meydanciAuth(e);
+  if (!user) return jsonp(cb, { error: 'Yetkisiz erişim' });
+
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Veriler');
+  if (!sheet) return jsonp(cb, { error: 'Veriler sekmesi bulunamadı' });
+
+  const rowIdx = parseInt(e.parameter.row_idx);
+  if (!rowIdx || rowIdx < 2) return jsonp(cb, { error: 'Geçersiz satır' });
+  if (rowIdx > sheet.getLastRow()) return jsonp(cb, { error: 'Satır bulunamadı' });
+
+  const tz  = ss.getSpreadsheetTimeZone();
+  const now = Utilities.formatDate(new Date(), tz, 'dd.MM.yyyy HH:mm');
+  const onayStr = 'ONAYLANDI [' + user.ad + ' ' + now + ']';
+
+  sheet.getRange(rowIdx, 24).setValue(onayStr);
+  return jsonp(cb, { result: 'ok', onay: onayStr });
+}
+
+function _parseDateTime(tarihStr, saatStr) {
+  // tarih: 'yyyy-MM-dd', saat: 'HH:mm' → ms timestamp
+  try {
+    const [y, mo, d] = tarihStr.split('-').map(Number);
+    const [h, mi]    = (saatStr || '00:00').split(':').map(Number);
+    return new Date(y, mo - 1, d, h || 0, mi || 0).getTime();
+  } catch (_) { return 0; }
+}
+
+// ACTION: getRecords — Veriler satırlarını dönem filtresiyle çek
+function getRecords(cb, e) {
+  const user = _denetleyiciAuth(e);
+  if (!user) return jsonp(cb, { error: 'Yetkisiz erişim' });
+
+  const ss      = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet   = ss.getSheetByName('Veriler');
+  if (!sheet || sheet.getLastRow() < 2) return jsonp(cb, { records: [] });
+
+  const basTarih = String(e.parameter.baslangic_tarih || '').trim();
+  const basSaat  = String(e.parameter.baslangic_saat  || '00:00').trim();
+  const bitTarih = String(e.parameter.bitis_tarih     || '').trim();
+  const bitSaat  = String(e.parameter.bitis_saat      || '23:59').trim();
+
+  const basMs = basTarih ? _parseDateTime(basTarih, basSaat) : 0;
+  const bitMs = bitTarih ? _parseDateTime(bitTarih, bitSaat) : Infinity;
+
+  const rows    = sheet.getRange(2, 1, sheet.getLastRow() - 1, 24).getValues();
+  const tz      = ss.getSpreadsheetTimeZone();
+  const records = [];
+
+  rows.forEach((row, i) => {
+    const zaman   = row[0];
+    const zamanMs = zaman instanceof Date ? zaman.getTime() : new Date(String(zaman)).getTime();
+    if (basMs && zamanMs < basMs) return;
+    if (bitMs < Infinity && zamanMs > bitMs) return;
+
+    const zamanStr = zaman instanceof Date
+      ? Utilities.formatDate(zaman, tz, 'dd.MM.yyyy HH:mm')
+      : String(zaman || '').trim();
+
+    records.push({
+      rowIdx:       i + 2,           // actual sheet row (1-indexed, +1 for header)
+      kayitZamani:  zamanStr,
+      vardiyaTarihi: String(row[1] instanceof Date
+        ? Utilities.formatDate(row[1], tz, 'yyyy-MM-dd')
+        : row[1] || '').trim(),
+      adSoyad:   String(row[2]  || '').trim(),
+      vardiya:   String(row[3]  || '').trim(),
+      olcumNo:   Number(row[4]) || '',
+      enjSayisi: Number(row[5]) || 1,
+      olcumSaat: String(row[6]  || '').trim(),
+      enj1No:    String(row[7]  || '').trim(),
+      enj1Kasa:  String(row[8]  || '').trim(),
+      enj1Cevrim:  Number(row[9])  || '',
+      enj1Agirlik: Number(row[10]) || '',
+      enj1SayacBas: Number(row[11]) || '',
+      enj1SayacBit: Number(row[12]) || '',
+      enj1Uretim:  Number(row[13]) || '',
+      enj1Fire:    Number(row[14]) || '',
+      enj2No:    String(row[15] || '').trim(),
+      enj2Kasa:  String(row[16] || '').trim(),
+      enj2Cevrim:  Number(row[17]) || '',
+      enj2Agirlik: Number(row[18]) || '',
+      enj2SayacBas: Number(row[19]) || '',
+      enj2SayacBit: Number(row[20]) || '',
+      enj2Uretim:  Number(row[21]) || '',
+      enj2Fire:    Number(row[22]) || '',
+      onay:      String(row[23] || '').trim(),
+    });
+  });
+
+  return jsonp(cb, { records });
+}
+
+// ACTION: updateRecord — Belirli satırı güncelle, üretimi yeniden hesapla
+function updateRecord(cb, e) {
+  const user = _denetleyiciAuth(e);
+  if (!user) return jsonp(cb, { error: 'Yetkisiz erişim' });
+
+  const ss     = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet  = ss.getSheetByName('Veriler');
+  if (!sheet)  return jsonp(cb, { error: 'Veriler sekmesi bulunamadı' });
+
+  const rowIdx = parseInt(e.parameter.row_idx);
+  if (!rowIdx || rowIdx < 2) return jsonp(cb, { error: 'Geçersiz satır' });
+  if (rowIdx > sheet.getLastRow()) return jsonp(cb, { error: 'Satır bulunamadı' });
+
+  const p = e.parameter;
+
+  const enj1SayacBas = parseInt(p.enj1_sayac_bas) || 0;
+  const enj1SayacBit = parseInt(p.enj1_sayac_bit) || 0;
+  const enj1Uretim   = Math.max(0, enj1SayacBit - enj1SayacBas);
+
+  const enjSayisi    = parseInt(p.enj_sayisi) || 1;
+  const enj2No       = String(p.enj2_no    || '').trim();
+  const enj2SayacBas = parseInt(p.enj2_sayac_bas) || 0;
+  const enj2SayacBit = parseInt(p.enj2_sayac_bit) || 0;
+  const enj2Uretim   = (enjSayisi === 2 && enj2No && enj2No !== '00')
+    ? Math.max(0, enj2SayacBit - enj2SayacBas) : 0;
+
+  const row = sheet.getRange(rowIdx, 1, 1, 24).getValues()[0];
+  const kayitZamani = row[0];   // col A — unchanged
+
+  sheet.getRange(rowIdx, 1, 1, 24).setValues([[
+    kayitZamani,
+    String(p.vardiya_tarihi || '').trim(),
+    String(p.ad_soyad       || '').trim(),
+    String(p.vardiya        || '').trim(),
+    parseInt(p.olcum_no)    || '',
+    enjSayisi,
+    String(p.olcum_saat     || '').trim(),
+    String(p.enj1_no        || '').trim(),
+    String(p.enj1_kasa      || '').trim(),
+    Number(p.enj1_cevrim)   || '',
+    Number(p.enj1_agirlik)  || '',
+    enj1SayacBas,
+    enj1SayacBit,
+    enj1Uretim,
+    parseInt(p.enj1_fire)   || 0,
+    enjSayisi === 2 ? enj2No : '00',
+    enjSayisi === 2 ? String(p.enj2_kasa    || '').trim() : '',
+    enjSayisi === 2 ? (Number(p.enj2_cevrim)  || '') : '',
+    enjSayisi === 2 ? (Number(p.enj2_agirlik) || '') : '',
+    enjSayisi === 2 ? enj2SayacBas : '',
+    enjSayisi === 2 ? enj2SayacBit : '',
+    enjSayisi === 2 ? enj2Uretim   : '',
+    enjSayisi === 2 ? (parseInt(p.enj2_fire) || 0) : '',
+    row[23],   // col X Onay — unchanged
+  ]]);
+
+  return jsonp(cb, { result: 'ok', enj1Uretim, enj2Uretim });
+}
+
+// ACTION: deleteRecord — Satırı sil
+function deleteRecord(cb, e) {
+  const user = _denetleyiciAuth(e);
+  if (!user) return jsonp(cb, { error: 'Yetkisiz erişim' });
+
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Veriler');
+  if (!sheet) return jsonp(cb, { error: 'Veriler sekmesi bulunamadı' });
+
+  const rowIdx = parseInt(e.parameter.row_idx);
+  if (!rowIdx || rowIdx < 2) return jsonp(cb, { error: 'Geçersiz satır' });
+  if (rowIdx > sheet.getLastRow()) return jsonp(cb, { error: 'Satır bulunamadı' });
+
+  sheet.deleteRow(rowIdx);
+  return jsonp(cb, { result: 'ok' });
+}
+
+// ACTION: manualAddRecord — Elle yeni kayıt ekle
+function manualAddRecord(cb, e) {
+  const user = _denetleyiciAuth(e);
+  if (!user) return jsonp(cb, { error: 'Yetkisiz erişim' });
+
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Veriler');
+  if (!sheet) return jsonp(cb, { error: 'Veriler sekmesi bulunamadı' });
+
+  const p = e.parameter;
+
+  const enj1SayacBas = parseInt(p.enj1_sayac_bas) || 0;
+  const enj1SayacBit = parseInt(p.enj1_sayac_bit) || 0;
+  const enj1Uretim   = Math.max(0, enj1SayacBit - enj1SayacBas);
+
+  const enjSayisi    = parseInt(p.enj_sayisi) || 1;
+  const enj2No       = String(p.enj2_no || '').trim();
+  const enj2SayacBas = parseInt(p.enj2_sayac_bas) || 0;
+  const enj2SayacBit = parseInt(p.enj2_sayac_bit) || 0;
+  const enj2Uretim   = (enjSayisi === 2 && enj2No && enj2No !== '00')
+    ? Math.max(0, enj2SayacBit - enj2SayacBas) : 0;
+
+  const now = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'dd/MM/yyyy HH:mm');
+  const kayitZamani = now + ' [DENETLEYİCİ:' + user.id + ']';
+
+  sheet.appendRow([
+    kayitZamani,
+    String(p.vardiya_tarihi || '').trim(),
+    String(p.ad_soyad       || '').trim(),
+    String(p.vardiya        || '').trim(),
+    parseInt(p.olcum_no)    || 1,
+    enjSayisi,
+    String(p.olcum_saat     || '').trim(),
+    String(p.enj1_no        || '').trim(),
+    String(p.enj1_kasa      || '').trim(),
+    Number(p.enj1_cevrim)   || '',
+    Number(p.enj1_agirlik)  || '',
+    enj1SayacBas,
+    enj1SayacBit,
+    enj1Uretim,
+    parseInt(p.enj1_fire)   || 0,
+    enjSayisi === 2 ? enj2No : '00',
+    enjSayisi === 2 ? String(p.enj2_kasa    || '').trim() : '',
+    enjSayisi === 2 ? (Number(p.enj2_cevrim)  || '') : '',
+    enjSayisi === 2 ? (Number(p.enj2_agirlik) || '') : '',
+    enjSayisi === 2 ? enj2SayacBas : '',
+    enjSayisi === 2 ? enj2SayacBit : '',
+    enjSayisi === 2 ? enj2Uretim   : '',
+    enjSayisi === 2 ? (parseInt(p.enj2_fire) || 0) : '',
+    '',   // Onay
+  ]);
+
+  return jsonp(cb, { result: 'ok', enj1Uretim, enj2Uretim });
 }
 
 // ================================================================

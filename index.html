@@ -48,8 +48,6 @@
     </div>
   </div>
 
-  <div id="status-box" style="display:none"></div>
-
   <div class="section">
     <div class="stitle"><span>👤</span> Kimlik Doğrulama</div>
 
@@ -61,6 +59,12 @@
       <input type="text" id="kullanici_id" placeholder="ID numaranızı girin"
              inputmode="numeric" maxlength="3" autocomplete="off" oninput="onIdChange()">
       <div class="err-msg" id="err-ad">Bu ID sistemde tanımlı değil</div>
+      <div style="margin-top:8px;text-align:right">
+        <button type="button" id="listeden-sec-btn" onclick="openPersonelPicker()"
+          style="background:none;border:none;color:var(--accent);font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;padding:4px 0;display:none">
+          👥 Listeden seçin
+        </button>
+      </div>
     </div>
 
     <div class="field" id="sifre-field" style="display:none">
@@ -146,10 +150,6 @@
       </div>
       <div class="err-msg" id="err-enj1">Lütfen Enjeksiyon seçin</div>
     </div>
-    <div id="enj1-ro" style="display:none" class="field">
-      <span class="ro-label">Makine</span>
-      <div class="ro-field">🏭 <span id="enj1-ro-val"></span></div>
-    </div>
 
     <div id="kasa1-sec" class="field">
       <label>Kasa Boyutu <span class="req">*</span></label>
@@ -160,10 +160,6 @@
       <div id="skel-kasa1" class="skeleton"></div>
       <select id="kasa1" style="display:none"><option value="">— Kasa boyutunu seçin —</option></select>
       <div class="err-msg" id="err-kasa1">Lütfen kasa boyutu seçin</div>
-    </div>
-    <div id="kasa1-ro" style="display:none" class="field">
-      <span class="ro-label">Kasa Boyutu</span>
-      <div class="ro-field">📦 <span id="kasa1-ro-val"></span></div>
     </div>
   </div>
 
@@ -265,10 +261,6 @@
       </div>
       <div class="err-msg" id="err-enj2">Lütfen makine seçin</div>
     </div>
-    <div id="enj2-ro" style="display:none" class="field">
-      <span class="ro-label">Makine</span>
-      <div class="ro-field">🏭 <span id="enj2-ro-val"></span></div>
-    </div>
 
     <div id="kasa2-sec" class="field">
       <label>Kasa Boyutu <span class="req">*</span></label>
@@ -278,10 +270,6 @@
       </div>
       <select id="kasa2"><option value="">— Kasa boyutunu seçin —</option></select>
       <div class="err-msg" id="err-kasa2">Lütfen kasa boyutu seçin</div>
-    </div>
-    <div id="kasa2-ro" style="display:none" class="field">
-      <span class="ro-label">Kasa Boyutu</span>
-      <div class="ro-field">📦 <span id="kasa2-ro-val"></span></div>
     </div>
   </div>
 
@@ -378,32 +366,26 @@
     </div>
     <div class="nav-row">
       <button class="btn btn-back"   onclick="goStep(2)">← Geri</button>
-      <button class="btn btn-submit" id="submit-btn" onclick="onGonderClick(false)">✅ Kaydet & Gönder</button>
+      <button class="btn btn-submit" id="submit-btn" onclick="onGonderClick()">✅ Kaydet & Gönder</button>
     </div>
   </div>
 
-  <!-- Onay özeti (3. ölçüm — vardiya sonu) -->
-  <div id="onay-ozet" style="display:none">
-    <div class="onay-card">
-      <div class="onay-icon">🏁</div>
-      <div class="onay-title">Vardiya Tamamlanıyor</div>
-      <div class="onay-sub">Son ölçüm. Üretim bilgilerini onaylıyor musunuz?</div>
-      <div class="onay-stats">
-        <div class="ostat"><div class="ostat-val" id="onay-uretim1">—</div><div class="ostat-lbl">Enj1 Üretim</div></div>
-        <div class="ostat"><div class="ostat-val" id="onay-uretim2">—</div><div class="ostat-lbl">Enj2 Üretim</div></div>
-      </div>
-      <div id="onay-summary-body"></div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn btn-submit" id="onay-btn" onclick="onGonderClick(true)">✅ Onaylıyorum — Gönder</button>
-      <button class="btn" style="background:var(--border);color:var(--text2);padding:14px" onclick="goStep(2)">← Düzelt</button>
-    </div>
-  </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
      MODALLER
 ══════════════════════════════════════════════════ -->
+
+<!-- Personel Seçici -->
+<div class="modal-overlay" id="personel-picker-modal" style="display:none" onclick="if(event.target===this)closePersonelPicker()">
+  <div class="modal-box" style="max-width:380px;max-height:80vh;display:flex;flex-direction:column;padding:20px">
+    <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:14px;text-align:center">👥 Personel Seçin</div>
+    <input type="text" id="personel-ara" placeholder="İsim ara..." oninput="filterPersonelPicker(this.value)"
+      style="margin-bottom:12px;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-family:'Nunito',sans-serif;font-weight:600;width:100%;box-sizing:border-box">
+    <div id="personel-liste" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px"></div>
+    <button onclick="closePersonelPicker()" style="margin-top:14px;padding:12px;border:2px solid var(--border);border-radius:10px;background:white;font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;cursor:pointer;color:var(--text2)">İptal</button>
+  </div>
+</div>
 
 <!-- Fire onayı -->
 <div class="modal-overlay" id="fire-modal" style="display:none">

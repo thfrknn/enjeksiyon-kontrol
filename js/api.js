@@ -5,6 +5,10 @@ function _genToken() {
   return Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 8);
 }
 
+// Aktif gönderim döngüsünün token'ı — hata/timeout retry'larında aynı kalır,
+// sadece başarılı gönderim sonrası sıfırlanır.
+var _pendingToken = null;
+
 /**
  * Ayarlar sekmesinden kasa ebatlarını, kullanıcıları ve limitleri çeker.
  * Sunucu zamanını okuyarak _timeOffset senkronizasyonu yapar.
@@ -40,6 +44,10 @@ function loadLists() {
         // API geldikten sonra zaten yazılmış ID'yi yeniden doğrula
         if (idEl.value.trim().length === 3) onIdChange();
       }
+
+      // Personel listesi yüklendiyse "Listeden seçin" butonunu göster
+      var listBtn = document.getElementById('listeden-sec-btn');
+      if (listBtn && Object.keys(kullanicilar).length > 0) listBtn.style.display = 'inline-block';
 
       // Şifre alanı: doğru şifre girilince "Devam Et" butonuna odaklan
       var sifreEl = document.getElementById('sifre');
@@ -88,7 +96,6 @@ function fetchLastCounter(n, enjNo, _attempt) {
   var bas = document.getElementById('sayac_bas' + n);
 
   if (attempt === 1) {
-    bas.value = '';
     setBasEditable(n);
     calcUretim(n);
   }
@@ -116,7 +123,6 @@ function fetchLastCounter(n, enjNo, _attempt) {
     document.getElementById('lcs' + n)?.remove();
     if (json.sayacBit !== null && json.sayacBit !== undefined) {
       bas.value = json.sayacBit;
-      setBasReadonly(n);
       calcUretim(n);
     }
     if (json.kasaAtanan) {
@@ -147,8 +153,8 @@ function fetchLastCounter(n, enjNo, _attempt) {
 }
 
 /**
- * Operatörün bu vardiyada daha önce ölçüm yapıp yapmadığını sorgular.
- * Varsa enjeksiyon/kasa bilgisini kilitler ve sayaç başlangıcını doldurur.
+ * Bu vardiyada son kaydın sayaç bitiş değerini çekip
+ * yeni kaydın sayaç başlangıcını önceden doldurur.
  */
 function checkStatus() {
   var ad    = _adSoyad;
@@ -182,27 +188,36 @@ function checkStatus() {
  * Doldurulmuş formu Google Sheets'e kaydeder.
  * JSONP GET ile iletişim kurulur (CORS sorunu olmaz).
  */
-function submitForm(onaylandi) {
+function submitForm(_retryCount) {
+  _retryCount = _retryCount || 0;
+  if (!_pendingToken) _pendingToken = _genToken();
+
   var sb = document.getElementById('submit-btn');
-  var ob = document.getElementById('onay-btn');
-  document.getElementById('load-text').textContent = 'Kaydediliyor...';
-  document.getElementById('loading').classList.add('show');
-  if (sb) sb.disabled = true;
-  if (ob) ob.disabled = true;
+
+  // UI sadece ilk denemede kurulur; retry'larda sessizce çalışır
+  if (_retryCount === 0) {
+    document.getElementById('load-text').textContent = 'Kaydediliyor...';
+    document.getElementById('loading').classList.add('show');
+    if (sb) sb.disabled = true;
+    document.getElementById('jsonp-submit')?.remove();
+  }
 
   var data = getData();
-  data.onaylandi = onaylandi;
 
   return new Promise(function(resolve) {
     var cb       = 'cbSubmit_' + Date.now();
     var timerOut = setTimeout(function() {
       delete window[cb];
-      document.getElementById('loading').classList.remove('show');
-      if (sb) sb.disabled = false;
-      if (ob) ob.disabled = false;
-      showToast('❌ Bağlantı zaman aşımı, tekrar dene', 'err');
-      resolve();
-    }, 15000);
+      document.getElementById('jsonp-submit')?.remove();
+      if (_retryCount < 2) {
+        setTimeout(function() { submitForm(_retryCount + 1).then(resolve); }, 2000);
+      } else {
+        document.getElementById('loading').classList.remove('show');
+        if (sb) sb.disabled = false;
+        showToast('❌ Bağlantı zaman aşımı, tekrar dene', 'err');
+        resolve();
+      }
+    }, 12000);
 
     window[cb] = function(json) {
       clearTimeout(timerOut);
@@ -210,16 +225,18 @@ function submitForm(onaylandi) {
       document.getElementById('jsonp-submit')?.remove();
 
       if (json && json.result === 'ok') {
-        if (olcumNo === 3 && onaylandi) clearFireLogs();
+        _pendingToken = null;
         clearDraft();
         document.getElementById('loading').classList.remove('show');
-        var msgs = { 1: '✅ Ölçümünüz kaydedildi! İyi Günler', 2: '✅ 2. ölçüm kaydedildi!', 3: '✅ Vardiya tamamlandı!' };
-        showToast(msgs[olcumNo] || '✅ Kaydedildi!', 'ok');
+        showToast('✅ Kaydedildi!', 'ok');
         setTimeout(resetForm, 2200);
+      } else if (_retryCount < 2) {
+        // Sessiz retry — kullanıcıya hiçbir şey gösterilmez
+        setTimeout(function() { submitForm(_retryCount + 1).then(resolve); }, 2000);
+        return;
       } else {
         document.getElementById('loading').classList.remove('show');
         if (sb) sb.disabled = false;
-        if (ob) ob.disabled = false;
         showToast('❌ Kayıt hatası, tekrar dene', 'err');
         console.error('submitForm hatası:', json);
       }
@@ -231,7 +248,6 @@ function submitForm(onaylandi) {
       callback:   cb,
       adsoyad:    data.adsoyad    || '',
       vardiya:    data.vardiya    || '',
-      olcumNo:    data.olcumNo   || 1,
       enjSayisi:  data.enjSayisi || 1,
       tarih:      data.tarih     || '',
       olcum_saat: data.olcum_saat || '',
@@ -251,8 +267,7 @@ function submitForm(onaylandi) {
       sayac_bit2: data.sayac_bit2 || '00',
       uretim2:    data.uretim2   || 0,
       fire2:      data.fire2     || '00',
-      onaylandi:  onaylandi ? 'true' : 'false',
-      submitToken: _genToken(),
+      submitToken: _pendingToken,
     });
 
     var s = document.createElement('script');
@@ -261,11 +276,15 @@ function submitForm(onaylandi) {
     s.onerror = function() {
       clearTimeout(timerOut);
       delete window[cb];
-      document.getElementById('loading').classList.remove('show');
-      if (sb) sb.disabled = false;
-      if (ob) ob.disabled = false;
-      showToast('❌ Bağlantı hatası, tekrar dene', 'err');
-      resolve();
+      document.getElementById('jsonp-submit')?.remove();
+      if (_retryCount < 2) {
+        setTimeout(function() { submitForm(_retryCount + 1).then(resolve); }, 2000);
+      } else {
+        document.getElementById('loading').classList.remove('show');
+        if (sb) sb.disabled = false;
+        showToast('❌ Bağlantı hatası, tekrar dene', 'err');
+        resolve();
+      }
     };
     document.head.appendChild(s);
   });

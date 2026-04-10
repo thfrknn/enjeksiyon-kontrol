@@ -817,11 +817,12 @@ function renderPersonel() {
         </div>
         <div style="margin-bottom:16px">
           <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">Rol</label>
-          <select id="prs-rol"
+          <select id="prs-rol" onchange="onEkleRolChange()"
             style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;background:white">
-            <option value="Operatör">Operatör</option>
-            <option value="Meydancı">Meydancı</option>
-            <option value="Yönetici">Yönetici</option>
+            <option value="Operatör">Operatör (2xx)</option>
+            <option value="Meydancı">Meydancı (1xx)</option>
+            <option value="Yönetici">Yönetici (3xx)</option>
+            <option value="Denetleyici">Denetleyici (4xx)</option>
           </select>
         </div>
         <button onclick="addPersonel()"
@@ -846,9 +847,10 @@ function renderPersonel() {
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <select id="rol-${p.id}" onchange="updateRol('${p.id}')"
               style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;background:white;cursor:pointer">
-              <option value="Operatör"  ${p.rol==='Operatör'  ? 'selected':''}>Operatör</option>
-              <option value="Meydancı"  ${p.rol==='Meydancı'  ? 'selected':''}>Meydancı</option>
-              <option value="Yönetici"  ${p.rol==='Yönetici'  ? 'selected':''}>Yönetici</option>
+              <option value="Operatör"    ${p.rol==='Operatör'    ? 'selected':''}>Operatör</option>
+              <option value="Meydancı"    ${p.rol==='Meydancı'    ? 'selected':''}>Meydancı</option>
+              <option value="Yönetici"    ${p.rol==='Yönetici'    ? 'selected':''}>Yönetici</option>
+              <option value="Denetleyici" ${p.rol==='Denetleyici' ? 'selected':''}>Denetleyici</option>
             </select>
             ${p.durum === 'Aktif'
               ? `<button onclick="updateDurum('${p.id}','Pasif')"
@@ -860,6 +862,10 @@ function renderPersonel() {
                   Aktif Et
                  </button>`
             }
+            <button onclick="deletePersonelItem('${p.id}','${p.ad.replace(/'/g,"\\'")}')"
+              style="padding:6px 12px;background:#1e293b;color:white;border:none;border-radius:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer">
+              🗑️ Sil
+            </button>
           </div>
         </div>`;
     }).join('');
@@ -944,6 +950,17 @@ function updateDurum(id, durum) {
     const p = (_personelData || []).find(x => x.id === id);
     if (p) p.durum = durum;
     renderPersonel();
+  });
+}
+
+function deletePersonelItem(id, ad) {
+  if (!confirm('⚠️ ' + ad + ' (' + id + ') silinecek.\nBu işlem geri alınamaz. Devam edilsin mi?')) return;
+  _jsonpCall({ action: 'deletePersonel', hedef_id: id }, () => {
+    showMonToast('✅ ' + ad + ' silindi — ID ' + id + ' yeniden kullanılabilir', 'ok');
+    _personelData = (_personelData || []).filter(p => p.id !== id);
+    renderPersonel();
+  }, err => {
+    showMonToast('❌ ' + err, 'err');
   });
 }
 

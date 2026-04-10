@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<!-- denetleyici.html -->
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#7c3aed">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Ersan Denetleyici">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <title>Denetleyici Paneli — Ersan Plastik</title>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/app.css">
+
+  <style>
+    :root { --den: #7c3aed; --den-light: #f5f3ff; }
+
+    header { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+    header p { color: rgba(255,255,255,.8); }
+
+    .den-card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .den-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--den);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .filter-grid label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text2);
+      margin-bottom: 5px;
+    }
+
+    .filter-grid input {
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    .btn-den {
+      background: var(--den);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 13px 20px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 12px;
+    }
+    .btn-den:active { opacity: .85; }
+    .btn-den.outline {
+      background: white;
+      border: 2px solid var(--den);
+      color: var(--den);
+    }
+
+    .btn-row { display: flex; gap: 10px; }
+    .btn-row .btn-den { margin-top: 0; }
+
+    /* Records table */
+    .records-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table.records {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 700px;
+    }
+
+    table.records th {
+      background: var(--den-light);
+      color: var(--den);
+      font-weight: 800;
+      padding: 10px 8px;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 2px solid #ede9fe;
+      position: sticky;
+      top: 0;
+    }
+
+    table.records td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    table.records tr:last-child td { border-bottom: none; }
+    table.records tr:hover td { background: var(--den-light); }
+
+    .action-btn {
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+    }
+
+    .action-btn.edit   { background: #dbeafe; color: #1d4ed8; }
+    .action-btn.delete { background: #fee2e2; color: #dc2626; }
+    .action-btn:active { opacity: .75; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text2);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    /* Edit / Add Modal */
+    .den-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 700;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .den-modal-box {
+      background: white;
+      border-radius: 20px;
+      padding: 24px 20px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      margin: auto;
+    }
+
+    .den-modal-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--den);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .form-grid.full { grid-template-columns: 1fr; }
+
+    .form-grid label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text2);
+      margin-bottom: 4px;
+    }
+
+    .form-grid input, .form-grid select {
+      padding: 9px 11px;
+      font-size: 14px;
+    }
+
+    .calc-preview {
+      background: var(--den-light);
+      border: 2px solid #ede9fe;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--den);
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .enj2-section { display: none; }
+
+    .modal-btns-den {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .modal-btns-den button {
+      flex: 1;
+      padding: 13px;
+      border-radius: 12px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .modal-btns-den .cancel-btn {
+      border: 2px solid var(--border);
+      background: white;
+      color: var(--text2);
+    }
+
+    .modal-btns-den .save-btn {
+      border: none;
+      background: var(--den);
+      color: white;
+    }
+
+    .modal-btns-den .save-btn:active { opacity: .85; }
+    .modal-btns-den .cancel-btn:active { background: var(--bg); }
+
+    /* Delete confirm */
+    .delete-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🔍 Denetleyici Paneli</h1>
+  <p id="header-user">Yükleniyor...</p>
+  <div id="header-date"></div>
+</header>
+
+<main style="padding:14px;max-width:900px;margin:0 auto">
+
+  <!-- Dönem Filtresi -->
+  <div class="den-card">
+    <div class="den-title">📅 Dönem Filtresi</div>
+    <div class="filter-grid">
+      <div class="field">
+        <label>Başlangıç Tarihi</label>
+        <input type="date" id="bas-tarih">
+      </div>
+      <div class="field">
+        <label>Başlangıç Saati</label>
+        <input type="time" id="bas-saat" value="00:00">
+      </div>
+      <div class="field">
+        <label>Bitiş Tarihi</label>
+        <input type="date" id="bit-tarih">
+      </div>
+      <div class="field">
+        <label>Bitiş Saati</label>
+        <input type="time" id="bit-saat" value="23:59">
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn-den" onclick="loadRecords()">🔍 Kayıtları Yükle</button>
+      <button class="btn-den outline" onclick="openAddModal()">+ Yeni Kayıt</button>
+    </div>
+  </div>
+
+  <!-- Kayıt Sayısı -->
+  <div id="records-summary" style="display:none;font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;padding:0 2px"></div>
+
+  <!-- Tablo -->
+  <div class="den-card" id="records-card" style="display:none;padding:14px">
+    <div class="den-title">📋 Kayıtlar</div>
+    <div class="records-wrap">
+      <table class="records" id="records-table">
+        <thead>
+          <tr>
+            <th>Satır</th>
+            <th>Kayıt Zamanı</th>
+            <th>V. Tarihi</th>
+            <th>Ad Soyad</th>
+            <th>Vardiya</th>
+            <th>Enj1</th>
+            <th>Kasa1</th>
+            <th>SayBaş1</th>
+            <th>SayBit1</th>
+            <th>Üretim1</th>
+            <th>Fire1</th>
+            <th>Enj2</th>
+            <th>Kasa2</th>
+            <th>SayBaş2</th>
+            <th>SayBit2</th>
+            <th>Üretim2</th>
+            <th>Fire2</th>
+            <th>Onay</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="records-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="records-empty" style="display:none" class="den-card empty-state">
+    Seçilen dönemde kayıt bulunamadı.
+  </div>
+
+</main>
+
+<!-- Edit / Add Modal -->
+<div class="den-modal-overlay" id="edit-modal" style="display:none">
+  <div class="den-modal-box">
+    <div class="den-modal-title">
+      <span id="modal-icon">✏️</span>
+      <span id="modal-title">Kayıt Düzenle</span>
+    </div>
+
+    <input type="hidden" id="edit-row-idx">
+
+    <div class="form-grid">
+      <div class="field">
+        <label>Vardiya Tarihi</label>
+        <input type="date" id="edit-vardiya-tarihi">
+      </div>
+      <div class="field">
+        <label>Vardiya</label>
+        <select id="edit-vardiya">
+          <option value="SABAH">SABAH</option>
+          <option value="AKSAM">AKSAM</option>
+          <option value="GECE">GECE</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Ad Soyad</label>
+        <input type="text" id="edit-ad-soyad" placeholder="Operatör adı">
+      </div>
+      <div class="field">
+        <label>Ölçüm Saati</label>
+        <input type="time" id="edit-olcum-saat">
+      </div>
+      <div class="field">
+        <label>Enj. Sayısı</label>
+        <select id="edit-enj-sayisi" onchange="toggleEnj2Section()">
+          <option value="1">Tek (1)</option>
+          <option value="2">Çift (2)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Enj 1 -->
+    <div class="den-title" style="font-size:12px;margin-bottom:8px">1. Enjeksiyon</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Makine No</label>
+        <select id="edit-enj1-no">
+          <option value="">— Seçin —</option>
+          <option value="Enjeksiyon 1">Enjeksiyon 1</option>
+          <option value="Enjeksiyon 2">Enjeksiyon 2</option>
+          <option value="Enjeksiyon 3">Enjeksiyon 3</option>
+          <option value="Enjeksiyon 4">Enjeksiyon 4</option>
+          <option value="Enjeksiyon 5">Enjeksiyon 5</option>
+          <option value="Enjeksiyon 6">Enjeksiyon 6</option>
+          <option value="Enjeksiyon 7">Enjeksiyon 7</option>
+          <option value="Enjeksiyon 8">Enjeksiyon 8</option>
+          <option value="Enjeksiyon 9">Enjeksiyon 9</option>
+          <option value="Enjeksiyon 10">Enjeksiyon 10</option>
+          <option value="Enjeksiyon 11">Enjeksiyon 11</option>
+          <option value="Enjeksiyon 12">Enjeksiyon 12</option>
+          <option value="Enjeksiyon 13">Enjeksiyon 13</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Kasa Ebatı</label>
+        <select id="edit-enj1-kasa"><option value="">— Seçin —</option></select>
+      </div>
+      <div class="field">
+        <label>Çevrim (sn)</label>
+        <input type="number" id="edit-enj1-cevrim" step="0.1">
+      </div>
+      <div class="field">
+        <label>Ağırlık (gr)</label>
+        <input type="number" id="edit-enj1-agirlik" step="0.1">
+      </div>
+      <div class="field">
+        <label>Sayaç Başlangıç</label>
+        <input type="number" id="edit-enj1-sayac-bas" oninput="calcPreview()">
+      </div>
+      <div class="field">
+        <label>Sayaç Bitiş</label>
+        <input type="number" id="edit-enj1-sayac-bit" oninput="calcPreview()">
+      </div>
+      <div class="field">
+        <label>Fire</label>
+        <input type="number" id="edit-enj1-fire" min="0">
+      </div>
+    </div>
+
+    <div class="calc-preview" id="calc-preview-1"></div>
+
+    <!-- Enj 2 -->
+    <div class="enj2-section" id="enj2-section">
+      <div class="den-title" style="font-size:12px;margin-bottom:8px">2. Enjeksiyon</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Makine No</label>
+          <select id="edit-enj2-no">
+            <option value="">— Seçin —</option>
+            <option value="Enjeksiyon 1">Enjeksiyon 1</option>
+            <option value="Enjeksiyon 2">Enjeksiyon 2</option>
+            <option value="Enjeksiyon 3">Enjeksiyon 3</option>
+            <option value="Enjeksiyon 4">Enjeksiyon 4</option>
+            <option value="Enjeksiyon 5">Enjeksiyon 5</option>
+            <option value="Enjeksiyon 6">Enjeksiyon 6</option>
+            <option value="Enjeksiyon 7">Enjeksiyon 7</option>
+            <option value="Enjeksiyon 8">Enjeksiyon 8</option>
+            <option value="Enjeksiyon 9">Enjeksiyon 9</option>
+            <option value="Enjeksiyon 10">Enjeksiyon 10</option>
+            <option value="Enjeksiyon 11">Enjeksiyon 11</option>
+            <option value="Enjeksiyon 12">Enjeksiyon 12</option>
+            <option value="Enjeksiyon 13">Enjeksiyon 13</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Kasa Ebatı</label>
+          <select id="edit-enj2-kasa"><option value="">— Seçin —</option></select>
+        </div>
+        <div class="field">
+          <label>Çevrim (sn)</label>
+          <input type="number" id="edit-enj2-cevrim" step="0.1">
+        </div>
+        <div class="field">
+          <label>Ağırlık (gr)</label>
+          <input type="number" id="edit-enj2-agirlik" step="0.1">
+        </div>
+        <div class="field">
+          <label>Sayaç Başlangıç</label>
+          <input type="number" id="edit-enj2-sayac-bas" oninput="calcPreview()">
+        </div>
+        <div class="field">
+          <label>Sayaç Bitiş</label>
+          <input type="number" id="edit-enj2-sayac-bit" oninput="calcPreview()">
+        </div>
+        <div class="field">
+          <label>Fire</label>
+          <input type="number" id="edit-enj2-fire" min="0">
+        </div>
+      </div>
+      <div class="calc-preview" id="calc-preview-2"></div>
+    </div>
+
+    <div class="modal-btns-den">
+      <button class="cancel-btn" onclick="closeEditModal()">İptal</button>
+      <button class="save-btn" onclick="saveRecord()" id="save-btn">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="delete-modal-overlay" id="delete-modal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-icon">🗑️</div>
+    <div class="modal-title">Kaydı Sil</div>
+    <div class="modal-body" id="delete-modal-body">Bu kayıt kalıcı olarak silinecek.</div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="closeDeleteModal()">İptal</button>
+      <button class="modal-btn-confirm" onclick="confirmDelete()">Evet, Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- Yükleniyor -->
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <span id="load-text">Yükleniyor...</span>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Çıkış butonu -->
+<div style="position:fixed;top:14px;right:14px;z-index:200">
+  <button onclick="cikisYap()"
+    style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);color:white;border-radius:10px;padding:7px 14px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer">
+    ← Çıkış
+  </button>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/denetleyici.js"></script>
+</body>
+</html>

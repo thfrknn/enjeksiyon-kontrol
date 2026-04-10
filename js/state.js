@@ -2,7 +2,6 @@
 
 var vardiya      = null;
 var currentStep  = 1;
-var olcumNo      = 1;
 var enjSayisi    = 1;
 
 var kullanicilar  = {};
